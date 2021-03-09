@@ -1,0 +1,35 @@
+Maintain separate ~gcloud config configurations~ for work and
+personal. Create a personal configuration and authorize it.
+
+#+begin_src sh
+gcloud config configurations list
+gcloud config configurations create personal
+gcloud config set account <email>
+gcloud config set project <project>
+gcloud auth login
+#+end_src
+
+Zone and project should be automatically set, allowing those flags to
+be omitted from following commands.
+
+#+begin_src sh
+gcloud beta compute ssh <compute-instance-name>
+#+end_src
+
+** Granting permissions to Terraform
+#+begin_src
+gcloud iam service-accounts get-iam-policy terraform@griffith-lab.iam.gserviceaccount.com > iamPolicy.yaml
+#+end_src
+then modify ~iamPolicy.yaml~ to desired settings, and set it
+#+begin_src
+gcloud iam service-accounts set-iam-policy terraform@griffith-lab.iam.gserviceaccount.com iamPolicy.yaml
+#+end_src
+
+** Cleanup
+Merge roles into a single CromwellService role:
+- storage.objectCreator
+- storage.objectViewer
+- genomics.pipelinesRunner
+- genomics.admin
+- iam.serviceAccountUser
+- storage.objects.create

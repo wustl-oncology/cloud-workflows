@@ -1,0 +1,20 @@
+# Terraform
+terraform.tfstate
+terraform.tfstate.backup
+.terraform/*
+.terraform.lock.hcl
+
+# Credentials
+*service-account.json
+*.pem
+
+# Cromwell
+cromwell/cromwell-executions/*
+cromwell/*.logs
+cromwell/cromwell-*.jar
+
+# Miscellaneous unimportant notes
+iam/*
+
+# Emacs temp files
+*~
