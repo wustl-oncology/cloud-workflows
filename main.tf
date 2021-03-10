@@ -33,9 +33,8 @@ data "google_service_account" "cromwell" {
   project = local.project
 }
 
-resource "google_compute_network" "vpc-network" {
-  name = "cromwell-network"
-}
+# --- Computing Server ---------------------------------------------------------
+
 
 resource "google_compute_instance" "cromwell-server" {
   name         = "cromwell-server"
@@ -47,7 +46,7 @@ resource "google_compute_instance" "cromwell-server" {
   }
 
   network_interface {
-    network = google_compute_network.vpc-network.id
+    network = "default"
   }
 
   # TODO: move into its own file
