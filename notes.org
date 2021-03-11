@@ -34,7 +34,6 @@ Merge roles into a single CromwellService role:
 - iam.serviceAccountUser
 - storage.objects.create
 
-
 ** Running Cromwell with GCP backup
 
 running in docker container fails with this error
@@ -62,9 +61,32 @@ naive replacement here results in a ton of stack traces
 [2021-03-10 10:47:09,84] [warn] The PEM file format will be deprecated
 in the upcoming Cromwell version. Please use JSON instead.
 
+!! Fixed
 #+begin_quote
 [2021-03-10 10:47:42,49] [warn] PAPI request worker had 1 failures making 1 requests:
 {"domain":"global",
 "message":"Quota exceeded for quota metric 'v1alpha2 requests' and limit 'v1alpha2 requests per minute' of service 'genomics.googleapis.com' for consumer 'project_number:190642530876'.",
 "reason":"rateLimitExceeded"}
 #+end_quote
+
+#+begin_quote
+[2021-03-11 09:29:10,36] [info] WorkflowManagerActor Workflow
+eaf65136-7834-4d36-84a6-ab719ae4fadc failed (during
+ExecutingWorkflowState):
+cromwell.backend.google.pipelines.common.api.PipelinesApiRequestManager$UserPAPIApiException:
+Unable to complete PAPI request due to a problem with the request (The
+caller does not have permission).
+#+end_quote
+
+** Cromwell Next-Steps after working locally
+
+Running hello world locally!
+
+- handle `[warn]` messages, e.g. PEM file format deprecated
+- do we want to do any configuration with logging?
+
+- need to get to run either from inside docker or from startup script
+  I would prefer docker for reproducibility, may be easier without tho
+- get .pem file into container (docker or vm)
+- networking constraints, SSH-able network/subnet/firewall
+- backing database? cloudSQL? see hall-lab.fake-tf

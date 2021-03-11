@@ -2,8 +2,7 @@
 
 locals {
   project = "griffith-lab"
-  creds-file = "${local.project}-terraform-service-account.json"
-  cromwell-service-account = "cromwell-server"
+  project-id = 190642530876  # TODO: pull from provider?
 }
 
 # ------------------------------------------------------------------------------
@@ -19,53 +18,72 @@ terraform {
 
 provider "google" {
   // if this file gets expanded to other labs, these should be tfvars
-  credentials = file(local.creds-file)
+  credentials = file("terraform-service-account.json")
 
   project = local.project
   region  = "us-central1"
   zone    = "us-central1-c"
 }
 
-# TODO: make Terraform own this service account, should only need to setup
-# then run terraform, not contents
-data "google_service_account" "cromwell" {
-  account_id = local.cromwell-service-account
+# --- Cromwell Server ---------------------------------------------------------
+
+resource "google_service_account" "cromwell-server" {
+  account_id = "cromwell-server"
   project = local.project
+  description = "To run Cromwell server as part of PipelinesAPI"
+  display_name = "cromwell-server"
 }
 
-# --- Computing Server ---------------------------------------------------------
+resource "google_project_iam_binding" "project" {
+  project = "griffith-lab"
+  role    = "roles/lifesciences.workflowsRunner"
 
+  members = [
+    "serviceAccount:${google_service_account.cromwell-server.email}",
+  ]
+}
 
 resource "google_compute_instance" "cromwell-server" {
-  name         = "cromwell-server"
+  name = "cromwell-server"
+
+  allow_stopping_for_update = true
   machine_type = "e2-medium"
+  # TODO: after google.conf configured, fix .sh to actually run a Cromwell server
+  metadata_startup_script = file("cromwell_server_startup.sh")
+  tags = ["http-server", "https-server"]
+
   boot_disk {
     initialize_params {
       image = "debian-10-buster-v20210217"
     }
   }
-
   network_interface {
     network = "default"
   }
-
-  # TODO: move into its own file
-  # TODO: configure backend with `google.conf`
-  # TODO: get a machine template with docker already installed
-  # TODO: create custom docker image from Cromwell with config file attached
-  #   or otherwise pull config somewhere not manual
-  metadata_startup_script = <<EOF
-curl -sSL https://get.docker.com/ | sh
-docker pull broadinstitute/cromwell:58
-docker run -p 8000:8000 broadinstitute/cromwell:58 server
-EOF
-
   service_account {
-    email = data.google_service_account.cromwell.email
+    email = google_service_account.cromwell-server.email
     scopes = ["cloud-platform"]
   }
+}
 
-  allow_stopping_for_update = true
+# --- Cromwell Compute ---------------------------------------------------------
+
+resource "google_service_account" "cromwell-compute" {
+  account_id = "cromwell-compute"
+  display_name = "Cromwell backend compute"
+  description = <<EOF
+Service account for compute resources spun up by Cromwell server.
+Per Cromwell's docs, must be a service account user of the cromwell-server
+service account and have read/write access to the cromwell-execution bucket.
+EOF
+}
+
+resource "google_service_account_iam_binding" "cromwell-service-account-user" {
+  service_account_id = google_service_account.cromwell-server.name
+  role = "roles/iam.serviceAccountUser"
+  members = [
+    "serviceAccount:${google_service_account.cromwell-compute.email}"
+  ]
 }
 
 # --- File Storage -------------------------------------------------------------
@@ -73,7 +91,6 @@ EOF
 resource "google_storage_bucket" "cromwell-executions" {
   name = "${local.project}-cromwell"
   location = "US"  # TODO: pull from provider?
-  # project, pull from provider
 
   # additional options we may want:
   # uniform_bucket_level_access, requester_pays, encryption, logging, labels,
@@ -86,13 +103,31 @@ resource "google_storage_bucket" "cromwell-executions" {
   force_destroy = "true"
 }
 
+resource "google_storage_bucket_iam_member" "cromwell-server" {
+  for_each = toset(["roles/storage.objectCreator", "roles/storage.objectViewer"])
+  bucket   = google_storage_bucket.cromwell-executions.name
+  role     = each.key
+  member   = "serviceAccount:${google_service_account.cromwell-server.email}"
+}
+resource "google_storage_bucket_iam_member" "cromwell-compute" {
+  for_each = toset(["roles/storage.objectCreator", "roles/storage.objectViewer"])
+  bucket   = google_storage_bucket.cromwell-executions.name
+  role     = each.key
+  member   = "serviceAccount:${google_service_account.cromwell-compute.email}"
+}
+
 resource "google_storage_bucket_acl" "cromwell-executions" {
   bucket = google_storage_bucket.cromwell-executions.name
 
   role_entity = [
-    "OWNER:project-owners-190642530876",
-    "OWNER:project-editors-190642530876",
-    "READER:project-viewers-190642530876",
-    "WRITER:user-${data.google_service_account.cromwell.email}"
+    "OWNER:project-owners-${local.project-id}",
+    "OWNER:project-editors-${local.project-id}",
+    "READER:project-viewers-${local.project-id}",
+    "WRITER:user-${google_service_account.cromwell-server.email}",
+    "WRITER:user-${google_service_account.cromwell-compute.email}"
   ]
 }
+
+# --- Networking ---------------------------------------------------------------
+
+# --- Database -----------------------------------------------------------------
