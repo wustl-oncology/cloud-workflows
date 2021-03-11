@@ -103,6 +103,9 @@ resource "google_storage_bucket" "cromwell-executions" {
   force_destroy = "true"
 }
 
+## both IAM and ACL are required
+## failed with permissions issue if either are missing
+
 resource "google_storage_bucket_iam_member" "cromwell-server" {
   for_each = toset(["roles/storage.objectCreator", "roles/storage.objectViewer"])
   bucket   = google_storage_bucket.cromwell-executions.name
