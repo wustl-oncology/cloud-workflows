@@ -3,6 +3,8 @@
 locals {
   project = "griffith-lab"
   project-id = 190642530876  # TODO: pull from provider?
+  region = "us-central1"
+  zone = "us-central1-c"
 }
 
 # ------------------------------------------------------------------------------
@@ -21,8 +23,8 @@ provider "google" {
   credentials = file("terraform-service-account.json")
 
   project = local.project
-  region  = "us-central1"
-  zone    = "us-central1-c"
+  region  = local.region
+  zone    = local.zone
 }
 
 # --- Cromwell Server ---------------------------------------------------------
@@ -48,9 +50,16 @@ resource "google_compute_instance" "cromwell-server" {
 
   allow_stopping_for_update = true
   machine_type = "e2-medium"
-  # TODO: after google.conf configured, fix .sh to actually run a Cromwell server
-  metadata_startup_script = file("cromwell_server_startup.sh")
-  tags = ["http-server", "https-server"]
+  metadata_startup_script = file("server_startup.py")
+  metadata = {
+    enable-oslogin = "TRUE"
+    service-file   = file("cromwell.service")
+    conf-file      = file("cromwell.conf")
+  }
+  tags = ["http-server", "https-server", "cromwell-ssh-allowed"]
+
+  # TODO: disks?
+  # TODO:
 
   boot_disk {
     initialize_params {
@@ -58,7 +67,12 @@ resource "google_compute_instance" "cromwell-server" {
     }
   }
   network_interface {
-    network = "default"
+    subnetwork = google_compute_subnetwork.default.name
+    # TODO: when network vs when subnetwork?
+    # TODO: access_config. nat_ip for static ip
+    access_config {
+      nat_ip = google_compute_address.static-ip.address
+    }
   }
   service_account {
     email = google_service_account.cromwell-server.email
@@ -132,5 +146,40 @@ resource "google_storage_bucket_acl" "cromwell-executions" {
 }
 
 # --- Networking ---------------------------------------------------------------
+
+resource "google_compute_network" "default" {
+  name                    = "cromwell-default"
+  auto_create_subnetworks = false
+}
+
+# what do we need subnetwork for?
+resource "google_compute_subnetwork" "default" {
+  name = "cromwell-default"
+  # what determines subnetwork ip_cidr_range?
+  ip_cidr_range = "10.10.0.0/16"
+  network = google_compute_network.default.id
+}
+
+resource "google_compute_address" "static-ip" {
+  name = "cromwell-server-ip"
+  region = local.region
+  network_tier = "PREMIUM"
+}
+
+resource "google_compute_firewall" "default-ssh-allowed" {
+  name = "default-ssh-allowed"
+  network = google_compute_network.default.id
+  allow {
+    # what do we need icmp for? monitoring?
+    protocol = "icmp"
+  }
+  allow {  # allow SSH
+    protocol = "tcp"
+    ports = ["22"]
+  }
+  source_ranges = ["0.0.0.0/0"]  # all IPs allowed
+  target_tags = ["cromwell-ssh-allowed"]
+}
+
 
 # --- Database -----------------------------------------------------------------
