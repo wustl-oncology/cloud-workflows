@@ -59,7 +59,6 @@ resource "google_compute_instance" "cromwell-server" {
   tags = ["http-server", "https-server", "cromwell-ssh-allowed"]
 
   # TODO: disks?
-  # TODO:
 
   boot_disk {
     initialize_params {
@@ -69,7 +68,6 @@ resource "google_compute_instance" "cromwell-server" {
   network_interface {
     subnetwork = google_compute_subnetwork.default.name
     # TODO: when network vs when subnetwork?
-    # TODO: access_config. nat_ip for static ip
     access_config {
       nat_ip = google_compute_address.static-ip.address
     }

@@ -4,9 +4,16 @@ import os, subprocess, sys
 # Cromwell constants
 CROMWELL_REPO = 'https://github.com/broadinstitute/cromwell'
 CROMWELL_VERSION = 58
-# Google Cloud related
+
+# name of .conf file for Cromwell on the VM instance. used in `cromwell.service`
 CROMWELL_CONF = 'cromwell.conf'
+# compute instance metadata tag with cromwell.conf contents. specified in `main.tf`
+DOT_CONF_TAG='conf-file'
+# compute instance metadata tag with cromwell.service contents. specified in `main.tf`
+DOT_SERVICE_TAG='service-file'
+
 GOOGLE_URL = "http://metadata.google.internal/computeMetadata/v1/instance/attributes"
+
 # VM local directories
 INSTALL_DIR = os.path.join(os.path.sep, 'opt', 'cromwell')
 BIN_DIR = os.path.join(INSTALL_DIR, "bin")
@@ -113,13 +120,12 @@ def fetch_and_save_instance_info(name, fn):
 def add_and_start_cromwell_service():
     """Create .service file and start service daemon for Cromwell."""
     fetch_and_save_instance_info(
-        name='service-file',
+        name=DOT_SERVICE_TAG,
         fn=os.path.join(os.path.sep, 'etc', 'systemd', 'system', 'cromwell.service')
     )
     print("Start cromwell service...")
     subprocess.check_call(['systemctl', 'daemon-reload'])
     subprocess.check_call(['systemctl', 'start', 'cromwell'])
-
 
 def install_cromwell_config():
     """Transfer Cromwell .conf file from instance info to local file."""
@@ -129,7 +135,7 @@ def install_cromwell_config():
     else:
         sys.stdout.write("Install cromwell config...")
         with open(fn, 'w') as f:
-            f.write(fetch_instance_info(name='conf-file'))
+            f.write(fetch_instance_info(name=DOT_CONF_TAG))
 
 
 if __name__ == '__main__':
