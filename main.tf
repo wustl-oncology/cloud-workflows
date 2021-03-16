@@ -5,6 +5,8 @@ locals {
   project-id = 190642530876  # TODO: pull from provider?
   region = "us-central1"
   zone = "us-central1-c"
+  # should match webservice.port in cromwell.conf
+  cromwell-port = 8000
 }
 
 # ------------------------------------------------------------------------------
@@ -57,8 +59,6 @@ resource "google_compute_instance" "cromwell-server" {
     conf-file      = file("cromwell.conf")
   }
   tags = ["http-server", "https-server", "cromwell-ssh-allowed"]
-
-  # TODO: disks?
 
   boot_disk {
     initialize_params {
@@ -153,7 +153,6 @@ resource "google_compute_network" "default" {
 # what do we need subnetwork for?
 resource "google_compute_subnetwork" "default" {
   name = "cromwell-default"
-  # what determines subnetwork ip_cidr_range?
   ip_cidr_range = "10.10.0.0/16"
   network = google_compute_network.default.id
 }
@@ -173,7 +172,7 @@ resource "google_compute_firewall" "default-ssh-allowed" {
   }
   allow {  # allow SSH
     protocol = "tcp"
-    ports = ["22"]
+    ports = ["22", local.cromwell-port]
   }
   source_ranges = ["0.0.0.0/0"]  # all IPs allowed
   target_tags = ["cromwell-ssh-allowed"]
