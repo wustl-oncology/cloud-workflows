@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-import os, subprocess, sys
+import os, subprocess, sys, time
 
 # Cromwell constants
 CROMWELL_REPO = 'https://github.com/broadinstitute/cromwell'
@@ -30,7 +30,7 @@ def create_directories():
 
 
 def install_apt_get_packages():
-    packages = [ 'python3-pip' 'default-jre' ]
+    packages = [ 'python3-pip', 'default-jre' ]
     while subprocess.call(['apt-get', 'update']):
         print("Failed to apt-get update. Trying again in 5 seconds")
         time.sleep(5)
@@ -126,6 +126,7 @@ def add_and_start_cromwell_service():
     print("Start cromwell service...")
     subprocess.check_call(['systemctl', 'daemon-reload'])
     subprocess.check_call(['systemctl', 'start', 'cromwell'])
+
 
 def install_cromwell_config():
     """Transfer Cromwell .conf file from instance info to local file."""
