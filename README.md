@@ -37,7 +37,8 @@ To troubleshoot starting script, its logs can be viewed with
 sudo journalctl -u google-startup-scripts.service
 ```
 
-Jobs should be submit either through REST API or through cromshell
+Jobs should be submit either through REST API or through cromshell.
+WDL file must specify task.runtime.docker to avoid an error
 
 
 # TODO
