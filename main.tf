@@ -6,7 +6,9 @@ locals {
   region = "us-central1"
   zone = "us-central1-c"
   # should match webservice.port in cromwell.conf
-  cromwell-port = 8000
+  cromwell_port = 8000
+
+  ssh_allowed = "cromwell-ssh-allowed"
 }
 
 # ------------------------------------------------------------------------------
@@ -29,136 +31,36 @@ provider "google" {
   zone    = local.zone
 }
 
-# --- Cromwell Server ---------------------------------------------------------
+module "network" {
+  source = "./network"
+  cromwell_port = local.cromwell_port
+  ssh_tag = local.ssh_allowed
+}
 
-resource "google_service_account" "cromwell-server" {
-  account_id = "cromwell-server"
+module "server" {
+  source = "./server"
+  project    = local.project
+  # network
+  nat_ip     = network.static_ip
+  subnetwork = network.subnetwork
+  # files
+  conf_file      = file("cromwell.conf")
+  service_file   = file("cromwell.service")
+  startup_script = file("server_startup.py")
+
+  tags = ["http-server", "https-server", local.ssh_allowed]
+}
+
+module "compute" {
+  source = "./compute"
+  server_service_account = module.server.service_account
+}
+
+module "bucket" {
+  source = "./bucket"
   project = local.project
-  description = "To run Cromwell server as part of PipelinesAPI"
-  display_name = "cromwell-server"
-}
-
-resource "google_project_iam_binding" "project" {
-  project = "griffith-lab"
-  role    = "roles/lifesciences.workflowsRunner"
-
-  members = [
-    "serviceAccount:${google_service_account.cromwell-server.email}",
+  writer_service_accounts = [
+    module.compute.service_account,
+    module.server.service_account
   ]
 }
-
-resource "google_compute_instance" "cromwell-server" {
-  name = "cromwell-server"
-
-  allow_stopping_for_update = true
-  machine_type = "e2-medium"
-  metadata_startup_script = file("server_startup.py")
-  metadata = {
-    enable-oslogin = "TRUE"
-    service-file   = file("cromwell.service")
-    conf-file      = file("cromwell.conf")
-  }
-  tags = ["http-server", "https-server", "cromwell-ssh-allowed"]
-
-  boot_disk {
-    initialize_params {
-      image = "debian-10-buster-v20210217"
-    }
-  }
-  network_interface {
-    subnetwork = google_compute_subnetwork.default.name
-    # TODO: when network vs when subnetwork?
-    access_config {
-      nat_ip = google_compute_address.static-ip.address
-    }
-  }
-  service_account {
-    email = google_service_account.cromwell-server.email
-    scopes = ["cloud-platform"]
-  }
-}
-
-# --- Cromwell Compute ---------------------------------------------------------
-
-resource "google_service_account" "cromwell-compute" {
-  account_id = "cromwell-compute"
-  display_name = "Cromwell backend compute"
-  description = <<EOF
-Service account for compute resources spun up by Cromwell server.
-Per Cromwell's docs, must be a service account user of the cromwell-server
-service account and have read/write access to the cromwell-execution bucket.
-EOF
-}
-
-resource "google_service_account_iam_binding" "cromwell-service-account-user" {
-  service_account_id = google_service_account.cromwell-server.name
-  role = "roles/iam.serviceAccountUser"
-  members = [
-    "serviceAccount:${google_service_account.cromwell-compute.email}"
-  ]
-}
-
-# --- File Storage -------------------------------------------------------------
-
-resource "google_storage_bucket" "cromwell-executions" {
-  name = "${local.project}-cromwell"
-  location = "US"  # TODO: pull from provider?
-}
-
-module "bucket_permissions" {
-  source = "./bucket-permissions"
-  acl_role_entity = [
-    "WRITER:user-${google_service_account.cromwell-server.email}",
-    "WRITER:user-${google_service_account.cromwell-compute.email}"
-  ]
-  bucket = google_storage_bucket.cromwell-executions.name
-  iam_members = [
-    {
-      member = "serviceAccount:${google_service_account.cromwell-server.email}",
-      roles = ["roles/storage.objectCreator", "roles/storage.objectViewer"]
-    },
-    {
-      member = "serviceAccount:${google_service_account.cromwell-compute.email}",
-      roles = ["roles/storage.objectCreator", "roles/storage.objectViewer"]
-    }
-  ]
-}
-
-
-# --- Networking ---------------------------------------------------------------
-
-resource "google_compute_network" "default" {
-  name                    = "cromwell-default"
-  auto_create_subnetworks = false
-}
-
-# what do we need subnetwork for?
-resource "google_compute_subnetwork" "default" {
-  name = "cromwell-default"
-  ip_cidr_range = "10.10.0.0/16"
-  network = google_compute_network.default.id
-}
-
-resource "google_compute_address" "static-ip" {
-  name = "cromwell-server-ip"
-  region = local.region
-  network_tier = "PREMIUM"
-}
-
-resource "google_compute_firewall" "default-ssh-allowed" {
-  name = "default-ssh-allowed"
-  network = google_compute_network.default.id
-  allow {
-    # what do we need icmp for? monitoring?
-    protocol = "icmp"
-  }
-  allow {  # allow SSH
-    protocol = "tcp"
-    ports = ["22", local.cromwell-port]
-  }
-  source_ranges = ["0.0.0.0/0"]  # all IPs allowed
-  target_tags = ["cromwell-ssh-allowed"]
-}
-
-
-# --- Database -----------------------------------------------------------------
