@@ -103,45 +103,27 @@ resource "google_service_account_iam_binding" "cromwell-service-account-user" {
 resource "google_storage_bucket" "cromwell-executions" {
   name = "${local.project}-cromwell"
   location = "US"  # TODO: pull from provider?
-
-  # additional options we may want:
-  # uniform_bucket_level_access, requester_pays, encryption, logging, labels,
-  # retention_policy, cors, versioning, lifecycle_rule, storage_class
-
-  # ONLY FOR PLAYGROUND
-  # _will_ cause data loss if done in a real environment
-  # attempts to delete non-empty bucket will delete its contents instead
-  # of failing to apply
-  force_destroy = "true"
 }
 
-## both IAM and ACL are required
-## failed with permissions issue if either are missing
-
-resource "google_storage_bucket_iam_member" "cromwell-server" {
-  for_each = toset(["roles/storage.objectCreator", "roles/storage.objectViewer"])
-  bucket   = google_storage_bucket.cromwell-executions.name
-  role     = each.key
-  member   = "serviceAccount:${google_service_account.cromwell-server.email}"
-}
-resource "google_storage_bucket_iam_member" "cromwell-compute" {
-  for_each = toset(["roles/storage.objectCreator", "roles/storage.objectViewer"])
-  bucket   = google_storage_bucket.cromwell-executions.name
-  role     = each.key
-  member   = "serviceAccount:${google_service_account.cromwell-compute.email}"
-}
-
-resource "google_storage_bucket_acl" "cromwell-executions" {
-  bucket = google_storage_bucket.cromwell-executions.name
-
-  role_entity = [
-    "OWNER:project-owners-${local.project-id}",
-    "OWNER:project-editors-${local.project-id}",
-    "READER:project-viewers-${local.project-id}",
+module "bucket_permissions" {
+  source = "./bucket-permissions"
+  acl_role_entity = [
     "WRITER:user-${google_service_account.cromwell-server.email}",
     "WRITER:user-${google_service_account.cromwell-compute.email}"
   ]
+  bucket = google_storage_bucket.cromwell-executions.name
+  iam_members = [
+    {
+      member = "serviceAccount:${google_service_account.cromwell-server.email}",
+      roles = ["roles/storage.objectCreator", "roles/storage.objectViewer"]
+    },
+    {
+      member = "serviceAccount:${google_service_account.cromwell-compute.email}",
+      roles = ["roles/storage.objectCreator", "roles/storage.objectViewer"]
+    }
+  ]
 }
+
 
 # --- Networking ---------------------------------------------------------------
 
