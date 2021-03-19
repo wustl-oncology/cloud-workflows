@@ -1,4 +1,4 @@
-resource "google_service_account" "cromwell-compute" {
+resource "google_service_account" "cromwell_compute" {
   account_id = "cromwell-compute"
   display_name = "Cromwell backend compute"
   description = <<EOF
@@ -8,10 +8,10 @@ service account and have read/write access to the cromwell-execution bucket.
 EOF
 }
 
-resource "google_service_account_iam_binding" "cromwell-service-account-user" {
-  service_account_id = var.server-service-account
+resource "google_service_account_iam_binding" "cromwell_service_account_user" {
+  service_account_id = var.server_service_account
   role = "roles/iam.serviceAccountUser"
   members = [
-    "serviceAccount:${google_service_account.cromwell-compute.email}"
+    "serviceAccount:${google_service_account.cromwell_compute.email}"
   ]
 }

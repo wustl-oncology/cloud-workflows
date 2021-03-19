@@ -10,12 +10,12 @@ resource "google_compute_subnetwork" "default" {
   network = google_compute_network.default.id
 }
 
-resource "google_compute_address" "static-ip" {
+resource "google_compute_address" "static_ip" {
   name = "cromwell-server-ip"
   network_tier = "PREMIUM"
 }
 
-resource "google_compute_firewall" "default-ssh-allowed" {
+resource "google_compute_firewall" "default_ssh_allowed" {
   name = "default-ssh-allowed"
   network = google_compute_network.default.id
   allow {
@@ -24,7 +24,7 @@ resource "google_compute_firewall" "default-ssh-allowed" {
   }
   allow {  # allow SSH
     protocol = "tcp"
-    ports = ["22", local.cromwell-port]
+    ports = ["22", var.cromwell_port]
   }
   source_ranges = ["0.0.0.0/0"]  # all IPs allowed
   target_tags = [var.ssh_tag]

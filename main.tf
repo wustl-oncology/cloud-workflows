@@ -2,7 +2,7 @@
 
 locals {
   project = "griffith-lab"
-  project-id = 190642530876  # TODO: pull from provider?
+  project_id = 190642530876  # TODO: pull from provider?
   region = "us-central1"
   zone = "us-central1-c"
   # should match webservice.port in cromwell.conf
@@ -41,8 +41,8 @@ module "server" {
   source = "./server"
   project    = local.project
   # network
-  nat_ip     = network.static_ip
-  subnetwork = network.subnetwork
+  nat_ip     = module.network.static_ip
+  subnetwork = module.network.subnetwork
   # files
   conf_file      = file("cromwell.conf")
   service_file   = file("cromwell.service")
@@ -53,14 +53,13 @@ module "server" {
 
 module "compute" {
   source = "./compute"
-  server_service_account = module.server.service_account
+  server_service_account = module.server.service_account_name
 }
 
 module "bucket" {
   source = "./bucket"
   project = local.project
-  writer_service_accounts = [
-    module.compute.service_account,
-    module.server.service_account
-  ]
+  project_id = local.project_id
+  compute_account_email = module.compute.service_account_email
+  server_account_email  = module.server.service_account_email
 }

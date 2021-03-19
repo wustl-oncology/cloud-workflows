@@ -1,41 +1,39 @@
 locals {
   bucket_roles = ["roles/storage.objectCreator", "roles/storage.objectViewer"]
-  iam_members = flatten([
-    for m_key, account in var.writer_service_accounts : [
-      for r_key, role in toset(local.bucket_roles) : {
-        {
-          name = account
-          role = role
-        }
-      }
-    ]
-  ])
+  bucket_writers = [var.server_account_email, var.compute_account_email]
 }
 
-resource "google_storage_bucket" "cromwell-executions" {
+resource "google_storage_bucket" "cromwell_executions" {
   name = "${var.project}-cromwell"
   location = "US"  # TODO: pull from provider?
+  force_destroy = true
 }
 
 ## both IAM and ACL are required
 ## failed with permissions issue if either are missing
 
-resource "google_storage_bucket_iam_member" "role_binding" {
-  for_each = {
-    for iam_member in local.iam_members : "${iam_member.name}/${iam_member.role}" => iam_member
-  }
-  bucket = google_storage_bucket.cromwell-executions.name
-  role   = each.value.role
-  member = each.value.name
-  description = "Non-authoritative permission bindings."
+# non-authoritative IAM bindings
+resource "google_storage_bucket_iam_member" "server_binding" {
+  for_each = toset(local.bucket_roles)
+  bucket = google_storage_bucket.cromwell_executions.name
+  role   = each.key
+  member = "serviceAccount:${var.server_account_email}"
+}
+resource "google_storage_bucket_iam_member" "compute_binding" {
+  for_each = toset(local.bucket_roles)
+  bucket = google_storage_bucket.cromwell_executions.name
+  role   = each.key
+  member = "serviceAccount:${var.compute_account_email}"
 }
 
-resource "google_storage_bucket_acl" "cromwell-executions" {
-  bucket = google_storage_bucket.cromwell-executions.name
-  role_entity = concat([
-    "OWNER:project-owners-${local.project-id}",
-    "OWNER:project-editors-${local.project-id}",
-    "READER:project-viewers-${local.project-id}"
-  ], [for account in var.writer-service-accounts : "WRITER:user-${account}"])
-  description = "Legacy permission bindings."
+# Legacy permission bindings
+resource "google_storage_bucket_acl" "cromwell_executions" {
+  bucket = google_storage_bucket.cromwell_executions.name
+  role_entity = [
+    "OWNER:project-owners-${var.project_id}",
+    "READER:project-viewers-${var.project_id}",
+    "OWNER:project-editors-${var.project_id}",
+    "WRITER:user-${var.server_account_email}",
+    "WRITER:user-${var.compute_account_email}"
+  ]
 }

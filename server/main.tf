@@ -1,4 +1,4 @@
-resource "google_service_account" "cromwell-server" {
+resource "google_service_account" "cromwell_server" {
   account_id = "cromwell-server"
   project = var.project
   description = "To run Cromwell server as part of PipelinesAPI"
@@ -8,10 +8,10 @@ resource "google_service_account" "cromwell-server" {
 resource "google_project_iam_binding" "project" {
   project = "griffith-lab"
   role    = "roles/lifesciences.workflowsRunner"
-  members = ["serviceAccount:${google_service_account.cromwell-server.email}"]
+  members = ["serviceAccount:${google_service_account.cromwell_server.email}"]
 }
 
-resource "google_compute_instance" "cromwell-server" {
+resource "google_compute_instance" "cromwell_server" {
   name = "cromwell-server"
 
   allow_stopping_for_update = true
@@ -34,7 +34,7 @@ resource "google_compute_instance" "cromwell-server" {
     access_config { nat_ip = var.nat_ip }
   }
   service_account {
-    email = google_service_account.cromwell-server.email
+    email = google_service_account.cromwell_server.email
     scopes = ["cloud-platform"]
   }
 }

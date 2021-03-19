@@ -1,3 +1,3 @@
-output "service_account" {
-  value = google_service_account.cromwell-compute.email
+output "service_account_email" {
+  value = google_service_account.cromwell_compute.email
 }

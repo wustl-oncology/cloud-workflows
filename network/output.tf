@@ -1,5 +1,5 @@
 output "static_ip" {
-  value = google_compute_address.static-ip.address
+  value = google_compute_address.static_ip.address
 }
 
 output "subnetwork" {
