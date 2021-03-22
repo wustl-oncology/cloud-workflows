@@ -1,5 +1,3 @@
-# --- Variables ----------------------------------------------------------------
-
 locals {
   project    = "griffith-lab"
   project_id = 190642530876  # TODO: pull from provider?
@@ -7,14 +5,16 @@ locals {
   zone   = "us-central1-c"
 }
 
-# ------------------------------------------------------------------------------
-
 terraform {
   required_providers {
     google = {
       source = "hashicorp/google"
       version = "3.5.0"
     }
+  }
+  backend "gcs" {
+    bucket  = "griffith-lab-terraform-state"
+    prefix  = "cloud-workflows"
   }
 }
 
