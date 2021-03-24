@@ -1,0 +1,7 @@
+google-cloud-storage
+cwl_utils
+
+# major API change after 0.15.0
+ruamel.yaml >= 0.15.0
+
+pathlib == 1.0.1
