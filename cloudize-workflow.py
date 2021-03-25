@@ -19,12 +19,47 @@ UNIQUE_PATH = "2021-03-22"
 bucket = storage.Client().bucket(BUCKET_NAME)
 yaml = ruamel.yaml.YAML()
 
+
+# ---- GCS interactions ------------------------------------------------
+
 def upload_to_gcs(src, dest):
     """Upload a local file to GCS. src is a filepath/name and dest is target GCS name."""
     print(f"Uploading {src} to {dest}")
     # bucket.blob(dest).upload_from_filename(src, num_retries=3)
     return f"gs://{bucket.name}/{dest}"
 
+
+# ---- Generic functions -----------------------------------------------
+
+def walk_object(obj, node_fn, path=[]):
+    """Walk an objects structure, applying node_fn to each node, both branch and leaf nodes.
+    node_fn must accept both the node and a kwarg for path."""
+    if (isinstance(obj, dict)):
+        return node_fn({ k: pathed_walk_object(v, node_fn, path=(path.copy() + [k]))
+                         for k, v in obj.items() },
+                       path)
+    elif (isinstance(obj, list)):
+        return node_fn([ pathed_walk_object(x, node_fn, path=(path.copy() + [i]))
+                         for i, x in enumerate(obj) ],
+                       path)
+    else:  # all non-collection classes are treated as leaf nodes
+        return node_fn(obj, path)
+
+
+def get(coll, k):
+    try:
+        return coll[k]
+    except (KeyError, IndexError):
+        return None
+
+
+def get_in(coll, path):
+    if not path:   return coll
+    elif not coll: return None
+    else:          return get_in(get(coll, path[0]), path[1:])
+
+
+# ---- CWL specific ----------------------------------------------------
 
 def secondary_file_path(basepath, suffix):
     if suffix.startswith("^"):
@@ -49,30 +84,6 @@ def upload_secondary_files(basepath, secondary_files):
             upload_secondary_file(basepath, file_suffix)
 
 
-def walk_object(obj, node_fn, key=None):
-    """Walk an objects structure, applying node_fn to each node, both branch and leaf nodes.
-    node_fn must accept both the node and a kwarg for key."""
-    if (isinstance(obj, dict)):
-        return node_fn({ k: walk_object(v, node_fn, key=k) for k, v in obj.items() }, key=key)
-    elif (isinstance(obj, list)):
-        return node_fn([ walk_object(x, node_fn, key=None) for x in obj ], key=key)
-    else:  # all non-collection classes are treated as leaf nodes
-        return node_fn(obj, key=key)
-
-
-def get(coll, k):
-    try:
-        return coll[k]
-    except (KeyError, IndexError):
-        return None
-
-
-def get_in(coll, path):
-    if not path:   return coll
-    elif not coll: return None
-    else:          return get_in(get(coll, path[0]), path[1:])
-
-
 def cloudize_file_path(path):
     return Path(path.parent, Path(f"{path.stem}_cloud{path.suffix}"))
 
@@ -94,14 +105,15 @@ class Workflow:
         # dont want to mutate self.inputs by mutating a contained node
         return node.copy()  # .update({'path': cloud_path})
 
-    def _cloudize_node(self, node, key):
+    def _cloudize_node(self, node, path):
+        key = get(path, -1)
         if (isinstance(node, dict) and node.get('class') == 'File'):
             return self._cloudize_file_node(node, key)
         else:
             return node
 
     def cloudize(self):
-        self.cloudized_inputs = walk_object(self.inputs, self._cloudize_node)
+        self.cloudized_inputs = pathed_walk_object(self.inputs, self._cloudize_node)
         # yaml.dump(self.cloudized_inputs, cloudize_file_path(inputs_path))
         return self.cloudized_inputs
 
