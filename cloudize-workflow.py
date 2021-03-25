@@ -5,10 +5,6 @@ from pathlib import Path
 
 # TODO: bring in bucket, inputs, definition as args
 # TODO: make UNIQUE_PATH somethings actually unique
-# TODO: files should be relative to specifying file, not cwd
-# TODO: strip cwd from beginning of path. i.e. /gscmnt/gc2560/core/... removed
-# TODO: collapse file structure somehow? worry about name collisions
-# TODO: paths should not be relative when they're used to make a GCS path
 
 BUCKET_NAME = "griffith-lab-cromwell"
 INPUTS_FILE = '../analysis-workflows/example_data/rnaseq/workflow.yaml'
@@ -24,9 +20,10 @@ yaml = YAML()
 def upload_to_gcs(src, dest):
     """Upload a local file to GCS. src is a filepath/name and dest is target GCS name."""
     if os.path.exists(src):
-        print(f"Uploading {src} to {dest}")
-        # bucket.blob(dest).upload_from_filename(src, num_retries=3)
-        return f"gs://{bucket.name}/{dest}"
+        target = f"{UNIQUE_PATH}/{dest}"
+        print(f"Uploading {src} to {target}")
+        # bucket.blob(target).upload_from_filename(src, num_retries=3)
+        return f"gs://{bucket.name}/{target}"
     else:
         print(f"WARN: could not find source file, potentially just a basepath: {src}")
 
@@ -73,13 +70,21 @@ def get_in(coll, path):
     else:          return get_in(get(coll, path[0]), path[1:])
 
 
+# ---- Pathlib ---------------------------------------------------------
+
+def deepest_shared_ancestor(paths):
+    ancestors = [set(path.resolve().parents) for path in paths]
+    shared_ancestors = ancestors[0].intersection(*ancestors[1:])
+    return max(shared_ancestors, key=lambda x: len(str(x)))
+
+
 # ---- CWL specific ----------------------------------------------------
 
 def secondary_file_path(basepath, suffix):
     if suffix.startswith("^"):
         return secondary_file_path(basepath.stem, suffix[1:])
     else:
-        return f"{basepath}{suffix}"
+        return Path(str(basepath) + suffix)
 
 
 def secondary_file_paths(base_path, suffixes):
@@ -87,11 +92,6 @@ def secondary_file_paths(base_path, suffixes):
         return [secondary_file_path(base_path, suffixes)]
     else:
         return [secondary_file_path(base_path, suffix) for suffix in suffixes]
-
-
-def cloudize_file_path(path):
-    path = Path(path)
-    return Path(path.parent, Path(f"{path.stem}_cloud{path.suffix}"))
 
 
 class FileInput:
@@ -113,12 +113,10 @@ class Workflow:
     # mutates internal state
     def _track_file_node(self, node, node_path):
         """Modify a File node by uploading to GCS and pointing path to its new location."""
-        file_path = node.get('path')
+        file_path = Path(node.get('path'))
         if (suffixes := get_in(self.definition, ['inputs', node_path[-1], 'secondaryFiles'])):
-            print(f"Found secondaryFiles for {node_path} {file_path}: {suffixes}")
             self._file_inputs.append(FileInput(file_path, node_path, suffixes))
         else:
-            print(f"Did not find secondaryFiles for {node_path} {file_path}")
             self._file_inputs.append(FileInput(file_path, node_path))
 
     def _track_file_inputs(self):
@@ -129,18 +127,20 @@ class Workflow:
         walk_object(self.inputs, process_node)
 
     def _upload_files(self):
+        ancestor = deepest_shared_ancestor([f.file_path for f in self._file_inputs])
+
         for file_input in self._file_inputs:
             src_path = file_input.file_path
-            upload_to_gcs(src_path, cloudize_file_path(src_path))
+            upload_to_gcs(src_path, src_path.resolve().relative_to(ancestor))
             for full_path in file_input.secondary_files:
-                upload_to_gcs(full_path, cloudize_file_path(full_path))
+                upload_to_gcs(full_path, full_path.resolve().relative_to(ancestor))
 
     def _generate_new_yaml(self):
         """Create a new YAMl structure (not file) from current Workflow state."""
         new_yaml = deepcopy(self.inputs)
         for file_input in self._file_inputs:
             def add_keys(x):
-                x['path'] = file_input.file_path
+                x['path'] = str(file_input.file_path)
                 return x
             update_in(new_yaml, file_input.yaml_path, add_keys)
         return new_yaml
@@ -148,19 +148,12 @@ class Workflow:
     def cloudize(self):
         self._track_file_inputs()
         # find cloud paths
-        target_path = cloudize_file_path(self.inputs_path)
+        target_path = Path(self.inputs_path.parent,
+                           Path(f"{self.inputs_path.stem}_cloud{self.inputs_path.suffix}"))
         print(f"Yaml dumped to {target_path}")
         yaml.dump(self._generate_new_yaml(), target_path)
         self._upload_files()
         print("Completed file upload process.")
-
-
-def cloud_paths(file_paths):
-    # check for colliding file names
-    # if there are colliding filenames, expand them to include parent
-    # expand all paths which share one of those parents
-    # return gs://bucket/new_path for all paths
-    pass
 
 
 wf = Workflow(INPUTS_FILE, DEFINITION_FILE)
