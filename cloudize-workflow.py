@@ -1,3 +1,5 @@
+import os
+from argparse import ArgumentParser
 from ruamel.yaml import YAML
 from copy import deepcopy
 from datetime import date
@@ -5,14 +7,7 @@ from getpass import getuser
 from google.cloud import storage
 from pathlib import Path
 
-# TODO: bring in bucket, inputs, definition as args
-
 # IMPROVE: be able to drop and pick up the upload somehow. long running process, may break near end
-
-BUCKET_NAME = "griffith-lab-cromwell"
-INPUTS_FILE = '../analysis-workflows/example_data/rnaseq/workflow.yaml'
-DEFINITION_FILE = '../analysis-workflows/definitions/pipelines/rnaseq.cwl'
-OUTPUT_YAML = '../analysis-workflows/example_data/rnaseq/workflow_cloud.yaml'
 
 UNIQUE_PATH = f"input_data/{getuser()}/" + date.today().strftime("%Y-%m-%d")
 
@@ -162,25 +157,44 @@ def cloudize(bucket, cwl_path, inputs_path, output_path):
 and its workflow's CWL definition."""
     yaml = YAML()
 
+    # load+parse files
     wf_inputs = yaml.load(inputs_path)
     cwl_definition = yaml.load(cwl_path)
     file_inputs = parse_file_inputs(cwl_definition, wf_inputs, inputs_path.parent)
+
     # Generate new YAML file
     new_yaml = deepcopy(wf_inputs)
     for f in file_inputs:
         set_in(new_yaml, f.yaml_path + ['path'] , str(f"gs://{bucket.name}/{f.file_path.cloud}"))
     yaml.dump(new_yaml, output_path)
     print(f"Yaml dumped to {output_path}")
+
     # Upload all the files
     for f in file_inputs:
         for file_path in f.all_file_paths:
             upload_to_gcs(bucket, file_path.local, file_path.cloud)
     print("Completed file upload process.")
 
+parser = ArgumentParser(description="Prepare a CWL workload for cloud processing. Upload Files and generate new inputs.yaml.")
+parser.add_argument("bucket")
+                    # help="the name of the GCS bucket to upload workflow inputs"
+parser.add_argument("workflow_definition")
+                    # help="path to the .cwl file defining your workflow"
+parser.add_argument("workflow_inputs")
+                    # help="path to the .yaml file specifying your workflow inputs")
+parser.add_argument("-o", "--output")
+                    # type=str,
+                    # help="path to write the updated workflow inputs, defaults to the value of workflow_inputs with _cloud before the extension.")
+
+def default_output(inputs_filename):
+    path = Path(inputs_filename)
+    return f"{path.parent}/{path.stem}_cloud{path.suffix}"
+
 if __name__=="__main__":
+    args = parser.parse_args()
     cloudize(
-        storage.Client().bucket(BUCKET_NAME),
-        Path(DEFINITION_FILE),
-        Path(INPUTS_FILE),
-        Path(OUTPUT_YAML)
+        storage.Client().bucket(args.bucket),
+        Path(args.workflow_definition),
+        Path(args.workflow_inputs),
+        Path(args.output or default_output(args.workflow_inputs))
     )
