@@ -175,23 +175,26 @@ and its workflow's CWL definition."""
             upload_to_gcs(bucket, file_path.local, file_path.cloud)
     print("Completed file upload process.")
 
-parser = ArgumentParser(description="Prepare a CWL workload for cloud processing. Upload Files and generate new inputs.yaml.")
-parser.add_argument("bucket")
-                    # help="the name of the GCS bucket to upload workflow inputs"
-parser.add_argument("workflow_definition")
-                    # help="path to the .cwl file defining your workflow"
-parser.add_argument("workflow_inputs")
-                    # help="path to the .yaml file specifying your workflow inputs")
-parser.add_argument("-o", "--output")
-                    # type=str,
-                    # help="path to write the updated workflow inputs, defaults to the value of workflow_inputs with _cloud before the extension.")
+
+# ---- CLI pieces ------------------------------------------------------
 
 def default_output(inputs_filename):
     path = Path(inputs_filename)
     return f"{path.parent}/{path.stem}_cloud{path.suffix}"
 
+
 if __name__=="__main__":
+    parser = ArgumentParser(description="Prepare a CWL workload for cloud processing. Upload Files and generate new inputs.yaml.")
+    parser.add_argument("bucket",
+                        help="the name of the GCS bucket to upload workflow inputs")
+    parser.add_argument("workflow_definition",
+                        help="path to the .cwl file defining your workflow")
+    parser.add_argument("workflow_inputs",
+                        help="path to the .yaml file specifying your workflow inputs")
+    parser.add_argument("-o", "--output",
+                        help="path to write the updated workflow inputs, defaults to the value of workflow_inputs with _cloud before the extension.")
     args = parser.parse_args()
+
     cloudize(
         storage.Client().bucket(args.bucket),
         Path(args.workflow_definition),
