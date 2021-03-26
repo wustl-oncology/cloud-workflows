@@ -6,9 +6,12 @@ from pathlib import Path
 # TODO: bring in bucket, inputs, definition as args
 # TODO: make UNIQUE_PATH somethings actually unique
 
+# IMPROVE: be able to drop and pick up the upload somehow. long running process, may break near end
+
 BUCKET_NAME = "griffith-lab-cromwell"
 INPUTS_FILE = '../analysis-workflows/example_data/rnaseq/workflow.yaml'
 DEFINITION_FILE = '../analysis-workflows/definitions/pipelines/rnaseq.cwl'
+OUTPUT_YAML = '../analysis-workflows/example_data/rnaseq/workflow_cloud.yaml'
 UNIQUE_PATH = "2021-03-22"
 
 bucket = storage.Client().bucket(BUCKET_NAME)
@@ -45,14 +48,14 @@ def walk_object(obj, node_fn, path=[]):
         return node_fn(obj, path)
 
 
-# https://stackoverflow.com/a/10579695
-def update_in(coll, path, func):
-    """Mutable deep update to a collection."""
+# modified from https://stackoverflow.com/a/10579695
+def set_in(coll, path, val):
+    """Mutable deep assignment to a collection."""
     for x in path:
         if not get(coll, x):
             coll[x] = {}
         prev, coll = coll, get(coll, x)
-    prev[x] = func(prev[x])
+    prev[x] = val
 
 
 def get(coll, k):
@@ -78,7 +81,22 @@ def deepest_shared_ancestor(paths):
     return max(shared_ancestors, key=lambda x: len(str(x)))
 
 
+def is_ancestor(path, ancestor):
+    return ancestor in set(path.resolve().parents)
+
+
+def strip_ancestor(path, ancestor):
+    if is_ancestor(path, ancestor):
+        return path.resolve().relative_to(ancestor)
+    else:  # absolute path if not an ancestor
+        return path.resolve()
+
+
 # ---- CWL specific ----------------------------------------------------
+
+def secondary_file_suffixes(cwl_definition, input_name):
+    return get_in(cwl_definition, ['inputs', input_name, 'secondaryFiles'])
+
 
 def secondary_file_path(basepath, suffix):
     if suffix.startswith("^"):
@@ -94,68 +112,64 @@ def secondary_file_paths(base_path, suffixes):
         return [secondary_file_path(base_path, suffix) for suffix in suffixes]
 
 
+# ---- Actually do the work we want ------------------------------------
+
+class FilePath:
+    def __init__(self, local):
+        self.local = local
+        self.cloud = None
+
+    def set_cloud(self, cloud):
+        self.cloud = cloud
+
+
 class FileInput:
     def __init__(self, file_path, yaml_path, secondary_file_suffixes=[]):
-        self.file_path = file_path
+        self.file_path = FilePath(file_path)
         self.yaml_path = yaml_path
-        self.secondary_files = secondary_file_paths(file_path, secondary_file_suffixes)
+        self.secondary_files = [ FilePath(f) for f in secondary_file_paths(file_path, secondary_file_suffixes)]
+        self.all_file_paths = [self.file_path] + self.secondary_files
 
 
-class Workflow:
-    def __init__(self, inputs_file, definition_cwl):
-        self.inputs_path = Path(inputs_file)
-        self.inputs = yaml.load(Path(inputs_file))
-        self.definition = yaml.load(Path(definition_cwl))
-        # File inputs are tracked separately instead of modified in place so
-        # renaming logic can be performed in aggregate.
-        self._file_inputs = []
+def parse_file_inputs(cwl_definition, wf_inputs):
+    """Crawl a yaml.loaded CWL definition structure and workflow inputs files for input Files."""
+    # build inputs list from original crawl
+    file_inputs = []
+    def process_node(node, node_path):
+        if (isinstance(node, dict) and node.get('class') == 'File'):
+            file_path = Path(node.get('path'))
+            if (suffixes := secondary_file_suffixes(cwl_definition, node_path[-1])):
+                file_inputs.append(FileInput(file_path, node_path, suffixes))
+            else:
+                file_inputs.append(FileInput(file_path, node_path))
+        return node
+    walk_object(wf_inputs, process_node)
 
-    # mutates internal state
-    def _track_file_node(self, node, node_path):
-        """Modify a File node by uploading to GCS and pointing path to its new location."""
-        file_path = Path(node.get('path'))
-        if (suffixes := get_in(self.definition, ['inputs', node_path[-1], 'secondaryFiles'])):
-            self._file_inputs.append(FileInput(file_path, node_path, suffixes))
-        else:
-            self._file_inputs.append(FileInput(file_path, node_path))
+    # Postprocessing: add cloud path to file_inputs
+    ancestor = deepest_shared_ancestor([file_path.local for f in file_inputs for file_path in f.all_file_paths])
+    for f in file_inputs:
+        for file_path in f.all_file_paths:
+            file_path.set_cloud(strip_ancestor(file_path.local, ancestor))
 
-    def _track_file_inputs(self):
-        def process_node(node, path):
-            if (isinstance(node, dict) and node.get('class') == 'File'):
-                self._track_file_node(node, path)
-            return node
-        walk_object(self.inputs, process_node)
-
-    def _upload_files(self):
-        ancestor = deepest_shared_ancestor([f.file_path for f in self._file_inputs])
-
-        for file_input in self._file_inputs:
-            src_path = file_input.file_path
-            upload_to_gcs(src_path, src_path.resolve().relative_to(ancestor))
-            for full_path in file_input.secondary_files:
-                upload_to_gcs(full_path, full_path.resolve().relative_to(ancestor))
-
-    def _generate_new_yaml(self):
-        """Create a new YAMl structure (not file) from current Workflow state."""
-        new_yaml = deepcopy(self.inputs)
-        for file_input in self._file_inputs:
-            def add_keys(x):
-                x['path'] = str(file_input.file_path)
-                return x
-            update_in(new_yaml, file_input.yaml_path, add_keys)
-        return new_yaml
-
-    def cloudize(self):
-        self._track_file_inputs()
-        # find cloud paths
-        target_path = Path(self.inputs_path.parent,
-                           Path(f"{self.inputs_path.stem}_cloud{self.inputs_path.suffix}"))
-        print(f"Yaml dumped to {target_path}")
-        yaml.dump(self._generate_new_yaml(), target_path)
-        self._upload_files()
-        print("Completed file upload process.")
+    return file_inputs
 
 
-wf = Workflow(INPUTS_FILE, DEFINITION_FILE)
-if __name__ == '__main__':
-    wf.cloudize()
+def cloudize(cwl_filename, inputs_filename, output_filename):
+    """Generate a cloud version of an inputs YAML file provided that file
+and its workflow's CWL definition."""
+    wf_inputs = yaml.load(Path(inputs_filename))
+    cwl_definition = yaml.load(Path(cwl_filename))
+    file_inputs = parse_file_inputs(cwl_definition, wf_inputs)
+    # Generate new YAML file
+    new_yaml = deepcopy(wf_inputs)
+    for f in file_inputs:
+        set_in(new_yaml, f.yaml_path + ['path'] , str(f.file_path.cloud))
+    yaml.dump(new_yaml, Path(output_filename))
+    print(f"Yaml dumped to {output_filename}")
+    # Upload all the files
+    for f in file_inputs:
+        for file_path in f.all_file_paths:
+            upload_to_gcs(file_path.local, file_path.cloud)
+    print("Completed file upload process.")
+
+cloudize(DEFINITION_FILE, INPUTS_FILE, OUTPUT_YAML)
