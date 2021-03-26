@@ -160,7 +160,6 @@ def parse_file_inputs(cwl_definition, wf_inputs, base_path):
 def cloudize(bucket, cwl_path, inputs_path, output_path):
     """Generate a cloud version of an inputs YAML file provided that file
 and its workflow's CWL definition."""
-    bucket = storage.Client().bucket(bucket_name)
     yaml = YAML()
 
     wf_inputs = yaml.load(inputs_path)
