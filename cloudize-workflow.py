@@ -1,10 +1,11 @@
 from ruamel.yaml import YAML
 from copy import deepcopy
+from datetime import date
+from getpass import getuser
 from google.cloud import storage
 from pathlib import Path
 
 # TODO: bring in bucket, inputs, definition as args
-# TODO: make UNIQUE_PATH somethings actually unique
 
 # IMPROVE: be able to drop and pick up the upload somehow. long running process, may break near end
 
@@ -12,21 +13,17 @@ BUCKET_NAME = "griffith-lab-cromwell"
 INPUTS_FILE = '../analysis-workflows/example_data/rnaseq/workflow.yaml'
 DEFINITION_FILE = '../analysis-workflows/definitions/pipelines/rnaseq.cwl'
 OUTPUT_YAML = '../analysis-workflows/example_data/rnaseq/workflow_cloud.yaml'
-UNIQUE_PATH = "2021-03-22"
 
-bucket = storage.Client().bucket(BUCKET_NAME)
-yaml = YAML()
+UNIQUE_PATH = f"input_data/{getuser()}/" + date.today().strftime("%Y-%m-%d")
 
 
 # ---- GCS interactions ------------------------------------------------
 
-def upload_to_gcs(src, dest):
+def upload_to_gcs(bucket, src, dest):
     """Upload a local file to GCS. src is a filepath/name and dest is target GCS name."""
     if os.path.exists(src):
-        target = f"{UNIQUE_PATH}/{dest}"
-        print(f"Uploading {src} to {target}")
-        # bucket.blob(target).upload_from_filename(src, num_retries=3)
-        return f"gs://{bucket.name}/{target}"
+        print(f"Uploading {src} to {dest}")
+        # bucket.blob(dest).upload_from_filename(src, num_retries=3)
     else:
         print(f"WARN: could not find source file, potentially just a basepath: {src}")
 
@@ -91,6 +88,12 @@ def strip_ancestor(path, ancestor):
     else:  # absolute path if not an ancestor
         return path.resolve()
 
+def expand_relative(path, base_path):
+    if path.is_absolute():
+        return path
+    else:
+        return Path(f"{base_path}/{path}")
+
 
 # ---- CWL specific ----------------------------------------------------
 
@@ -120,7 +123,7 @@ class FilePath:
         self.cloud = None
 
     def set_cloud(self, cloud):
-        self.cloud = cloud
+        self.cloud = f"{UNIQUE_PATH}/{cloud}"
 
 
 class FileInput:
@@ -131,13 +134,13 @@ class FileInput:
         self.all_file_paths = [self.file_path] + self.secondary_files
 
 
-def parse_file_inputs(cwl_definition, wf_inputs):
+def parse_file_inputs(cwl_definition, wf_inputs, base_path):
     """Crawl a yaml.loaded CWL definition structure and workflow inputs files for input Files."""
     # build inputs list from original crawl
     file_inputs = []
     def process_node(node, node_path):
         if (isinstance(node, dict) and node.get('class') == 'File'):
-            file_path = Path(node.get('path'))
+            file_path = expand_relative(Path(node.get('path')), base_path)
             if (suffixes := secondary_file_suffixes(cwl_definition, node_path[-1])):
                 file_inputs.append(FileInput(file_path, node_path, suffixes))
             else:
@@ -154,22 +157,31 @@ def parse_file_inputs(cwl_definition, wf_inputs):
     return file_inputs
 
 
-def cloudize(cwl_filename, inputs_filename, output_filename):
+def cloudize(bucket, cwl_path, inputs_path, output_path):
     """Generate a cloud version of an inputs YAML file provided that file
 and its workflow's CWL definition."""
-    wf_inputs = yaml.load(Path(inputs_filename))
-    cwl_definition = yaml.load(Path(cwl_filename))
-    file_inputs = parse_file_inputs(cwl_definition, wf_inputs)
+    bucket = storage.Client().bucket(bucket_name)
+    yaml = YAML()
+
+    wf_inputs = yaml.load(inputs_path)
+    cwl_definition = yaml.load(cwl_path)
+    file_inputs = parse_file_inputs(cwl_definition, wf_inputs, inputs_path.parent)
     # Generate new YAML file
     new_yaml = deepcopy(wf_inputs)
     for f in file_inputs:
-        set_in(new_yaml, f.yaml_path + ['path'] , str(f.file_path.cloud))
-    yaml.dump(new_yaml, Path(output_filename))
-    print(f"Yaml dumped to {output_filename}")
+        set_in(new_yaml, f.yaml_path + ['path'] , str(f"gs://{bucket.name}/{f.file_path.cloud}"))
+    yaml.dump(new_yaml, output_path)
+    print(f"Yaml dumped to {output_path}")
     # Upload all the files
     for f in file_inputs:
         for file_path in f.all_file_paths:
-            upload_to_gcs(file_path.local, file_path.cloud)
+            upload_to_gcs(bucket, file_path.local, file_path.cloud)
     print("Completed file upload process.")
 
-cloudize(DEFINITION_FILE, INPUTS_FILE, OUTPUT_YAML)
+if __name__=="__main__":
+    cloudize(
+        storage.Client().bucket(BUCKET_NAME),
+        Path(DEFINITION_FILE),
+        Path(INPUTS_FILE),
+        Path(OUTPUT_YAML)
+    )
