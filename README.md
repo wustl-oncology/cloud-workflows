@@ -1,3 +1,43 @@
+# cloudize-workflow.py script
+
+A script is provided at `cloudize-workflow.py` to automate the
+transition of a predefined workflow to use with the GCP Cromwell
+server. Provided a bucket, CWL workflow definition, and inputs yaml,
+the script will upload all specified File paths to the specified GCS
+bucket, and generate a new inputs yaml with those file paths replaced
+with their GCS path.
+
+To use the script, make sure you're authenticated for the Google Cloud
+CLI and have permissions to write to the specified bucket.
+
+The command is as follows:
+
+    python3 cloudize-workflow.py <bucket-name> /path/to/workflow.cwl /path/to/inputs.yaml
+
+There is an optional argument to specify the path of your output file
+
+    --output=/path/to/output
+
+Files will be uploaded to a personal path, roughly
+`gs://<bucket>/<whoami>/<date>/` and from that root will contain
+whatever folder structure is shared, e.g. files `/foo/bar`,
+`/foo/buux/baz` would upload to paths `gs://<bucket>/<whoami>/<date>/bar`
+and `gs://<bucket>/<whoami>/<date>/buux/baz`
+
+For now the script assumes a happy path. Files that don't exist will
+be skipped and emit a warning. Uploads that fail with an exception
+will cause the script to terminate early. Because of the by-date
+personal paths, reattempted runs should overwrite existing files
+instead of duplicating them.
+
+Improvements to be done later regarding resilient uploads:
+If one file fails, the remaining should still be attempted. For any
+files the script fails to upload, either because the attempt failed or
+because the program terminated early, persist that knowledge somewhere
+and either expand or accompany this script with an uploading
+reattempt.
+
+
 # Interacting with Cromwell server
 
 SSH in to server:
@@ -80,6 +120,7 @@ As of 2021-03-22 the cromwell.conf file does not contain all settings
 required to run Cromwell locally -- some are in Terraform
 (cromwell/server/main.tf). This may be tweaked later but for now just
 run off of a derived .conf file that includes the Terraformed settings.
+
 
 # Potential Future Improvements
 
