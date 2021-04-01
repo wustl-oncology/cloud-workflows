@@ -161,7 +161,8 @@ def parse_file_inputs(cwl_definition, wf_inputs, base_path):
     def process_node(node, node_path):
         if (is_file_input(node, node_path and node_path[-1])):  # avoid indexerror
             file_path = expand_relative(get_path(node), base_path)
-            if (suffixes := secondary_file_suffixes(cwl_definition, node_path[-1])):
+            suffixes = secondary_file_suffixes(cwl_definition, node_path[-1])
+            if suffixes:
                 file_inputs.append(FileInput(file_path, node_path, suffixes))
             else:
                 file_inputs.append(FileInput(file_path, node_path))
