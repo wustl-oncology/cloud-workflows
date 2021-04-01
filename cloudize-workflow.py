@@ -14,11 +14,12 @@ UNIQUE_PATH = f"input_data/{getuser()}/" + date.today().strftime("%Y-%m-%d")
 
 # ---- GCS interactions ------------------------------------------------
 
-def upload_to_gcs(bucket, src, dest):
+def upload_to_gcs(bucket, src, dest, dryrun=False):
     """Upload a local file to GCS. src is a filepath/name and dest is target GCS name."""
     if os.path.exists(src):
         print(f"Uploading {src} to {dest}")
-        # bucket.blob(dest).upload_from_filename(src, num_retries=3)
+        if not dryrun:
+            bucket.blob(dest).upload_from_filename(src, num_retries=3)
     else:
         print(f"WARN: could not find source file, potentially just a basepath: {src}")
 
@@ -178,7 +179,7 @@ def parse_file_inputs(cwl_definition, wf_inputs, base_path):
     return file_inputs
 
 
-def cloudize(bucket, cwl_path, inputs_path, output_path):
+def cloudize(bucket, cwl_path, inputs_path, output_path, dryrun=False):
     """Generate a cloud version of an inputs YAML file provided that file
 and its workflow's CWL definition."""
     yaml = YAML()
@@ -198,7 +199,7 @@ and its workflow's CWL definition."""
     # Upload all the files
     for f in file_inputs:
         for file_path in f.all_file_paths:
-            upload_to_gcs(bucket, file_path.local, file_path.cloud)
+            upload_to_gcs(bucket, file_path.local, file_path.cloud, dryrun=dryrun)
     print("Completed file upload process.")
 
 
@@ -219,11 +220,13 @@ if __name__=="__main__":
                         help="path to the .yaml file specifying your workflow inputs")
     parser.add_argument("-o", "--output",
                         help="path to write the updated workflow inputs, defaults to the value of workflow_inputs with _cloud before the extension.")
+    parser.add_argument("--dryrun", help="prevent actual upload to GCS.")
     args = parser.parse_args()
 
     cloudize(
         storage.Client().bucket(args.bucket),
         Path(args.workflow_definition),
         Path(args.workflow_inputs),
-        Path(args.output or default_output(args.workflow_inputs))
+        Path(args.output or default_output(args.workflow_inputs)),
+        dryrun=args.dryrun
     )
