@@ -1,10 +1,12 @@
+# third-party, pip install
+from ruamel.yaml import YAML
+from google.cloud import storage
+# built-in, hooray
 import os
 from argparse import ArgumentParser
-from ruamel.yaml import YAML
 from copy import deepcopy
 from datetime import date
 from getpass import getuser
-from google.cloud import storage
 from pathlib import Path
 
 # IMPROVE: be able to drop and pick up the upload somehow. long running process, may break near end
@@ -115,7 +117,7 @@ def secondary_file_paths(base_path, suffixes):
 
 class FilePath:
     def __init__(self, local):
-        self.local = local
+        self.local = local.resolve()
         self.cloud = None
 
     def set_cloud(self, cloud):
