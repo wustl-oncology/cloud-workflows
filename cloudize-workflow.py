@@ -99,7 +99,7 @@ def secondary_file_suffixes(cwl_definition, input_name):
 
 def secondary_file_path(basepath, suffix):
     if suffix.startswith("^"):
-        return secondary_file_path(basepath.stem, suffix[1:])
+        return secondary_file_path(f"{basepath.parent}/{basepath.stem", suffix[1:])
     else:
         return Path(str(basepath) + suffix)
 
