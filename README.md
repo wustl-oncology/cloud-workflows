@@ -37,6 +37,27 @@ because the program terminated early, persist that knowledge somewhere
 and either expand or accompany this script with an uploading
 reattempt.
 
+## Dockerfile
+
+There is a Dockerfile provided to work with `cloudize-workflow.py` in
+storage1. It's extremely barebones -- it just copies the requirements,
+pip installs them, copies the script, and runs it.
+
+Because the Dockerfile is so barebones, there are additional
+requirements for running it:
+- Pass in the env var GOOGLE_APPLICATION_CREDENTIALS to auth the SDK
+- Mount the volume(s) your workflow files are under
+- Pass script arguments as if `docker run` were the script command
+
+Luckily, LSF handles most of this through bsub. Excluding the more
+general settings like memory, output, and user info, your bsub call
+should look roughly like this. This assumes that LSF_DOCKER_VOLUMES
+and GOOGLE_APPLICATION_CREDENTIALS are set accordingly
+```
+bsub -a 'docker(jackmaruska/cloudize-workflow:0.0.1)' 'python3 /opt/cloudize-workflow.py [script-args]'
+```
+The exact name of the docker image may change, or you can build and
+push to your own Dockerhub repo.
 
 # Interacting with Cromwell server
 
