@@ -12,8 +12,8 @@ cromwell/cromwell-executions/*
 cromwell/*.logs
 cromwell/cromwell-*.jar
 
-# Miscellaneous unimportant notes
-iam/*
+# Manually created untracked files
+outputs/*
 
 # Emacs temp files
 *~
