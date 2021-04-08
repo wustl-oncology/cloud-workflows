@@ -52,6 +52,7 @@ def extract_file_locations(outputs_response):
                        for sf in output['secondaryFiles']]
     return primary_files + secondary_files
 
+# --- Do the download
 
 def download_locations(output_dir, gcs_locations):
     return [Path(f"{output_dir}/{Path(loc).parent.stem}/{Path(loc).name}") for loc in gcs_locations]
