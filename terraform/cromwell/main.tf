@@ -32,17 +32,16 @@ EOF
 resource "google_service_account_iam_binding" "compute_use_server" {
   service_account_id = google_service_account.server.name
   role = "roles/iam.serviceAccountUser"
-  members = [
-    "serviceAccount:${google_service_account.compute.email}"
-  ]
+  members = ["serviceAccount:${google_service_account.compute.email}"]
 }
 
 # ---- Modules ---------------------------------------------------------
 
 module "network" {
   source  = "./network"
-  ssh_tag = var.ssh_allowed_tag
+  ssh_tag       = var.ssh_allowed_tag
   cromwell_port = local.cromwell_port
+  network_id    = var.network_id
 }
 
 module "bucket" {
@@ -53,18 +52,11 @@ module "bucket" {
   server_account_email  = google_service_account.server.email
 }
 
-module "server" {
-  source  = "./server"
-  project = var.project
-  region  = var.region
-  bucket  = module.bucket.name
-  # service accounts
-  compute_account_email = google_service_account.compute.email
-  server_account_email  = google_service_account.server.email
-  # network
-  nat_ip     = module.network.static_ip
-  subnetwork = module.network.subnetwork
-  cromwell_port = local.cromwell_port
-
-  tags = ["http-server", "https-server", var.ssh_allowed_tag]
+module "database" {
+  source = "./database"
+  region = var.region
+  zone = var.zone
+  root_password = var.db_root_password
+  instance_type = var.db_instance_type
+  authorized_networks = ["${module.network.static_ip}/32"]
 }

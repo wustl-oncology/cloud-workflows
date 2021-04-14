@@ -1,23 +1,18 @@
-resource "google_compute_network" "default" {
-  name                    = "cromwell-default"
-  auto_create_subnetworks = false
-}
-
-# what do we need subnetwork for?
 resource "google_compute_subnetwork" "default" {
-  name = "cromwell-default"
+  name = "cromwell"
   ip_cidr_range = "10.10.0.0/16"
-  network = google_compute_network.default.id
+  network = var.network_id
 }
 
 resource "google_compute_address" "static_ip" {
   name = "cromwell-server-ip"
   network_tier = "PREMIUM"
+  address_type = "EXTERNAL"
 }
 
 resource "google_compute_firewall" "default_ssh_allowed" {
   name = "default-ssh-allowed"
-  network = google_compute_network.default.id
+  network = var.network_id
   allow {
     # what do we need icmp for? monitoring?
     protocol = "icmp"

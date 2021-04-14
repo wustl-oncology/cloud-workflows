@@ -3,5 +3,5 @@ output "static_ip" {
 }
 
 output "subnetwork" {
-  value = google_compute_subnetwork.default.name
+  value = google_compute_subnetwork.default.self_link
 }

@@ -1,0 +1,69 @@
+info:
+  title: Cromwell Server Deployment
+  author: Griffith Lab (based on work by Hall Lab)
+  description: |
+    A Google Deployment stack definition for deploying a Cromwell |
+    compute instance. intended to be used in conjunction with |
+    pre-defined cloud resources (i.e. created through Terraform).
+
+imports:
+  - path: server_startup.py
+  - path: cromwell.conf
+  - path: cromwell.service
+
+required:
+  - cromwell_db_ip
+  - cromwell_db_password
+  - cromwell_service_mem
+  - region
+  - vm_boot_disk_size
+  - vm_machine_type
+  - vm_name
+  - vm_service_account
+  - vm_static_ip_address
+  - vm_subnetwork
+  - zone
+
+properties:
+  cromwell_db_ip:
+    description: IP of the MySQL instance for Cromwell database.
+
+  cromwell_db_password:
+    description: Password for MySQL root user for Cromwell database.
+    type: string
+
+  vm_boot_disk_size:
+    description: Size in GB of Cromwell server VM boot disk.
+    type: integer
+
+  vm_machine_type:
+    description: Machine type for the Cromwell server VM.
+    type: string
+
+  cromwell_service_mem:
+    description: Amount of memory allocated to Cromwell service JVM.
+    type: integer
+
+  vm_service_account:
+    description: Email of the service account used for the Cromwell server.
+    type: string
+
+  vm_static_ip_address:
+    description: Static IP address to use for the compute VM running Cromwell.
+    type: string
+
+  vm_subnetwork:
+    description: Self-link of subnetwork to host the compute VM running Cromwell.
+    type: string
+
+  cromwell_version:
+    description: Version of Cromwell software to use
+    type: number
+
+  region:
+    description: Region to run server in. Ensure buckets either match or are multi-regional.
+    type: string
+
+  zone:
+    description: Zone to run server in. Ensure buckets either match region or are multi-regional.
+    type: string

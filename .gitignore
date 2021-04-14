@@ -1,7 +1,8 @@
 # Terraform
-terraform.tfstate*
-.terraform/*
-.terraform.lock.hcl
+terraform/terraform.tfstate*
+terraform/.terraform/*
+terraform/.terraform.lock.hcl
+terraform/secrets.auto.tfvars
 
 # Credentials
 *service-account.json

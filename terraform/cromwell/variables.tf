@@ -4,9 +4,25 @@ variable "project" {
 variable "project_id" {
   type = number
 }
-
 variable "region" {
   type = string
+}
+variable "zone" {
+  type = string
+}
+
+variable "db_instance_type" {
+  type = string
+}
+
+variable "db_root_password" {
+  type = string
+  sensitive = true
+}
+
+variable "network_id" {
+  type = string
+  description = "ID of the Network to create subnetwork, static IP, etc"
 }
 
 variable "ssh_allowed_tag" {

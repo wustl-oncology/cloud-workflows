@@ -1,0 +1,17 @@
+[Unit]
+Description=Cromwell Server
+After=network.target
+
+[Service]
+User=root
+Group=root
+Restart=always
+TimeoutStopSec=10
+RestartSec=5
+WorkingDirectory=/opt/cromwell
+Environment=MYSQL=@CROMWELL_CLOUDSQL_PASSWORD@
+Environment=LOG_MODE=standard
+ExecStart=/usr/bin/java -Xmx@CROMWELL_SERVER_SERVICE_MEM@G -Dconfig.file=/opt/cromwell/config/PAPI.v2.conf -jar /opt/cromwell/jar/cromwell.jar server
+
+[Install]
+WantedBy=multi-user.target

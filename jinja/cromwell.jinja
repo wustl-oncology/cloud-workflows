@@ -1,0 +1,43 @@
+resources:
+- name: {{ properties['vm_name'] }}
+  type: compute.v1.instance
+  properties:
+    region: {{ properties['region'] }}
+    zone: {{ properties['zone'] }}
+    machineType: https://www.googleapis.com/compute/v1/projects/{{ env["project"] }}/zones/{{ properties["zone"] }}/machineTypes/{{ properties["vm_machine_type"] }}
+    minCpuPlatform: Intel Skylake
+    serviceAccounts:
+      - email: {{ properties['vm_service_account'] }}
+        scopes:
+          - https://www.googleapis.com/auth/cloud-platform
+    tags:
+      items:
+        - cromwell-ssh-allowed
+    disks:
+      - deviceName: boot
+        type: PERSISTENT
+        boot: true
+        autoDelete: true
+        initializeParams:
+          sourceImage: https://www.googleapis.com/compute/v1/projects/debian-cloud/global/images/family/debian-9
+          diskType: https://www.googleapis.com/compute/v1/projects/{{ env["project"] }}/zones/{{ properties["zone"] }}/diskTypes/pd-standard
+          diskSizeGb: {{ properties['vm_boot_disk_size'] }}
+    networkInterfaces:
+    - subnetwork: {{ properties['vm_subnetwork'] }}
+      accessConfigs:
+      - name: External NAT
+        type: ONE_TO_ONE_NAT
+        natIP: {{ properties['vm_static_ip_address'] }}
+    metadata:
+      items:
+        - key: startup-script
+          value: |
+            {{ imports["server_startup.py"]|indent(12)|replace("@CROMWELL_VERSION@",properties["cromwell_version"])|replace("@CROMWELL_CLOUDSQL_PASSWORD@",properties["cromwell_db_password"]) }}
+        - key: cromwell-service
+          value: |
+            {{ imports["cromwell.service"]|indent(12)|replace("@CROMWELL_VERSION@",properties["cromwell_version"])|replace("@CROMWELL_CLOUDSQL_PASSWORD@",properties["cromwell_db_password"])|replace("@CROMWELL_SERVER_SERVICE_MEM@",properties["cromwell_service_mem"]) }}
+        - key: papi-v2-conf
+          value: |
+            {{ imports["cromwell.conf"]|indent(12) }}
+        - key: cloudsql-ip
+          value: {{ properties['cromwell_db_ip'] }}

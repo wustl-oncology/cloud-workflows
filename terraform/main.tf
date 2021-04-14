@@ -19,7 +19,6 @@ terraform {
 }
 
 provider "google" {
-  // if this file gets expanded to other labs, these should be tfvars
   credentials = file("terraform-service-account.json")
 
   project = local.project
@@ -27,9 +26,20 @@ provider "google" {
   zone    = local.zone
 }
 
+resource "google_compute_network" "custom-default" {
+  name = "${local.project}-default"
+  auto_create_subnetworks = false
+}
+
 module "cromwell" {
   source     = "./cromwell"
   project    = local.project
   project_id = local.project_id
   region     = local.region
+  zone       = local.zone
+
+  network_id = google_compute_network.custom-default.id
+
+  db_instance_type = "db-n1-standard-2"
+  db_root_password = var.cromwell_db_root_password
 }
