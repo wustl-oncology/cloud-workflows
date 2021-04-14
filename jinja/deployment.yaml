@@ -7,9 +7,9 @@ resources:
     type: cromwell.jinja
     properties:
       cromwell_db_ip: "34.68.25.189"
-      cromwell_db_password: "foobarbaazbuux"
+      cromwell_db_password: <PASSWORD>
       cromwell_service_mem: 11
-      cromwell_version: 39
+      cromwell_version: 56
       region: us-central1
       vm_boot_disk_size: 10
       vm_machine_type: n1-standard-4
