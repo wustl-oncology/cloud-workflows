@@ -9,6 +9,18 @@
 1. pull_outputs from completed workflow outputs
 
 
+## Idle Resources
+
+To prevent idle costs, resources should be spun down when not in use.
+To ensure existing infrastructure is running:
+
+    sh infra.sh thaw
+
+Similary, to freeze them at the end of the day:
+
+    sh infra.sh freeze
+
+
 ## cloudize-workflow.py script
 
 A script is provided at `cloudize-workflow.py` to automate the
