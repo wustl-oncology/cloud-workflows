@@ -18,7 +18,9 @@ UNIQUE_PATH = f"input_data/{getuser()}/" + date.today().strftime("%Y-%m-%d")
 
 def upload_to_gcs(bucket, src, dest, dryrun=False):
     """Upload a local file to GCS. src is a filepath/name and dest is target GCS name."""
-    if os.path.exists(src):
+    if os.path.isdir(src):
+        print(f"Source file {src} is a directory. Skipping.")
+    elif os.path.isfile(src):
         print(f"Uploading {src} to {dest}")
         if not dryrun:
             bucket.blob(dest).upload_from_filename(src, num_retries=3)
