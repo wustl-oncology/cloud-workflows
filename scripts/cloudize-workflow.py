@@ -56,9 +56,12 @@ def set_in(coll, path, val):
 def get(coll, k):
     """Safe retrieval from a collection, returns None instead of Error."""
     try:
-        if isinstance(coll, dict): return coll[k]
-        else: return None
-    except (KeyError): return None
+        if isinstance(coll, dict) or isinstance(coll, list):
+            return coll[k]
+        else:
+            return None
+    except (KeyError, IndexError):
+        return None
 
 
 def get_in(coll, path):
