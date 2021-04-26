@@ -108,8 +108,28 @@ def input_name(node_path):
     return inp
 
 
-def node_parent(node_path):
-    return node_path and node_path[-1]
+def is_file_input(node, node_parent):
+    """Check if a node is a file input, either object class File or a string pointing to an existing file."""
+    explicitly_defined = isinstance(node, dict) and node.get('class') == 'File'
+    matches_filename = isinstance(node, str) and node_parent != 'path' and os.path.exists(node)
+    return (explicitly_defined or matches_filename)
+
+
+def get_path(node):
+    """ Get path value of a File node, works for both objects and strings."""
+    if isinstance(node, dict):
+        return Path(node.get('path'))
+    else:
+        return Path(node)
+
+
+def set_path(yaml, file_input, new_value):
+    """Set the path value for `file_input` within `yaml`.
+    Works for both objects and strings."""
+    if get_in(yaml, file_input.yaml_path + ['path']):
+        set_in(yaml, file_input.yaml_path + ['path'], new_value)
+    else:
+        set_in(yaml, file_input.yaml_path, new_value)
 
 
 # ---- CWL specific ----------------------------------------------------
@@ -152,30 +172,6 @@ class FileInput:
         self.all_file_paths = [self.file_path] + self.secondary_files
 
 
-# handle both string and object formats of file input
-
-def is_file_input(node, node_parent):
-    """Check if a node is a file input, either object class File or a string pointing to an existing file."""
-    explicitly_defined = isinstance(node, dict) and node.get('class') == 'File'
-    matches_filename = isinstance(node, str) and node_parent != 'path' and os.path.exists(node)
-    return (explicitly_defined or matches_filename)
-
-
-def get_path(node):
-    """ Get path value of a File node, works for both objects and strings."""
-    if isinstance(node, dict):
-        return Path(node.get('path'))
-    else:
-        return Path(node)
-
-def set_path(yaml, file_input, new_value):
-    """Set the path value for `file_input` within `yaml`.
-    Works for both objects and strings."""
-    if get_in(yaml, file_input.yaml_path + ['path']):
-        set_in(yaml, file_input.yaml_path + ['path'], new_value)
-    else:
-        set_in(yaml, file_input.yaml_path, new_value)
-
 def parse_file_inputs(cwl_definition, wf_inputs, base_path):
     """Crawl a yaml.loaded CWL structure and workflow inputs files for input Files."""
     # build inputs list from original crawl
@@ -183,7 +179,7 @@ def parse_file_inputs(cwl_definition, wf_inputs, base_path):
     def process_node(node, node_path):
         if (is_file_input(node, input_name(node_path))):
             file_path = expand_relative(get_path(node), base_path)
-            suffixes = secondary_file_suffixes(cwl_definition, input_name(node_path))
+            suffixes  = secondary_file_suffixes(cwl_definition, input_name(node_path))
             if suffixes:
                 file_inputs.append(FileInput(file_path, node_path, suffixes))
             else:
