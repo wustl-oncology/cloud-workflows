@@ -60,6 +60,38 @@ because the program terminated early, persist that knowledge somewhere
 and either expand or accompany this script with an uploading
 reattempt.
 
+### Gotchas
+
+- script is not resilient or idempotent. If an upload fails, the
+  script stops. If the script stops, it will not skip previous
+  uploads. Both of these are characeristics I'd like to add later.
+
+- script assumes any path to a file will be accessible from the
+  script's run location. If the inputs YAML has relative paths, the
+  script should be run in the same dir as that inputs YAML.
+
+- script has no way of expanding custom types. If a custom type
+  includes a secondaryFiles definition, the script will not see that
+  definition and won't know to upload those files.
+
+Any problem that results in a file not being uploaded can be manually
+resolved by copying that file to the GCS path listed in the generated
+YAML.
+
+    gsutil cp <that-file-location> <gcs-destination-in-cloud-yaml>
+
+### Later Improvements
+
+- Resilient uploads. Multiple upload attempts, attempt all even if
+  early fail, some restart mechanism.
+- Idempotent uploads. Essentially just skip upload if path already
+  exists. Enables multiple runs without repeating network traffic. The
+  cost is overwriting incorrect files. Probably that should be manual.
+- Can parse custom type declarations to check for Files,
+  secondaryFiles
+- Add `root_dir` flag for handling relative paths.
+- Assume `root_dir` is location of `inputs_yaml`
+
 
 ## Cromwell API for workflow interactions
 

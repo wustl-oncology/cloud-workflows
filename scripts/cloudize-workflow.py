@@ -98,10 +98,25 @@ def expand_relative(path, base_path):
         return Path(f"{base_path}/{path}")
 
 
+# ---- YAML specific ---------------------------------------------------
+
+
+def input_name(node_path):
+    inp = node_path and node_path[-1]
+    if isinstance(inp, int):
+        inp = node_path[-2]
+    return inp
+
+
+def node_parent(node_path):
+    return node_path and node_path[-1]
+
+
 # ---- CWL specific ----------------------------------------------------
 
-def secondary_file_suffixes(cwl_definition, input_name):
-    return get_in(cwl_definition, ['inputs', input_name, 'secondaryFiles'])
+
+def secondary_file_suffixes(cwl_definition, yaml_input_name):
+    return get_in(cwl_definition, ['inputs', yaml_input_name, 'secondaryFiles'])
 
 
 def secondary_file_path(basepath, suffix):
@@ -130,10 +145,10 @@ class FilePath:
 
 
 class FileInput:
-    def __init__(self, file_path, yaml_path, secondary_file_suffixes=[]):
+    def __init__(self, file_path, yaml_path, suffixes=[]):
         self.file_path = FilePath(file_path)
         self.yaml_path = yaml_path
-        self.secondary_files = [ FilePath(f) for f in secondary_file_paths(file_path, secondary_file_suffixes)]
+        self.secondary_files = [FilePath(f) for f in secondary_file_paths(file_path, suffixes)]
         self.all_file_paths = [self.file_path] + self.secondary_files
 
 
@@ -154,20 +169,15 @@ def get_path(node):
         return Path(node)
 
 def set_path(yaml, file_input, new_value):
-    """Set the path value for `file_input` within `yaml`, works for both objects and strings."""
+    """Set the path value for `file_input` within `yaml`.
+    Works for both objects and strings."""
     if get_in(yaml, file_input.yaml_path + ['path']):
         set_in(yaml, file_input.yaml_path + ['path'], new_value)
     else:
         set_in(yaml, file_input.yaml_path, new_value)
 
-def input_name(node_path):
-    inp = node_path and node_path[-1]
-    if isinstance(inp, int):
-        inp = node_path[-2]
-    return inp
-
 def parse_file_inputs(cwl_definition, wf_inputs, base_path):
-    """Crawl a yaml.loaded CWL definition structure and workflow inputs files for input Files."""
+    """Crawl a yaml.loaded CWL structure and workflow inputs files for input Files."""
     # build inputs list from original crawl
     file_inputs = []
     def process_node(node, node_path):
@@ -194,7 +204,7 @@ def parse_file_inputs(cwl_definition, wf_inputs, base_path):
 
 def cloudize(bucket, cwl_path, inputs_path, output_path, dryrun=False):
     """Generate a cloud version of an inputs YAML file provided that file
-and its workflow's CWL definition."""
+    and its workflow's CWL definition."""
     yaml = YAML()
 
     # load+parse files
