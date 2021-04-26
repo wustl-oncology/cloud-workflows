@@ -160,15 +160,20 @@ def set_path(yaml, file_input, new_value):
     else:
         set_in(yaml, file_input.yaml_path, new_value)
 
+def input_name(node_path):
+    inp = node_path and node_path[-1]
+    if isinstance(inp, int):
+        inp = node_path[-2]
+    return inp
 
 def parse_file_inputs(cwl_definition, wf_inputs, base_path):
     """Crawl a yaml.loaded CWL definition structure and workflow inputs files for input Files."""
     # build inputs list from original crawl
     file_inputs = []
     def process_node(node, node_path):
-        if (is_file_input(node, node_path and node_path[-1])):  # avoid indexerror
+        if (is_file_input(node, input_name(node_path))):
             file_path = expand_relative(get_path(node), base_path)
-            suffixes = secondary_file_suffixes(cwl_definition, node_path[-1])
+            suffixes = secondary_file_suffixes(cwl_definition, input_name(node_path))
             if suffixes:
                 file_inputs.append(FileInput(file_path, node_path, suffixes))
             else:
