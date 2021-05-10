@@ -4,8 +4,8 @@
 
 1. cloudize-workflow by running modified `bsub_cloudize.sh` with
    values for your user and your target workflow
-1. Start workflow execution [from Swagger](http://34.69.35.61:8000/swagger). Be careful about
-   relative paths in workflowSource.cwl and workflowDependencies.zip
+1. Start workflow execution [from Swagger](http://34.69.35.61:8000/swagger).
+   Be careful about relative paths in workflowSource.cwl and workflowDependencies.zip
 1. pull_outputs from completed workflow outputs
 
 
@@ -14,11 +14,11 @@
 To prevent idle costs, resources should be spun down when not in use.
 To ensure existing infrastructure is running:
 
-    sh infra.sh thaw
+    sh infra.sh start
 
 Similary, to freeze them at the end of the day:
 
-    sh infra.sh freeze
+    sh infra.sh stop
 
 
 ## cloudize-workflow.py script
@@ -60,6 +60,7 @@ because the program terminated early, persist that knowledge somewhere
 and either expand or accompany this script with an uploading
 reattempt.
 
+
 ### Gotchas
 
 - script is not resilient or idempotent. If an upload fails, the
@@ -80,17 +81,35 @@ YAML.
 
     gsutil cp <that-file-location> <gcs-destination-in-cloud-yaml>
 
+
+#### Directory Inputs
+
+For input vep\_cache\_dir and likely any future Directory inputs,
+extra care will need to be taken.
+
+CWL for tasks using the directory will need to be modified to have a
+`tmpdirMin` value that can hold the entire contents of that directory,
+in addition to its other constraints.
+
+Because they can be such a large size, Directory inputs are not
+automatically handled by cloudize-workflow.py. This may come later
+after more robust handling has been figured out. In the meantime,
+manually upload whatever directory/subdirectories needed using
+
+    gsutil cp -r /path/to/dir gs://griffith-lab-cromwell/
+
+This process can be sped up by using the `-m` flag, though it may be
+rocky and fail with a threading issue. Omitting it seems easier,
+though slower. Additionally, a modified version of
+`scripts/run_bsub.sh` could be used to execute this command.
+
+
 ### Later Improvements
 
 - Resilient uploads. Multiple upload attempts, attempt all even if
   early fail, some restart mechanism.
-- Idempotent uploads. Essentially just skip upload if path already
-  exists. Enables multiple runs without repeating network traffic. The
-  cost is overwriting incorrect files. Probably that should be manual.
-- Can parse custom type declarations to check for Files,
-  secondaryFiles
-- Add `root_dir` flag for handling relative paths.
-- Assume `root_dir` is location of `inputs_yaml`
+- Add optional `root_dir` flag for handling relative paths. Assume
+  `root_dir` is location of `inputs_yaml`
 
 
 ## Cromwell API for workflow interactions
@@ -143,7 +162,6 @@ will be a proper response for the outputs of the requested workflow
 ID. Deviations from the happy path will probably result in an
 arbitrary Python error instead of a helpful message, but nothing
 harmful will happen since it's just a simple download script.
-
 
 
 # Infrastructure

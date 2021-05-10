@@ -216,6 +216,7 @@ def cloudize(bucket, cwl_path, inputs_path, output_path, dryrun=False):
     print(f"Yaml dumped to {output_path}")
 
     # Upload all the files
+    # TODO: find a way to optimize/parallelize a la `gsutil -m
     for f in file_inputs:
         for file_path in f.all_file_paths:
             upload_to_gcs(bucket, file_path.local, file_path.cloud, dryrun=dryrun)
