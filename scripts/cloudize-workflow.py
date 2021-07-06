@@ -1,4 +1,5 @@
 # third-party, pip install
+import WDL  # https://miniwdl.readthedocs.io/en/latest/WDL.html#
 from ruamel.yaml import YAML
 from google.cloud import storage
 # built-in, hooray
@@ -9,20 +10,23 @@ from datetime import date
 from getpass import getuser
 from pathlib import Path
 
-# IMPROVE: be able to drop and pick up the upload somehow. long running process, may break near end
+# IMPROVE: be able to drop and pick up the upload somehow.
+# long running process, may break near end
 
 UNIQUE_PATH = f"input_data/{getuser()}/" + date.today().strftime("%Y-%m-%d")
+yaml = YAML()
 
 
 # ---- GCS interactions ------------------------------------------------
 
 def upload_to_gcs(bucket, src, dest, dryrun=False):
-    """Upload a local file to GCS. src is a filepath/name and dest is target GCS name."""
+    """Upload a local file to GCS bucket. src is a filepath and dest is target GCS name."""
     if os.path.isdir(src):
         print(f"Source file {src} is a directory. Skipping.")
     elif os.path.isfile(src):
         print(f"Uploading {src} to {dest}")
         if not dryrun:
+            # TODO: just use gsutil, behavior discrepancies, e.g. with .interval_list
             bucket.blob(dest).upload_from_filename(src, num_retries=3)
     else:
         print(f"WARN: could not find source file, potentially just a basepath: {src}")
@@ -31,15 +35,17 @@ def upload_to_gcs(bucket, src, dest, dryrun=False):
 # ---- Generic functions -----------------------------------------------
 
 def walk_object(obj, node_fn, path=[]):
-    """Walk an objects structure, applying node_fn to each node, both branch and leaf nodes.
-    node_fn must accept both the node and a kwarg for path."""
+    """Walk an objects structure, applying node_fn to each node, both
+    branch and leaf nodes.
+    node_fn must accept both the node and a kwarg for path.
+    """
     if (isinstance(obj, dict)):
-        return node_fn({ k: walk_object(v, node_fn, path=(path.copy() + [k]))
-                         for k, v in obj.items() },
+        return node_fn({k: walk_object(v, node_fn, path=(path.copy() + [k]))
+                        for k, v in obj.items()},
                        path)
     elif (isinstance(obj, list)):
-        return node_fn([ walk_object(x, node_fn, path=(path.copy() + [i]))
-                         for i, x in enumerate(obj) ],
+        return node_fn([walk_object(x, node_fn, path=(path.copy() + [i]))
+                        for i, x in enumerate(obj)],
                        path)
     else:  # all non-collection classes are treated as leaf nodes
         return node_fn(obj, path)
@@ -68,9 +74,12 @@ def get(coll, k):
 
 def get_in(coll, path):
     """Safe deep retrieval from a collection, returns None instead of Error."""
-    if not path:   return coll
-    elif not coll: return None
-    else:          return get_in(get(coll, path[0]), path[1:])
+    if not path:
+        return coll
+    elif not coll:
+        return None
+    else:
+        return get_in(get(coll, path[0]), path[1:])
 
 
 # ---- Pathlib ---------------------------------------------------------
@@ -91,6 +100,7 @@ def strip_ancestor(path, ancestor):
     else:  # absolute path if not an ancestor
         return path.resolve()
 
+
 def expand_relative(path, base_path):
     if path.is_absolute():
         return path
@@ -108,10 +118,11 @@ def input_name(node_path):
     return inp
 
 
-def is_file_input(node, node_parent):
-    """Check if a node is a file input, either object class File or a string pointing to an existing file."""
+def is_file_input(node, node_parent, input_file_path):
+    """Check if a node is a file input, either object class File or existing filepath string."""
     explicitly_defined = isinstance(node, dict) and node.get('class') == 'File'
-    matches_filename = isinstance(node, str) and node_parent != 'path' and os.path.exists(node)
+    matches_filename = isinstance(node, str) and node_parent != 'path' \
+        and os.path.exists(expand_relative(Path(node), input_file_path))
     return (explicitly_defined or matches_filename)
 
 
@@ -126,14 +137,41 @@ def get_path(node):
 def set_path(yaml, file_input, new_value):
     """Set the path value for `file_input` within `yaml`.
     Works for both objects and strings."""
-    if get_in(yaml, file_input.yaml_path + ['path']):
-        set_in(yaml, file_input.yaml_path + ['path'], new_value)
+    if get_in(yaml, file_input.input_path + ['path']):
+        set_in(yaml, file_input.input_path + ['path'], new_value)
     else:
-        set_in(yaml, file_input.yaml_path, new_value)
+        set_in(yaml, file_input.input_path, new_value)
+
+
+# ---- WDL specific ----------------------------------------------------
+
+def load_wdl_definition(wdl_path):
+    deps_paths = [str(wdl_path.parent), str(wdl_path.parent.parent)]
+    return WDL.load(str(wdl_path), deps_paths)
+
+
+# TODO: only modify if not already prepended
+def prepend_workflow_name(obj, wdl_definition):
+    wf_name = wdl_definition.workflow.name
+    return {f"{wf_name}.{k}": v for k, v in obj.items()}
+
+
+def find_file_inputs_wdl(wf_inputs, inputs_file_path):
+    file_inputs = []
+
+    def process_node(node, node_path):
+        if (is_file_input(node, input_name(node_path), inputs_file_path)):
+            file_path = expand_relative(get_path(node), inputs_file_path)
+            file_inputs.append(FileInput(file_path, node_path))
+        else:
+            print(f"not file_input node={node} input_name({node_path}) => {input_name(node_path)}")
+        return node
+
+    walk_object(wf_inputs, process_node)
+    return file_inputs
 
 
 # ---- CWL specific ----------------------------------------------------
-
 
 def secondary_file_suffixes(cwl_definition, yaml_input_name):
     return get_in(cwl_definition, ['inputs', yaml_input_name, 'secondaryFiles'])
@@ -153,6 +191,25 @@ def secondary_file_paths(base_path, suffixes):
         return [secondary_file_path(base_path, suffix) for suffix in suffixes]
 
 
+def find_file_inputs_cwl(wf_path, wf_inputs, inputs_file_path):
+    """Crawl a yaml.loaded CWL structure and workflow inputs files for input Files."""
+    cwl_definition = yaml.load(wf_path)
+    file_inputs = []
+
+    def process_node(node, node_path):
+        if (is_file_input(node, input_name(node_path), inputs_file_path)):
+            file_path = expand_relative(get_path(node), inputs_file_path)
+            suffixes = secondary_file_suffixes(cwl_definition, input_name(node_path))
+            if suffixes:
+                file_inputs.append(FileInput(file_path, node_path, suffixes))
+            else:
+                file_inputs.append(FileInput(file_path, node_path))
+        return node
+
+    walk_object(wf_inputs, process_node)
+    return file_inputs
+
+
 # ---- Actually do the work we want ------------------------------------
 
 class FilePath:
@@ -165,27 +222,19 @@ class FilePath:
 
 
 class FileInput:
-    def __init__(self, file_path, yaml_path, suffixes=[]):
+    def __init__(self, file_path, input_path, suffixes=[]):
         self.file_path = FilePath(file_path)
-        self.yaml_path = yaml_path
+        self.input_path = input_path
         self.secondary_files = [FilePath(f) for f in secondary_file_paths(file_path, suffixes)]
         self.all_file_paths = [self.file_path] + self.secondary_files
 
 
-def parse_file_inputs(cwl_definition, wf_inputs, base_path):
-    """Crawl a yaml.loaded CWL structure and workflow inputs files for input Files."""
+def parse_file_inputs(wf_path, wf_inputs, inputs_file_path):
     # build inputs list from original crawl
-    file_inputs = []
-    def process_node(node, node_path):
-        if (is_file_input(node, input_name(node_path))):
-            file_path = expand_relative(get_path(node), base_path)
-            suffixes  = secondary_file_suffixes(cwl_definition, input_name(node_path))
-            if suffixes:
-                file_inputs.append(FileInput(file_path, node_path, suffixes))
-            else:
-                file_inputs.append(FileInput(file_path, node_path))
-        return node
-    walk_object(wf_inputs, process_node)
+    if wf_path.suffix == ".cwl":
+        file_inputs = find_file_inputs_cwl(wf_path, wf_inputs, inputs_file_path)
+    else:
+        file_inputs = find_file_inputs_wdl(wf_inputs, inputs_file_path)
 
     # Postprocessing: add cloud path to file_inputs
     ancestor = deepest_shared_ancestor([file_path.local
@@ -198,20 +247,23 @@ def parse_file_inputs(cwl_definition, wf_inputs, base_path):
     return file_inputs
 
 
-def cloudize(bucket, cwl_path, inputs_path, output_path, dryrun=False):
+def cloudize(bucket, wf_path, inputs_path, output_path, dryrun=False):
     """Generate a cloud version of an inputs YAML file provided that file
     and its workflow's CWL definition."""
-    yaml = YAML()
 
     # load+parse files
     wf_inputs = yaml.load(inputs_path)
-    cwl_definition = yaml.load(cwl_path)
-    file_inputs = parse_file_inputs(cwl_definition, wf_inputs, inputs_path.parent)
+    file_inputs = parse_file_inputs(wf_path, wf_inputs, inputs_path.parent)
 
     # Generate new YAML file
     new_yaml = deepcopy(wf_inputs)
     for f in file_inputs:
         set_path(new_yaml, f, str(f"gs://{bucket.name}/{f.file_path.cloud}"))
+
+    if wf_path.suffix == ".wdl":
+        wdl_definition = load_wdl_definition(wf_path)
+        new_yaml = prepend_workflow_name(new_yaml, wdl_definition)
+
     yaml.dump(new_yaml, output_path)
     print(f"Yaml dumped to {output_path}")
 
@@ -230,7 +282,7 @@ def default_output(inputs_filename):
     return f"{path.parent}/{path.stem}_cloud{path.suffix}"
 
 
-if __name__=="__main__":
+if __name__ == "__main__":
     parser = ArgumentParser(description="Prepare a CWL workload for cloud processing. Upload Files and generate new inputs.yaml.")
     parser.add_argument("bucket",
                         help="the name of the GCS bucket to upload workflow inputs")
