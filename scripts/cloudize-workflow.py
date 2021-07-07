@@ -214,7 +214,7 @@ class CWL(WorkflowLanguage):
             return [CWL.secondary_file_path(base_path, suffix) for suffix in suffixes]
 
 
-def make_workflow_language(definition_path, inputs_path):
+def make_workflow(definition_path, inputs_path):
     if definition_path.suffix == ".cwl":
         return CWL(definition_path, inputs_path)
     else:
@@ -257,28 +257,35 @@ def cloudize_file_paths(inputs, bucket, file_inputs):
     return new_input_obj
 
 
-def cloudize(bucket, wf_path, inputs_path, output_path, dryrun=False):
-    """Generate a cloud version of an inputs YAML file provided that file
-    and its workflow's CWL definition."""
+def write_new_inputs(new_input_obj, output_path):
+    """Write a Python object to a file. Defaults to YAML format unless output_path ends .json"""
+    if output_path.suffix == ".json":
+        with open(output_path) as f:
+            f.write(json.dump(new_input_obj, output_path))
+    else:
+        yaml.dump(new_input_obj, output_path)
+    print(f"Inputs dumped to {output_path}")
 
-    workflow = make_workflow_language(wf_path, inputs_path)
-    # load+parse files
-    file_inputs = workflow.find_file_inputs()
-    set_cloud_paths(file_inputs)
 
-    # Generate new inputs file
-    cloudized_inputs = workflow.postprocess_inputs(
-        cloudize_file_paths(workflow.inputs, bucket, file_inputs)
-    )
-
-    yaml.dump(cloudized_inputs, output_path)
-    print(f"Yaml dumped to {output_path}")
-
+def upload_all(file_inputs, bucket, dryrun):
     # Upload all the files
     # TODO: find a way to optimize/parallelize a la `gsutil -m
     for f in file_inputs:
         for file_path in f.all_file_paths:
             upload_to_gcs(bucket, file_path.local, file_path.cloud, dryrun=dryrun)
+
+
+def cloudize(bucket, wf_path, inputs_path, output_path, dryrun=False):
+    """Generate a cloud version of an inputs YAML file provided that file
+    and its workflow's CWL definition."""
+    workflow = make_workflow(wf_path, inputs_path)
+    file_inputs = workflow.find_file_inputs()
+    set_cloud_paths(file_inputs)
+    cloudized_inputs = workflow.postprocess_inputs(
+        cloudize_file_paths(workflow.inputs, bucket, file_inputs)
+    )
+    write_new_inputs(cloudized_inputs, output_path)
+    upload_all(file_inputs, bucket, dryrun)
     print("Completed file upload process.")
 
 
