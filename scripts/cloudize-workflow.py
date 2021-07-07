@@ -194,9 +194,24 @@ class CWL(WorkflowLanguage):
         self.definition = yaml.load(definition_path)
 
     def _file_input(self, file_path, node_path):
-        suffixes = secondary_file_suffixes(self.definition, input_name(node_path))
-        secondary_files = [FilePath(f) for f in secondary_file_paths(file_path, suffixes)]
+        suffixes = self.secondary_file_suffixes(input_name(node_path))
+        secondary_files = [FilePath(f) for f in self.secondary_file_paths(file_path, suffixes)]
         return FileInput(file_path, node_path, secondary_files)
+
+    def secondary_file_suffixes(self, yaml_input_name):
+        return get_in(self.definition, ['inputs', yaml_input_name, 'secondaryFiles']) or []
+
+    def secondary_file_path(basepath, suffix):
+        if suffix.startswith("^"):
+            return CWL.secondary_file_path(f"{basepath.parent}/{basepath.stem}", suffix[1:])
+        else:
+            return Path(str(basepath) + suffix)
+
+    def secondary_file_paths(base_path, suffixes):
+        if isinstance(suffixes, str):
+            return [CWL.secondary_file_path(base_path, suffixes)]
+        else:
+            return [CWL.secondary_file_path(base_path, suffix) for suffix in suffixes]
 
 
 def make_workflow_language(definition_path, inputs_path):
@@ -204,26 +219,6 @@ def make_workflow_language(definition_path, inputs_path):
         return CWL(definition_path, inputs_path)
     else:
         return WDL(definition_path, inputs_path)
-
-
-# ---- CWL specific ----------------------------------------------------
-
-def secondary_file_suffixes(cwl_definition, yaml_input_name):
-    return get_in(cwl_definition, ['inputs', yaml_input_name, 'secondaryFiles']) or []
-
-
-def secondary_file_path(basepath, suffix):
-    if suffix.startswith("^"):
-        return secondary_file_path(f"{basepath.parent}/{basepath.stem}", suffix[1:])
-    else:
-        return Path(str(basepath) + suffix)
-
-
-def secondary_file_paths(base_path, suffixes):
-    if isinstance(suffixes, str):
-        return [secondary_file_path(base_path, suffixes)]
-    else:
-        return [secondary_file_path(base_path, suffix) for suffix in suffixes]
 
 
 # ---- Actually do the work we want ------------------------------------
