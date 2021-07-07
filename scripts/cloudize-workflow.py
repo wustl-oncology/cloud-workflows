@@ -3,12 +3,14 @@ import WDL as wdl  # https://miniwdl.readthedocs.io/en/latest/WDL.html#
 from ruamel.yaml import YAML
 from google.cloud import storage
 # built-in, hooray
+import json
 import os
 from argparse import ArgumentParser
 from copy import deepcopy
 from datetime import date
 from getpass import getuser
 from pathlib import Path
+
 
 # IMPROVE: be able to drop and pick up the upload somehow.
 # long running process, may break near end
@@ -108,7 +110,7 @@ def expand_relative(path, base_path):
         return Path(f"{base_path}/{path}")
 
 
-# ---- YAML specific ---------------------------------------------------
+# ---- Inputs Object specific ---------------------------------------------------
 
 
 def input_name(node_path):
@@ -134,13 +136,13 @@ def get_path(node):
         return Path(node)
 
 
-def set_path(yaml, file_input, new_value):
-    """Set the path value for `file_input` within `yaml`.
+def set_path(input_obj, file_input, new_value):
+    """Set the path value for `file_input` within `input_obj`.
     Works for both objects and strings."""
-    if get_in(yaml, file_input.input_path + ['path']):
-        set_in(yaml, file_input.input_path + ['path'], new_value)
+    if get_in(input_obj, file_input.input_path + ['path']):
+        set_in(input_obj, file_input.input_path + ['path'], new_value)
     else:
-        set_in(yaml, file_input.input_path, new_value)
+        set_in(input_obj, file_input.input_path, new_value)
 
 
 # ---- Workflow Language Classes ---------------------------------------
