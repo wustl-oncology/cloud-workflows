@@ -1,5 +1,5 @@
 # third-party, pip install
-import WDL  # https://miniwdl.readthedocs.io/en/latest/WDL.html#
+import WDL as wdl  # https://miniwdl.readthedocs.io/en/latest/WDL.html#
 from ruamel.yaml import YAML
 from google.cloud import storage
 # built-in, hooray
@@ -143,11 +143,20 @@ def set_path(yaml, file_input, new_value):
         set_in(yaml, file_input.input_path, new_value)
 
 
+# ---- Workflow Language Classes ---------------------------------------
+
+class WorkflowLanguage:
+    def __init__(self, definition_path, inputs_path):
+        self.definition_path = definition_path
+        self.inputs_path = inputs_path
+        self.inputs = yaml.load(inputs_path)
+
+
 # ---- WDL specific ----------------------------------------------------
 
 def load_wdl_definition(wdl_path):
     deps_paths = [str(wdl_path.parent), str(wdl_path.parent.parent)]
-    return WDL.load(str(wdl_path), deps_paths)
+    return wdl.load(str(wdl_path), deps_paths)
 
 
 def prepend_workflow_name(obj, wdl_definition):
@@ -254,17 +263,21 @@ def cloudize(bucket, wf_path, inputs_path, output_path, dryrun=False):
     """Generate a cloud version of an inputs YAML file provided that file
     and its workflow's CWL definition."""
 
+    workflow = WorkflowLanguage(wf_path, inputs_path)
     # load+parse files
-    wf_inputs = yaml.load(inputs_path)
-    file_inputs = parse_file_inputs(wf_path, wf_inputs, inputs_path.parent)
+    file_inputs = parse_file_inputs(
+        workflow.definition_path,
+        workflow.inputs,
+        workflow.inputs_path.parent
+    )
 
     # Generate new inputs file
-    new_input_obj = deepcopy(wf_inputs)
+    new_input_obj = deepcopy(workflow.inputs)
     for f in file_inputs:
         set_path(new_input_obj, f, str(f"gs://{bucket.name}/{f.file_path.cloud}"))
 
     if wf_path.suffix == ".wdl":
-        wdl_definition = load_wdl_definition(wf_path)
+        wdl_definition = load_wdl_definition(workflow.definition_path)
         new_input_obj = prepend_workflow_name(new_input_obj, wdl_definition)
 
     yaml.dump(new_input_obj, output_path)
