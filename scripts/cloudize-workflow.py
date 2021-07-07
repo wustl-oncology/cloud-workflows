@@ -195,7 +195,7 @@ class CWL(WorkflowLanguage):
 
     def _file_input(self, file_path, node_path):
         suffixes = self.secondary_file_suffixes(input_name(node_path))
-        secondary_files = [FilePath(f) for f in self.secondary_file_paths(file_path, suffixes)]
+        secondary_files = [FilePath(f) for f in CWL.secondary_file_paths(file_path, suffixes)]
         return FileInput(file_path, node_path, secondary_files)
 
     def secondary_file_suffixes(self, yaml_input_name):
