@@ -151,13 +151,46 @@ class WorkflowLanguage:
         self.inputs_path = inputs_path
         self.inputs = yaml.load(inputs_path)
 
+    def find_file_inputs(self): raise NotImplementedError
+
+
+class WDL(WorkflowLanguage):
     def find_file_inputs(self):
-        # build inputs list from original crawl
-        if self.definition_path.suffix == ".cwl":
-            file_inputs = find_file_inputs_cwl(self)
-        else:
-            file_inputs = find_file_inputs_wdl(self)
+        file_inputs = []
+
+        def process_node(node, node_path):
+            if (is_file_input(node, input_name(node_path), self.inputs_path.parent)):
+                file_path = expand_relative(get_path(node), self.inputs_path.parent)
+                file_inputs.append(FileInput(file_path, node_path))
+            return node
+
+        walk_object(self.inputs, process_node)
         return file_inputs
+
+
+class CWL(WorkflowLanguage):
+    def find_file_inputs(self):
+        """Crawl a yaml.loaded CWL structure and workflow inputs files for input Files."""
+        cwl_definition = yaml.load(self.definition_path)
+        file_inputs = []
+
+        def process_node(node, node_path):
+            if (is_file_input(node, input_name(node_path), self.inputs_path.parent)):
+                file_path = expand_relative(get_path(node), self.inputs_path.parent)
+                suffixes = secondary_file_suffixes(cwl_definition, input_name(node_path))
+                secondary_files = [FilePath(f) for f in secondary_file_paths(file_path, suffixes)]
+                file_inputs.append(FileInput(file_path, node_path, secondary_files))
+            return node
+
+        walk_object(self.inputs, process_node)
+        return file_inputs
+
+
+def make_workflow_language(definition_path, inputs_path):
+    if definition_path.suffix == ".cwl":
+        return CWL(definition_path, inputs_path)
+    else:
+        return WDL(definition_path, inputs_path)
 
 
 # ---- WDL specific ----------------------------------------------------
@@ -178,19 +211,6 @@ def prepend_workflow_name(obj, wdl_definition):
     return {idempotent_prepend(k, wf_name): v for k, v in obj.items()}
 
 
-def find_file_inputs_wdl(workflow):
-    file_inputs = []
-
-    def process_node(node, node_path):
-        if (is_file_input(node, input_name(node_path), workflow.inputs_path.parent)):
-            file_path = expand_relative(get_path(node), workflow.inputs_path.parent)
-            file_inputs.append(FileInput(file_path, node_path))
-        return node
-
-    walk_object(workflow.inputs, process_node)
-    return file_inputs
-
-
 # ---- CWL specific ----------------------------------------------------
 
 def secondary_file_suffixes(cwl_definition, yaml_input_name):
@@ -209,23 +229,6 @@ def secondary_file_paths(base_path, suffixes):
         return [secondary_file_path(base_path, suffixes)]
     else:
         return [secondary_file_path(base_path, suffix) for suffix in suffixes]
-
-
-def find_file_inputs_cwl(workflow):
-    """Crawl a yaml.loaded CWL structure and workflow inputs files for input Files."""
-    cwl_definition = yaml.load(workflow.definition_path)
-    file_inputs = []
-
-    def process_node(node, node_path):
-        if (is_file_input(node, input_name(node_path), workflow.inputs_path.parent)):
-            file_path = expand_relative(get_path(node), workflow.inputs_path.parent)
-            suffixes = secondary_file_suffixes(cwl_definition, input_name(node_path))
-            secondary_files = [FilePath(f) for f in secondary_file_paths(file_path, suffixes)]
-            file_inputs.append(FileInput(file_path, node_path, secondary_files))
-        return node
-
-    walk_object(workflow.inputs, process_node)
-    return file_inputs
 
 
 # ---- Actually do the work we want ------------------------------------
@@ -261,7 +264,7 @@ def cloudize(bucket, wf_path, inputs_path, output_path, dryrun=False):
     """Generate a cloud version of an inputs YAML file provided that file
     and its workflow's CWL definition."""
 
-    workflow = WorkflowLanguage(wf_path, inputs_path)
+    workflow = make_workflow_language(wf_path, inputs_path)
     # load+parse files
     file_inputs = workflow.find_file_inputs()
     set_cloud_paths(file_inputs)
