@@ -35,11 +35,15 @@ CLI and have permissions to write to the specified bucket.
 
 The command is as follows:
 
-    python3 cloudize-workflow.py <bucket-name> /path/to/workflow.cwl /path/to/inputs.yaml
+    python3 cloudize-workflow.py <bucket-name> /path/to/workflow /path/to/inputs
 
 There is an optional argument to specify the path of your output file
 
     --output=/path/to/output
+
+This script should work for both CWL and WDL files. It expects a YAML
+formatted input, and will output YAML format by default, unless
+specified output file ends with .json which will generated JSON.
 
 Files will be uploaded to a personal path, roughly
 `gs://<bucket>/<whoami>/<date>/` and from that root will contain
