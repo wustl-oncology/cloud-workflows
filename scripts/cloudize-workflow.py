@@ -151,7 +151,7 @@ class WorkflowLanguage:
         self.inputs_path = inputs_path
         self.inputs = yaml.load(inputs_path)
 
-    def file_input(self, file_path, node_path):
+    def _file_input(self, file_path, node_path):
         return FileInput(file_path, node_path)
 
     def find_file_inputs(self):
@@ -160,7 +160,7 @@ class WorkflowLanguage:
         def process_node(node, node_path):
             if (is_file_input(node, input_name(node_path), self.inputs_path.parent)):
                 file_path = expand_relative(get_path(node), self.inputs_path.parent)
-                file_inputs.append(self.file_input(file_path, node_path))
+                file_inputs.append(self._file_input(file_path, node_path))
             return node
         walk_object(self.inputs, process_node)
         return file_inputs
@@ -169,13 +169,13 @@ class WorkflowLanguage:
 
 
 class WDL(WorkflowLanguage):
-    def load_definition(self):
+    def _load_definition(self):
         path_dir = self.definition_path.parent
         deps_paths = [str(path_dir), str(path_dir.parent)]
         return wdl.load(str(self.definition_path), deps_paths)
 
     def postprocess_inputs(self, processed_inputs):
-        definition = self.load_definition()
+        definition = self._load_definition()
         return prepend_workflow_name(processed_inputs, definition)
 
 
@@ -184,7 +184,7 @@ class CWL(WorkflowLanguage):
         super().__init__(definition_path, inputs_path)
         self.definition = yaml.load(definition_path)
 
-    def file_input(self, file_path, node_path):
+    def _file_input(self, file_path, node_path):
         suffixes = secondary_file_suffixes(self.definition, input_name(node_path))
         secondary_files = [FilePath(f) for f in secondary_file_paths(file_path, suffixes)]
         return FileInput(file_path, node_path, secondary_files)
