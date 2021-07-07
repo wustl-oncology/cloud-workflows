@@ -241,22 +241,24 @@ class FileInput:
         self.all_file_paths = [self.file_path] + self.secondary_files
 
 
-def parse_file_inputs(workflow):
+def find_file_inputs(workflow):
     # build inputs list from original crawl
     if workflow.definition_path.suffix == ".cwl":
         file_inputs = find_file_inputs_cwl(workflow.definition_path, workflow.inputs, workflow.inputs_path)
     else:
         file_inputs = find_file_inputs_wdl(workflow.inputs, workflow.inputs_path.parent)
 
-    # Postprocessing: add cloud path to file_inputs
+    return file_inputs
+
+
+def set_cloud_paths(file_inputs):
+    """Set cloud paths for all file_inputs, mutating them."""
     ancestor = deepest_shared_ancestor([file_path.local
                                         for f in file_inputs
                                         for file_path in f.all_file_paths])
     for f in file_inputs:
         for file_path in f.all_file_paths:
             file_path.set_cloud(strip_ancestor(file_path.local, ancestor))
-
-    return file_inputs
 
 
 def cloudize(bucket, wf_path, inputs_path, output_path, dryrun=False):
@@ -265,7 +267,8 @@ def cloudize(bucket, wf_path, inputs_path, output_path, dryrun=False):
 
     workflow = WorkflowLanguage(wf_path, inputs_path)
     # load+parse files
-    file_inputs = parse_file_inputs(workflow)
+    file_inputs = find_file_inputs(workflow)
+    set_cloud_paths(file_inputs)
 
     # Generate new inputs file
     new_input_obj = deepcopy(workflow.inputs)
