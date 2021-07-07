@@ -199,11 +199,6 @@ def make_workflow_language(definition_path, inputs_path):
 
 # ---- WDL specific ----------------------------------------------------
 
-def load_wdl_definition(wdl_path):
-    deps_paths = [str(wdl_path.parent), str(wdl_path.parent.parent)]
-    return wdl.load(str(wdl_path), deps_paths)
-
-
 def prepend_workflow_name(obj, wdl_definition):
     def idempotent_prepend(s, prefix):
         """Prepend a . prefix iff no . prefix already exists."""
