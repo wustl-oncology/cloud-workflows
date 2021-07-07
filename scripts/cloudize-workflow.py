@@ -179,7 +179,7 @@ def find_file_inputs_wdl(wf_inputs, inputs_file_path):
 # ---- CWL specific ----------------------------------------------------
 
 def secondary_file_suffixes(cwl_definition, yaml_input_name):
-    return get_in(cwl_definition, ['inputs', yaml_input_name, 'secondaryFiles'])
+    return get_in(cwl_definition, ['inputs', yaml_input_name, 'secondaryFiles']) or []
 
 
 def secondary_file_path(basepath, suffix):
@@ -205,10 +205,8 @@ def find_file_inputs_cwl(wf_path, wf_inputs, inputs_file_path):
         if (is_file_input(node, input_name(node_path), inputs_file_path)):
             file_path = expand_relative(get_path(node), inputs_file_path)
             suffixes = secondary_file_suffixes(cwl_definition, input_name(node_path))
-            if suffixes:
-                file_inputs.append(FileInput(file_path, node_path, suffixes))
-            else:
-                file_inputs.append(FileInput(file_path, node_path))
+            secondary_files = [FilePath(f) for f in secondary_file_paths(file_path, suffixes)]
+            file_inputs.append(FileInput(file_path, node_path, secondary_files))
         return node
 
     walk_object(wf_inputs, process_node)
@@ -227,10 +225,10 @@ class FilePath:
 
 
 class FileInput:
-    def __init__(self, file_path, input_path, suffixes=[]):
+    def __init__(self, file_path, input_path, secondary_files=[]):
         self.file_path = FilePath(file_path)
         self.input_path = input_path
-        self.secondary_files = [FilePath(f) for f in secondary_file_paths(file_path, suffixes)]
+        self.secondary_files = secondary_files
         self.all_file_paths = [self.file_path] + self.secondary_files
 
 
