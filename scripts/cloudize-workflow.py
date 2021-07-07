@@ -205,20 +205,20 @@ def secondary_file_paths(base_path, suffixes):
         return [secondary_file_path(base_path, suffix) for suffix in suffixes]
 
 
-def find_file_inputs_cwl(wf_path, wf_inputs, inputs_file_path):
+def find_file_inputs_cwl(workflow):
     """Crawl a yaml.loaded CWL structure and workflow inputs files for input Files."""
-    cwl_definition = yaml.load(wf_path)
+    cwl_definition = yaml.load(workflow.definition_path)
     file_inputs = []
 
     def process_node(node, node_path):
-        if (is_file_input(node, input_name(node_path), inputs_file_path)):
-            file_path = expand_relative(get_path(node), inputs_file_path)
+        if (is_file_input(node, input_name(node_path), workflow.inputs_path)):
+            file_path = expand_relative(get_path(node), workflow.inputs_path)
             suffixes = secondary_file_suffixes(cwl_definition, input_name(node_path))
             secondary_files = [FilePath(f) for f in secondary_file_paths(file_path, suffixes)]
             file_inputs.append(FileInput(file_path, node_path, secondary_files))
         return node
 
-    walk_object(wf_inputs, process_node)
+    walk_object(workflow.inputs, process_node)
     return file_inputs
 
 
@@ -241,12 +241,12 @@ class FileInput:
         self.all_file_paths = [self.file_path] + self.secondary_files
 
 
-def parse_file_inputs(wf_path, wf_inputs, inputs_file_path):
+def parse_file_inputs(workflow):
     # build inputs list from original crawl
-    if wf_path.suffix == ".cwl":
-        file_inputs = find_file_inputs_cwl(wf_path, wf_inputs, inputs_file_path)
+    if workflow.definition_path.suffix == ".cwl":
+        file_inputs = find_file_inputs_cwl(workflow.definition_path, workflow.inputs, workflow.inputs_path)
     else:
-        file_inputs = find_file_inputs_wdl(wf_inputs, inputs_file_path)
+        file_inputs = find_file_inputs_wdl(workflow.inputs, workflow.inputs_path.parent)
 
     # Postprocessing: add cloud path to file_inputs
     ancestor = deepest_shared_ancestor([file_path.local
@@ -265,11 +265,7 @@ def cloudize(bucket, wf_path, inputs_path, output_path, dryrun=False):
 
     workflow = WorkflowLanguage(wf_path, inputs_path)
     # load+parse files
-    file_inputs = parse_file_inputs(
-        workflow.definition_path,
-        workflow.inputs,
-        workflow.inputs_path.parent
-    )
+    file_inputs = parse_file_inputs(workflow)
 
     # Generate new inputs file
     new_input_obj = deepcopy(workflow.inputs)
