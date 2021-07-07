@@ -150,10 +150,15 @@ def load_wdl_definition(wdl_path):
     return WDL.load(str(wdl_path), deps_paths)
 
 
-# TODO: only modify if not already prepended
 def prepend_workflow_name(obj, wdl_definition):
+    def idempotent_prepend(s, prefix):
+        """Prepend a . prefix iff no . prefix already exists."""
+        if len(s.split(".")) == 1:
+            return f"{prefix}.{s}"
+        else:
+            return s
     wf_name = wdl_definition.workflow.name
-    return {f"{wf_name}.{k}": v for k, v in obj.items()}
+    return {idempotent_prepend(k, wf_name): v for k, v in obj.items()}
 
 
 def find_file_inputs_wdl(wf_inputs, inputs_file_path):
