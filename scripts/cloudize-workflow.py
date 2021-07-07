@@ -151,39 +151,36 @@ class WorkflowLanguage:
         self.inputs_path = inputs_path
         self.inputs = yaml.load(inputs_path)
 
-    def find_file_inputs(self): raise NotImplementedError
+    def file_input(self, file_path, node_path):
+        return FileInput(file_path, node_path)
+
+    def find_file_inputs(self):
+        file_inputs = []
+
+        def process_node(node, node_path):
+            if (is_file_input(node, input_name(node_path), self.inputs_path.parent)):
+                file_path = expand_relative(get_path(node), self.inputs_path.parent)
+                file_inputs.append(self.file_input(file_path, node_path))
+            return node
+        walk_object(self.inputs, process_node)
+        return file_inputs
 
 
 class WDL(WorkflowLanguage):
-    def find_file_inputs(self):
-        file_inputs = []
-
-        def process_node(node, node_path):
-            if (is_file_input(node, input_name(node_path), self.inputs_path.parent)):
-                file_path = expand_relative(get_path(node), self.inputs_path.parent)
-                file_inputs.append(FileInput(file_path, node_path))
-            return node
-
-        walk_object(self.inputs, process_node)
-        return file_inputs
-
+    def load_definition(self):
+        path_dir = self.definition_path.parent
+        deps_paths = [str(path_dir), str(path_dir.parent)]
+        return wdl.load(str(self.definition_path), deps_paths)
 
 class CWL(WorkflowLanguage):
-    def find_file_inputs(self):
-        """Crawl a yaml.loaded CWL structure and workflow inputs files for input Files."""
-        cwl_definition = yaml.load(self.definition_path)
-        file_inputs = []
+    def __init__(self, definition_path, inputs_path):
+        super().__init__(definition_path, inputs_path)
+        self.definition = yaml.load(definition_path)
 
-        def process_node(node, node_path):
-            if (is_file_input(node, input_name(node_path), self.inputs_path.parent)):
-                file_path = expand_relative(get_path(node), self.inputs_path.parent)
-                suffixes = secondary_file_suffixes(cwl_definition, input_name(node_path))
-                secondary_files = [FilePath(f) for f in secondary_file_paths(file_path, suffixes)]
-                file_inputs.append(FileInput(file_path, node_path, secondary_files))
-            return node
-
-        walk_object(self.inputs, process_node)
-        return file_inputs
+    def file_input(self, file_path, node_path):
+        suffixes = secondary_file_suffixes(self.definition, input_name(node_path))
+        secondary_files = [FilePath(f) for f in secondary_file_paths(file_path, suffixes)]
+        return FileInput(file_path, node_path, secondary_files)
 
 
 def make_workflow_language(definition_path, inputs_path):
