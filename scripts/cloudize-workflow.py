@@ -175,8 +175,17 @@ class WDL(WorkflowLanguage):
         return wdl.load(str(self.definition_path), deps_paths)
 
     def postprocess_inputs(self, processed_inputs):
-        definition = self._load_definition()
-        return prepend_workflow_name(processed_inputs, definition)
+        return self._prepend_workflow_name(processed_inputs)
+
+    def _prepend_workflow_name(self, obj):
+        def idempotent_prepend(s, prefix):
+            """Prepend a . prefix iff no . prefix already exists."""
+            if len(s.split(".")) == 1:
+                return f"{prefix}.{s}"
+            else:
+                return s
+        wf_name = self._load_definition().workflow.name
+        return {idempotent_prepend(k, wf_name): v for k, v in obj.items()}
 
 
 class CWL(WorkflowLanguage):
@@ -195,19 +204,6 @@ def make_workflow_language(definition_path, inputs_path):
         return CWL(definition_path, inputs_path)
     else:
         return WDL(definition_path, inputs_path)
-
-
-# ---- WDL specific ----------------------------------------------------
-
-def prepend_workflow_name(obj, wdl_definition):
-    def idempotent_prepend(s, prefix):
-        """Prepend a . prefix iff no . prefix already exists."""
-        if len(s.split(".")) == 1:
-            return f"{prefix}.{s}"
-        else:
-            return s
-    wf_name = wdl_definition.workflow.name
-    return {idempotent_prepend(k, wf_name): v for k, v in obj.items()}
 
 
 # ---- CWL specific ----------------------------------------------------
