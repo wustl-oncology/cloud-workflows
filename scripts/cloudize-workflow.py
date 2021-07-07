@@ -258,16 +258,16 @@ def cloudize(bucket, wf_path, inputs_path, output_path, dryrun=False):
     wf_inputs = yaml.load(inputs_path)
     file_inputs = parse_file_inputs(wf_path, wf_inputs, inputs_path.parent)
 
-    # Generate new YAML file
-    new_yaml = deepcopy(wf_inputs)
+    # Generate new inputs file
+    new_input_obj = deepcopy(wf_inputs)
     for f in file_inputs:
-        set_path(new_yaml, f, str(f"gs://{bucket.name}/{f.file_path.cloud}"))
+        set_path(new_input_obj, f, str(f"gs://{bucket.name}/{f.file_path.cloud}"))
 
     if wf_path.suffix == ".wdl":
         wdl_definition = load_wdl_definition(wf_path)
-        new_yaml = prepend_workflow_name(new_yaml, wdl_definition)
+        new_input_obj = prepend_workflow_name(new_input_obj, wdl_definition)
 
-    yaml.dump(new_yaml, output_path)
+    yaml.dump(new_input_obj, output_path)
     print(f"Yaml dumped to {output_path}")
 
     # Upload all the files
