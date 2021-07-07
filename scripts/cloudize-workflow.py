@@ -154,9 +154,9 @@ class WorkflowLanguage:
     def find_file_inputs(self):
         # build inputs list from original crawl
         if self.definition_path.suffix == ".cwl":
-            file_inputs = find_file_inputs_cwl(self.definition_path, self.inputs, self.inputs_path)
+            file_inputs = find_file_inputs_cwl(self)
         else:
-            file_inputs = find_file_inputs_wdl(self.inputs, self.inputs_path.parent)
+            file_inputs = find_file_inputs_wdl(self)
         return file_inputs
 
 
@@ -178,18 +178,16 @@ def prepend_workflow_name(obj, wdl_definition):
     return {idempotent_prepend(k, wf_name): v for k, v in obj.items()}
 
 
-def find_file_inputs_wdl(wf_inputs, inputs_file_path):
+def find_file_inputs_wdl(workflow):
     file_inputs = []
 
     def process_node(node, node_path):
-        if (is_file_input(node, input_name(node_path), inputs_file_path)):
-            file_path = expand_relative(get_path(node), inputs_file_path)
+        if (is_file_input(node, input_name(node_path), workflow.inputs_path.parent)):
+            file_path = expand_relative(get_path(node), workflow.inputs_path.parent)
             file_inputs.append(FileInput(file_path, node_path))
-        else:
-            print(f"not file_input node={node} input_name({node_path}) => {input_name(node_path)}")
         return node
 
-    walk_object(wf_inputs, process_node)
+    walk_object(workflow.inputs, process_node)
     return file_inputs
 
 
@@ -219,8 +217,8 @@ def find_file_inputs_cwl(workflow):
     file_inputs = []
 
     def process_node(node, node_path):
-        if (is_file_input(node, input_name(node_path), workflow.inputs_path)):
-            file_path = expand_relative(get_path(node), workflow.inputs_path)
+        if (is_file_input(node, input_name(node_path), workflow.inputs_path.parent)):
+            file_path = expand_relative(get_path(node), workflow.inputs_path.parent)
             suffixes = secondary_file_suffixes(cwl_definition, input_name(node_path))
             secondary_files = [FilePath(f) for f in secondary_file_paths(file_path, suffixes)]
             file_inputs.append(FileInput(file_path, node_path, secondary_files))
