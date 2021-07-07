@@ -165,12 +165,19 @@ class WorkflowLanguage:
         walk_object(self.inputs, process_node)
         return file_inputs
 
+    def postprocess_inputs(self, processed_inputs): return processed_inputs
+
 
 class WDL(WorkflowLanguage):
     def load_definition(self):
         path_dir = self.definition_path.parent
         deps_paths = [str(path_dir), str(path_dir.parent)]
         return wdl.load(str(self.definition_path), deps_paths)
+
+    def postprocess_inputs(self, processed_inputs):
+        definition = self.load_definition()
+        return prepend_workflow_name(processed_inputs, definition)
+
 
 class CWL(WorkflowLanguage):
     def __init__(self, definition_path, inputs_path):
@@ -257,6 +264,13 @@ def set_cloud_paths(file_inputs):
             file_path.set_cloud(strip_ancestor(file_path.local, ancestor))
 
 
+def cloudize_file_paths(inputs, bucket, file_inputs):
+    new_input_obj = deepcopy(inputs)
+    for f in file_inputs:
+        set_path(new_input_obj, f, str(f"gs://{bucket.name}/{f.file_path.cloud}"))
+    return new_input_obj
+
+
 def cloudize(bucket, wf_path, inputs_path, output_path, dryrun=False):
     """Generate a cloud version of an inputs YAML file provided that file
     and its workflow's CWL definition."""
@@ -267,15 +281,11 @@ def cloudize(bucket, wf_path, inputs_path, output_path, dryrun=False):
     set_cloud_paths(file_inputs)
 
     # Generate new inputs file
-    new_input_obj = deepcopy(workflow.inputs)
-    for f in file_inputs:
-        set_path(new_input_obj, f, str(f"gs://{bucket.name}/{f.file_path.cloud}"))
+    cloudized_inputs = workflow.postprocess_inputs(
+        cloudize_file_paths(workflow.inputs, bucket, file_inputs)
+    )
 
-    if wf_path.suffix == ".wdl":
-        wdl_definition = load_wdl_definition(workflow.definition_path)
-        new_input_obj = prepend_workflow_name(new_input_obj, wdl_definition)
-
-    yaml.dump(new_input_obj, output_path)
+    yaml.dump(cloudized_inputs, output_path)
     print(f"Yaml dumped to {output_path}")
 
     # Upload all the files
