@@ -6,6 +6,10 @@ variable network_id {
   type = string
 }
 
-variable ssh_tag {
+variable source_ranges {
+  type = list(string)
+}
+
+variable target_tag {
   type = string
 }
