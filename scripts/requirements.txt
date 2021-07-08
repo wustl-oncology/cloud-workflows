@@ -1,5 +1,6 @@
 google-cloud-storage
 cwl_utils
+miniwdl == 1.2.1
 
 # major API change after 0.15.0
 ruamel.yaml >= 0.15.0

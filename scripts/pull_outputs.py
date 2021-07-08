@@ -12,17 +12,21 @@ DEFAULT_OUTPUT_DIR = './outputs'
 
 GCS = storage.Client()
 
+
 # --- Local file system
 
 def ensure_parent_dir_exists(filename):
     os.makedirs(filename.parent, exist_ok=True)
 
+
 # --- Google Cloud Storage
 
 GCS_URI = r'gs:\/\/([^\/]+)\/(.+)'
 
+
 def bucket_name(gcs_uri):
     return re.search(GCS_URI, gcs_uri).group(1)
+
 
 def storage_object_name(gcs_uri):
     return re.search(GCS_URI, gcs_uri).group(2)
@@ -32,6 +36,7 @@ def download_from_gcs(src, dest):
     ensure_parent_dir_exists(dest)
     GCS.bucket(bucket_name(src)).blob(storage_object_name(src)).download_to_filename(dest)
     print(f"Downloaded {src} to {dest}")
+
 
 # --- Cromwell server
 
@@ -52,6 +57,7 @@ def extract_file_locations(outputs_response):
                        for sf in output['secondaryFiles']]
     return primary_files + secondary_files
 
+
 # --- Do the download
 
 def download_locations(output_dir, gcs_locations):
@@ -65,7 +71,7 @@ def download_outputs(workflow_id, output_dir, cromwell_url):
         download_from_gcs(src, dest)
 
 
-if __name__=="__main__":
+if __name__ == "__main__":
     parser = ArgumentParser(description="Download Cromwell outputs for a given workflow.")
     parser.add_argument("workflow_id", help="the UUID of the workflow run to pull outputs for.")
     parser.add_argument("-o", "--output",

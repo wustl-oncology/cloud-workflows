@@ -1,5 +1,7 @@
 VM_NAME=cromwell
-DB_INSTANCE=cromwell
+
+DB_INSTANCE=cromwell1
+DEPLOY_NAME=cromwell
 
 case $1 in
     "start")
