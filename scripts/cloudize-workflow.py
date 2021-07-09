@@ -299,15 +299,20 @@ def default_output(inputs_filename):
 
 
 if __name__ == "__main__":
-    parser = ArgumentParser(description="Prepare a CWL workload for cloud processing. Upload Files and generate new inputs.yaml.")
+    parser = ArgumentParser(description="""Prepare a CWL workload for cloud processing.
+Upload File inputs and generate new workflow_inputs file.""")
+
     parser.add_argument("bucket",
                         help="the name of the GCS bucket to upload workflow inputs")
     parser.add_argument("workflow_definition",
                         help="path to the .cwl file defining your workflow")
     parser.add_argument("workflow_inputs",
-                        help="path to the .yaml file specifying your workflow inputs")
+                        help="path to the YAML formatted file specifying your workflow inputs")
     parser.add_argument("-o", "--output",
-                        help="path to write the updated workflow inputs, defaults to the value of workflow_inputs with _cloud before the extension.")
+                        help="""Path to write the updated workflow inputs.
+Defaults to workflow_inputs with _cloud before the extension.
+If this value ends with .json, JSON format used instead of YAML.""")
+
     parser.add_argument("--dryrun", help="prevent actual upload to GCS.")
     args = parser.parse_args()
 

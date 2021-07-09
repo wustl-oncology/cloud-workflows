@@ -75,13 +75,13 @@ if __name__ == "__main__":
     parser = ArgumentParser(description="Download Cromwell outputs for a given workflow.")
     parser.add_argument("workflow_id", help="the UUID of the workflow run to pull outputs for.")
     parser.add_argument("-o", "--output",
-                        help="directory path to download outputs to. Defaults to {DEFAULT_OUTPUT_DIR}")
+                        help=f"directory path to download outputs to. Defaults to {DEFAULT_OUTPUT_DIR}")
     parser.add_argument("--cromwell-url",
-                        help=f"URL of the relevant Cromwell server. Defaults to {DEFAULT_CROMWELL_URL}")
+                        help=f"URL of the relevant Cromwell server. Honors env var CROMWELL_URL. Defaults to {DEFAULT_CROMWELL_URL}")
     args = parser.parse_args()
 
     output_dir = args.output or DEFAULT_OUTPUT_DIR
-    cromwell_url = args.cromwell_url or DEFAULT_CROMWELL_URL
+    cromwell_url = args.cromwell_url or os.environ('CROMWELL_URL') or DEFAULT_CROMWELL_URL
 
     download_outputs(
         args.workflow_id,

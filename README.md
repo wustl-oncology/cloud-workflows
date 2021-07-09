@@ -1,220 +1,269 @@
 # Usage
 
-## Quickstart/Cheatsheet
+Most interaction with the Cromwell server will be one of
+1. Preparing a workflow for submission
+2. Submitting that workflow
+3. Querying/fetching its output
 
-1. cloudize-workflow by running modified `bsub_cloudize.sh` with
-   values for your user and your target workflow
-1. Start workflow execution [from Swagger](http://34.69.35.61:8000/swagger).
-   Be careful about relative paths in workflowSource.cwl and workflowDependencies.zip
-1. pull_outputs from completed workflow outputs
+## Preparing a workflow for submission
 
+### Staging Input Files
 
-## Idle Resources
+To submit a workflow to the cloud Cromwell server, all its input files
+must be located on a GCS cloud bucket the server has access to. In
+this case most likely `griffith-lab-cromwell`. A helper script,
+`scripts/cloudize-workflow.py` will handle this step. It parses a
+workflow definition (either CWL or WDL), finds all the File inputs,
+uploads them, and generates a new workflow inputs file with the new
+cloud paths.
 
-To prevent idle costs, resources should be spun down when not in use.
-To ensure existing infrastructure is running:
+    python3 scripts/cloudize-workflow.py \
+        griffith-lab-cromwell
+        /path/to/workflow/definition \
+        /path/to/workflow/inputs
 
-    sh infra.sh start
+See the script's documentation or help message for more details.
 
-Similary, to freeze them at the end of the day:
+### Zip Dependencies
 
-    sh infra.sh stop
+When running on the cloud, workflow dependencies must be zipped to be
+sent along with the root workflow.
 
+Zipping is kind of finnicky and is best automated as done through
+`scripts/submit_workflow.sh`.
 
-## cloudize-workflow.py script
+Assuming a file structure as in analysis-workflows:
 
-A script is provided at `cloudize-workflow.py` to automate the
-transition of a predefined workflow to use with the GCP Cromwell
-server. Provided a bucket, CWL workflow definition, and inputs yaml,
-the script will upload all specified File paths to the specified GCS
-bucket, and generate a new inputs yaml with those file paths replaced
-with their GCS path.
+For WDL files, zip the `definitions` directory. Modify calling workflow
+file to remove relative imports, they're disallowed.
 
-To use the script, make sure you're authenticated for the Google Cloud
-CLI and have permissions to write to the specified bucket.
+    cd analysis-wdls/definitions
+    zip -r $ZIP .
 
-The command is as follows:
+For CWL files, there are two options. Either do the same as WDL above,
+_or_ zip the directory containing your workflow, and its parent, so
+those relative paths become available in the zip.
 
-    python3 cloudize-workflow.py <bucket-name> /path/to/workflow /path/to/inputs
+    cd analysis-workflows/definitions/pipelines
+    zip -r $ZIP . ..
 
-There is an optional argument to specify the path of your output file
+## Submitting that workflow
 
-    --output=/path/to/output
+To submit a workflow to the server, send a POST request to
+`$CROMWELL_URL/api/workflows/v1`. There are many options for doing
+this POST request but the main ones are:
 
-This script should work for both CWL and WDL files. It expects a YAML
-formatted input, and will output YAML format by default, unless
-specified output file ends with .json which will generated JSON.
+a) Use the [Swagger endpoint][swagger-endpoint]
+b) modify the `scripts/submit_workflow.sh` to work in your setup, this
+will handle both zip and curl.
+c) use your preferred zip+curl equivalent
 
-Files will be uploaded to a personal path, roughly
-`gs://<bucket>/<whoami>/<date>/` and from that root will contain
-whatever folder structure is shared, e.g. files `/foo/bar`,
-`/foo/buux/baz` would upload to paths `gs://<bucket>/<whoami>/<date>/bar`
-and `gs://<bucket>/<whoami>/<date>/buux/baz`
+### Cromshell
 
-For now the script assumes a happy path. Files that don't exist will
-be skipped and emit a warning. Uploads that fail with an exception
-will cause the script to terminate early. Because of the by-date
-personal paths, reattempted runs should overwrite existing files
-instead of duplicating them.
+Cromshell is very useful for interacting with a Cromwell server if
+you're more comfortable on the command-line or want to automate any of
+the interactions. The drawback is that some parts of it like workflow
+submit only work with WDL.
 
-Improvements to be done later regarding resilient uploads:
-If one file fails, the remaining should still be attempted. For any
-files the script fails to upload, either because the attempt failed or
-because the program terminated early, persist that knowledge somewhere
-and either expand or accompany this script with an uploading
-reattempt.
 
+## Querying/Fetching its output
 
-### Gotchas
+As above, anything that means "send equivalent request to server" will
+do for things like checking status or locations of outputs. For
+helpers that will actually retrieve the files for you,
+`scripts/pull_outputs.py` will request the locations of all outputs
+and download them. Cromshell is most useful in this space.
 
-- script is not resilient or idempotent. If an upload fails, the
-  script stops. If the script stops, it will not skip previous
-  uploads. Both of these are characeristics I'd like to add later.
+# Terraform
 
-- script assumes any path to a file will be accessible from the
-  script's run location. If the inputs YAML has relative paths, the
-  script should be run in the same dir as that inputs YAML.
+[Terraform][terraform-docs] is a declarative Infrastructure as Code
+tools. In our case it's used to manage all of our infrastructure sans
+a single compute VM instance, see directory `../jinja` for information
+regarding that instance. Everything contained in this directory is a
+fairly standard Terraform setup intended to be run on a local machine,
+using a remote statefile stored in Google Cloud Storage (GCS).
 
-- script has no way of expanding custom types. If a custom type
-  includes a secondaryFiles definition, the script will not see that
-  definition and won't know to upload those files.
+## Authentication
 
-Any problem that results in a file not being uploaded can be manually
-resolved by copying that file to the GCS path listed in the generated
-YAML.
+Terraform actions are performed through the Terraform service account
+for Google Cloud Platform (GCP). In order to use this service account,
+you'll need a JSON file, `terraform-service-account.json`. This key
+can be created in [the Service Account console][service-accounts].
 
-    gsutil cp <that-file-location> <gcs-destination-in-cloud-yaml>
+If this service account doesn't yet exist, it needs the following
+privileges:
+    - Editor
+    - Security Admin
+    - Project IAM Admin
 
+You'll also need command-line [authentication for gcloud][auth-login].
 
-#### Directory Inputs
+    gcloud auth login
 
-For input vep\_cache\_dir and likely any future Directory inputs,
-extra care will need to be taken.
+You may need to do some additional first-time configuration with
+`gcloud config`.
 
-CWL for tasks using the directory will need to be modified to have a
-`tmpdirMin` value that can hold the entire contents of that directory,
-in addition to its other constraints.
+## Setting Variables
 
-Because they can be such a large size, Directory inputs are not
-automatically handled by cloudize-workflow.py. This may come later
-after more robust handling has been figured out. In the meantime,
-manually upload whatever directory/subdirectories needed using
+Variables for Terraform can be passed in a few ways, but for
+consistency it's recommended to do use `.tfvars` files. The repo
+contains a `terraform.tfvars` for unsensitive values. Sensitive values
+should be kept in an ignored file, `secrets.auto.tfvars` which
+Terraform will load automatically. Sensitive variables are marked as
+such in their definition within a `variables.tf`.
 
-    gsutil cp -r /path/to/dir gs://griffith-lab-cromwell/
+## Finding resource values
 
-This process can be sped up by using the `-m` flag, though it may be
-rocky and fail with a threading issue. Omitting it seems easier,
-though slower. Additionally, a modified version of
-`scripts/run_bsub.sh` could be used to execute this command.
+A small handful of resource values are needed outside of
+Terraform. These values are defined in `output.tf` and can be viewed
+with the following command
 
+    terraform output
 
-### Later Improvements
+More detailed state information for troubleshooting can be seen using
 
-- Resilient uploads. Multiple upload attempts, attempt all even if
-  early fail, some restart mechanism.
-- Add optional `root_dir` flag for handling relative paths. Assume
-  `root_dir` is location of `inputs_yaml`
+    terraform show
 
+## Changing Infrastructure
 
-## Cromwell API for workflow interactions
+Without delving into a full tutorial of how Terraform works which is
+available with [their docs][terraform-docs], the main relevant points
+are that nearly every cloud resource has a 1:1 mapping with the
+[Google provider][terraform-google]. Changes to existing resources, or
+creation of new resources, is probably just going to be done directly
+off of those docs.
 
-The simplest way to kick off a workflow will be via the [Cromwell
-server Swagger page](http://34.69.35.61:8000/swagger). If the exact
-request is already known, tools like wget, curl, or
-[cromshell](https://github.com/broadinstitute/cromshell)  can be used
-instead for a CLI experience.
+Make use of modules as necessary to abstract relevant blocks of
+infrastructure. Each directory within this dir including itself
+contain up to three .tf files: `main.tf`, `variables.tf`, and
+`output.tf`. They may or may not contain directories with the same
+constraints. Those directories are modules to separate concerns. See
+any of the existing modules for examples.
 
-The main endpoint here is `POST /api/workflows/v1` to start a
-workflow. You'll want to specify the following params:
-- workflowSource: attach your CWL workflow definition
-- workflowInputs: attach your cloudized inputs yaml, generated by
-  cloudize-workflow.py
-- workflowType: set to CWL
-- workflowTypeVersion: set to v1.0
-- workflowDependencies: attach a zip of your dependencies* see below
+After changes have been made, a combination of `terraform plan` and
+`terraform apply` should be used. `plan` for spot-checking as changes
+are made that what will happen is expected, and `apply` to actually
+persist those changes. `apply` will perform the same action as `plan`
+as a preliminary step.
 
-For the zip at workflowDependencies, it's assumed that this zip will
-sit at the same level as your workflow and inputs. If using
-analysis-workflows, they'll be located at e.g. `./tools/foo` or
-`tools/foo`. Your CWL may need slight tweaking if the relative paths
-don't match this assumption, which would be the case if you're using a
-workflow directly from within analysis-workflows for example.
+As needed, there are options to the command to only target certain
+resources, use alternate variable settings, auto-approve, etc.
 
+# Jinja
 
-## pull_outputs.py script
+Files in the `jinja/` directory are all related to defining a Google
+deployment managing one compute VM for the Cromwell service.
 
-A script is provided at `pull_outputs.py` to extract the outputs of a
-workflow from the Cromwell server and GCS bucket. Provided a workflow
-ID, given to the user by Cromwell at time of workflow submission, the
-script will query the Cromwell server for outputs of the workflow and
-download them to local file storage.
+## Performing the Deployments
 
-To use the script, make sure you're authenticated for the Google Cloud
-CLI and have permissions to read from the buckets containing the
-output files. This may vary depending on the Cromwell server
-requested, though the bucket is most likely static for that server.
+Deployments refers to [Google Deployment Manager][google-deployment-manager].
+Most interaction is going to be done through the command
 
-The command is as follows:
+    gcloud deployment-manager deployments
 
-    python3 pull_outputs.py <workflow_id>
+For more advanced/specific scenarios, the command should be used
+directly. For the majority of the cases, the `infra.sh` script
+commands `create-deploy`, `update-deploy` should be used.
 
-There are optional arguments to specify which local directory to store
-outputs, and to specify the URL to hit for the Cromwell server.
+## What do the files each do?
+### deployment.yaml
 
-The script has little in the way of resiliency and assumes that there
-will be a proper response for the outputs of the requested workflow
-ID. Deviations from the happy path will probably result in an
-arbitrary Python error instead of a helpful message, but nothing
-harmful will happen since it's just a simple download script.
+This is essentially our entrypoint and where variable values are kept,
+beneath the resources.properties path. This is the file sent to gcloud
+deployment-manager as the configuration for the deployment. Certain
+values within this file refer to existing infrastructure managed by
+Terraform. Pull the outputs from Terraform to find their values.
 
+### cromwell.jinja.schema
 
-# Infrastructure
+Inputs are defined here, as well as file imports. The only time this
+file will change is if which files to import are changed, or if the
+type/existence of any inputs change.
 
-Google Cloud infrastructure is managed through [a fork of the Hall Lab
-Cromwell Deployment repo](https://github.com/hall-lab/cromwell-deployment).
+### cromwell.jinja
 
-Instructions for how to create and interact with the infrastructure
-can be found in the README.md of that repo.
+The actual resource definitions. Values within braces `{{ }}` are
+interpolated from `deployment.yaml`. Files passed as metadata have
+certain values string-replaced here, e.g. `replace("@CROMWELL-VERSION@", ...)`.
+All such instances are `@` enclosed.
 
-Files relating to Terraform can be ignored. They're sitting around
-mostly in case the decision is made to switch back and could be
-restored or removed at any point.
+### cromwell.service
 
-# Dockerfile
+This file defines a systemd service unit for the Cromwell
+service. This is what enables following logs with `journalctl` among
+other conveniences.
 
-There is a Dockerfile provided to work with `cloudize-workflow.py` in
-storage1. It's extremely barebones -- it just copies the requirements,
-pip installs them, copies the script, and runs it.
+### cromwell.conf
 
-Because the Dockerfile is so barebones, there are additional
-requirements for running it:
-- Pass in the env var GOOGLE_APPLICATION_CREDENTIALS to auth the SDK
-- Mount the volume(s) your workflow files are under
-- Pass script arguments as if `docker run` were the script command
+This file is the same here as anywhere else. This is the configuration
+file for the Cromwell server. This file will have some values
+interpolated within braces `{{ }}` and written to the metadata of the
+created compute VM, to be used on startup.
 
-Luckily, LSF handles most of this through bsub. Excluding the more
-general settings like memory, output, and user info, your bsub call
-should look roughly like this. This assumes that LSF_DOCKER_VOLUMES
-and GOOGLE_APPLICATION_CREDENTIALS are set accordingly
-```
-bsub -a 'docker(jackmaruska/cloudize-workflow:0.0.1)' 'python3 /opt/cloudize-workflow.py [script-args]'
-```
-The exact name of the docker image may change, or you can build and
-push to your own Dockerhub repo.
+### server_startup.py
 
+This is the actual entrypoint for the compute VM, and is automatically
+run when Google hands control of the booting VM back to us. It handles
+additional setup like pulling the VM's metadata to write passed files
+to disk, downloads dependencies like Cromwell jar, less, etc., and
+starts the systemctl service.
 
+[google-deployment-manager]:https://cloud.google.com/deployment-manager/docs
+[auth-login]:https://cloud.google.com/sdk/gcloud/reference/auth/login
+[service-accounts]:https://console.cloud.google.com/iam-admin/serviceaccounts/
+[swagger-endpoint]:http://35.188.155.31:8000/swagger/index.html?url=/swagger/cromwell.yaml
+[terraform-docs]:https://www.terraform.io/docs/index.html
+[terraform-google]:https://registry.terraform.io/providers/hashicorp/google/latest/docs
 
-# Potential Additional Tools
+# Scripts
 
-### [Cromshell](https://github.com/broadinstitute/cromshell)
-Submit Cromwell jobs from the shell.
-Specify which server via env var `CROMWELL_URL`
+Some helper scripts for interacting with the Cromwell server.
 
-### [WOMtool](https://cromwell.readthedocs.io/en/stable/WOMtool/)
-Workflow Object Model tool. Almost all features WDL-only
+## pull\_outputs.py
 
-### [Calrissian](https://github.com/Duke-GCB/calrissian)
-CWL implementation inside a Kubernetes cluster. Alternative approach
-that may yield a service with better scalability. Drawback is that it
-seems to be fully eschewing Cromwell, which sinks interop with Terra
-and other Cromwell-related tools.
+pull_outputs.py will query a Cromwell server for the outputs
+associated with a workflow, and download them. For details on usage,
+see `python3 scripts/pull_outputs.py --help`.
+
+Requirements to run this script:
+ - able to reach the Cromwell server's endpoints
+ - authenticated by Google
+ - authorized to read files from specified GCS bucket
+
+## cloudize-workflow.py
+
+cloudize-workflow.py will accept a workflow, its inputs, and a GCS
+bucket, and prepare a new inputs file to run that workflow on the
+cloud. The script assumes the workflow definition is cloud-ready, the
+file parameters in the input file are all available, and you have
+access to upload to a GCS bucket. For details on usage, see `python3
+scripts/cloudize-workflow.py --help`
+
+Requirements to run this script:
+ - access to read all file paths specified in workflow inputs
+ - authenticated by Google
+ - authorized to write files to specified GCS bucket
+
+## submit_workflow.sh
+
+This script is the least user-ready script but it's still available
+as-needed. It's essentially just composing the steps "zip the workflow
+dependencies" and "POST to the server with curl".  Recommendation is
+not to use this script directly until a more user-friendly version is
+made, but modify or extract from it what is needed to zip workflow
+dependencies for your case.
+
+It's current iteration is expected to be used as follows
+
+Given the location of a workflow definition, perform a zip on a
+pre-defined location for WDL workflows (ANALYSIS\_WDLS), then curl with
+those inputs, the newly generated zip, and a pre-defined
+WORKFLOW\_OPTIONS file.
+
+## Docker Image
+
+These scripts are contained within a Docker container image, to they
+can be used asynchronously with bsub. This container image can be
+found on dockerhub at `jackmaruska/cloudize-workflow`. Using latest is
+always suggested but semantic versioning will be followed in case
+prior behavior is needed.
