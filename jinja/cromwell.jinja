@@ -12,7 +12,7 @@ resources:
           - https://www.googleapis.com/auth/cloud-platform
     tags:
       items:
-        - cromwell-ssh-allowed
+        - {{ properties['network_target_tag'] }}
     disks:
       - deviceName: boot
         type: PERSISTENT

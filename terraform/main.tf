@@ -39,6 +39,8 @@ module "cromwell" {
   zone       = local.zone
 
   network_id = google_compute_network.custom-default.id
+  allowed_ip_ranges = [var.washu_vpn_range]
+  cromwell_port = var.cromwell_port
 
   db_instance_type = "db-n1-standard-2"
   db_root_password = var.cromwell_db_root_password

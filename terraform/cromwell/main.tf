@@ -1,8 +1,3 @@
-locals {
-  # should match webservice.port in cromwell.conf
-  cromwell_port = 8000
-}
-
 # ---- Server service account ------------------------------------------
 
 resource "google_service_account" "server" {
@@ -39,9 +34,10 @@ resource "google_service_account_iam_binding" "compute_use_server" {
 
 module "network" {
   source  = "./network"
-  ssh_tag       = var.ssh_allowed_tag
-  cromwell_port = local.cromwell_port
+  target_tag    = var.target_network_tag
+  cromwell_port = var.cromwell_port
   network_id    = var.network_id
+  source_ranges = var.allowed_ip_ranges
 }
 
 module "bucket" {

@@ -10,8 +10,8 @@ resource "google_compute_address" "static_ip" {
   address_type = "EXTERNAL"
 }
 
-resource "google_compute_firewall" "default_ssh_allowed" {
-  name = "default-ssh-allowed"
+resource "google_compute_firewall" "cromwell_firewall" {
+  name = "cromwell-firewall"
   network = var.network_id
   allow {
     # what do we need icmp for? monitoring?
@@ -19,8 +19,12 @@ resource "google_compute_firewall" "default_ssh_allowed" {
   }
   allow {  # allow SSH
     protocol = "tcp"
-    ports = ["22", var.cromwell_port]
+    ports = ["22"]
   }
-  source_ranges = ["0.0.0.0/0"]  # all IPs allowed
-  target_tags = [var.ssh_tag]
+  allow {  # http, https
+    protocol = "tcp"
+    ports = [var.cromwell_port, "80", "443"]
+  }
+  source_ranges = var.source_ranges
+  target_tags = [var.target_tag]
 }
