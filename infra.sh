@@ -2,6 +2,9 @@ VM_NAME=cromwell
 
 DB_INSTANCE=cromwell1
 DEPLOY_NAME=cromwell
+DOCKER_IMAGE=jackmaruska/cloudize-workflow
+
+SRC_DIR="$(dirname "${BASH_SOURCE[0]}")"
 
 SRC_DIR="$(dirname "${BASH_SOURCE[0]}")"
 
@@ -25,4 +28,17 @@ case $1 in
     "update-deploy")
         echo "Updating previous deployment"
         gcloud deployment-manager deployments update $DEPLOY_NAME --config $SRC_DIR/jinja/deployment.yaml
+        ;;
+    "build-and-tag")
+        echo "Building container image tagged latest"
+        docker build $SRC_DIR/scripts/ -t $DOCKER_IMAGE:latest
+        # this one will be cached, basically just doing a tag without having to find image ID
+        echo "Building container image tagged $2"
+        docker build $SRC_DIR/scripts/ -t $DOCKER_IMAGE:$2
+
+        echo "Pushing container image tagged latest"
+        docker push $DOCKER_IMAGE:latest
+        echo "Pushing container image tagged $2"
+        docker push $DOCKER_IMAGE:$2
+        ;;
 esac
