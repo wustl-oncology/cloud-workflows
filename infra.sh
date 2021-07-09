@@ -6,8 +6,6 @@ DOCKER_IMAGE=jackmaruska/cloudize-workflow
 
 SRC_DIR="$(dirname "${BASH_SOURCE[0]}")"
 
-SRC_DIR="$(dirname "${BASH_SOURCE[0]}")"
-
 case $1 in
     "start")
         echo "Starting database $DB_INSTANCE"
