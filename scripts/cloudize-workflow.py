@@ -12,6 +12,8 @@ from getpass import getuser
 from pathlib import Path
 
 
+# TODO: if string type, wrap with quotes
+# TODO: remove object wrapping for File types
 # IMPROVE: be able to drop and pick up the upload somehow.
 # long running process, may break near end
 
@@ -262,7 +264,7 @@ def cloudize_file_paths(inputs, bucket, file_inputs):
 def write_new_inputs(new_input_obj, output_path):
     """Write a Python object to a file. Defaults to YAML format unless output_path ends .json"""
     if output_path.suffix == ".json":
-        with open(output_path) as f:
+        with open(output_path, 'w+') as f:
             f.write(json.dump(new_input_obj, output_path))
     else:
         yaml.dump(new_input_obj, output_path)

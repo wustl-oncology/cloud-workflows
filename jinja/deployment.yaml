@@ -13,7 +13,7 @@ resources:
       region: us-central1
       network_target_tag: "cromwell-server"
       vm_boot_disk_size: 10
-      vm_machine_type: n1-standard-4
+      vm_machine_type: custom-1-4608
       vm_name: cromwell
       vm_service_account: "cromwell-server@griffith-lab.iam.gserviceaccount.com"
       vm_static_ip_address: "35.188.155.31"

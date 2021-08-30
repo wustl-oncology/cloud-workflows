@@ -75,9 +75,6 @@ def install_cromwell():
 
 def install_cromwell_config():
     fn = os.path.join(CONFIG_DIR, 'PAPI.v2.conf')
-    if os.path.exists(fn):
-        print("Already installed cromwell PAPI v2 config...SKIPPING")
-        return
     sys.stderr.write("Install cromwell PAPI v2 config...")
     from jinja2 import Template
     papi_template = Template(_fetch_instance_info(name='papi-v2-conf'))

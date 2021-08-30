@@ -27,7 +27,9 @@ EOF
 resource "google_service_account_iam_binding" "compute_use_server" {
   service_account_id = google_service_account.server.name
   role = "roles/iam.serviceAccountUser"
-  members = ["serviceAccount:${google_service_account.compute.email}"]
+  members = concat([
+    "serviceAccount:${google_service_account.compute.email}"
+  ], formatlist("serviceAccount:%s", var.dependent_lab_service_accounts))
 }
 
 # ---- Modules ---------------------------------------------------------
@@ -44,6 +46,8 @@ module "bucket" {
   source  = "./bucket"
   project = var.project
   project_id = var.project_id
+  user_emails = var.user_emails
+  dependent_lab_service_accounts = var.dependent_lab_service_accounts
   compute_account_email = google_service_account.compute.email
   server_account_email  = google_service_account.server.email
 }

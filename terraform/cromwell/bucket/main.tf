@@ -26,6 +26,20 @@ resource "google_storage_bucket_iam_member" "compute_binding" {
   member = "serviceAccount:${var.compute_account_email}"
 }
 
+resource "google_storage_bucket_iam_member" "user_read_access" {
+  for_each = toset(var.user_emails)
+  bucket   = google_storage_bucket.cromwell_executions.name
+  role     = "roles/storage.objectViewer"
+  member   = "user:${each.key}"
+}
+
+resource "google_storage_bucket_iam_member" "service_account_read_access" {
+  for_each = toset(var.dependent_lab_service_accounts)
+  bucket   = google_storage_bucket.cromwell_executions.name
+  role     = "roles/storage.objectViewer"
+  member   = "serviceAccount:${each.key}"
+}
+
 # Legacy permission bindings
 resource "google_storage_bucket_acl" "cromwell_executions" {
   bucket = google_storage_bucket.cromwell_executions.name

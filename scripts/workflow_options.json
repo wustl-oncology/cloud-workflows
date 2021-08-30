@@ -1,1 +1,7 @@
-{}
+{
+    "enable_ssh_access": true,
+    "default_runtime_attributes": {
+        "backend": "GriffithLab"
+    },
+    "backend": "GriffithLab"
+}

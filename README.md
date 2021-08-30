@@ -267,3 +267,96 @@ can be used asynchronously with bsub. This container image can be
 found on dockerhub at `jackmaruska/cloudize-workflow`. Using latest is
 always suggested but semantic versioning will be followed in case
 prior behavior is needed.
+
+# Using central server with a separate lab
+
+TODO: why you should do this
+
+## Add a backend provider
+
+The server uses the configuration file `jinja/cromwell.conf`.
+
+Under the path `backend.providers` add a new entry with configuration
+for the new lab.
+
+```conf
+...
+backend {
+  ...
+  providers  {
+    <NewProviderName> {
+      actor-factory = "cromwell.backend.google.pipelines.v2beta.PipelinesApiLifecycleActorFactory"
+      config {
+        project = <google-project-name>
+        root = <gcs-path>
+        genomics {
+          auth = "application-default"
+          compute-service-account = "<service-account-email>"
+          endpoint-url = "https://lifesciences.googleapis.com/"
+          location = "us-central1"
+        }
+
+        filesystems {
+          gcs {
+            auth = "application-default"
+            project = <google-project-name>
+            caching {
+              duplication-strategy = "reference"
+            }
+          }
+        }
+        include "papi_v2_reference_image_manifest.conf"
+      }
+
+    }
+  }
+  ...
+}
+...
+```
+
+Values within brackets need to be changed for each new lab.
+
+
+- NewProviderName
+
+Use the name for whatever group is associated with this
+configuration. This value is used in workflow-options.json to change
+which provider is used.
+
+- google-project-name
+
+Cromwell will refer to a GCS bucket or other resources. This is just
+the name of your GCP project as it appears in the console or CLI.
+
+- gcs-path
+
+Whatever GCS path to store Cromwell generated files. Constraint that
+service-account-email must be able to write to this bucket. A sub-path
+can be included if the bucket will be used for other files,
+e.g. inputs.
+
+- service-account-email
+
+Email address to a service account granted permissions required by the
+compute VMs. It should have a role of "iam.serviceAccountUser" and
+permissions to read/write on the bucket in gcs-path.
+
+## Checklist
+
+- [ ] Cloud Life Sciences API Enabled
+- [ ] Created a compute service account with project role Service Account
+      User and member permissions granting a role Service Account User
+      to the central server service account
+- [ ] Project IAM permissions for Cromwell server, role Life Sciences
+      Workflow Runner
+- [ ] Bucket created with role Storage Object Creator granted to your
+      compute and central server service accounts
+- [ ] Add your lab to Griffith Lab owned resources
+  + [ ] Configuration added to server .conf
+  + [ ] Service account email added to Terraform vars  (maybe?)
+- [ ] Specifying backend in submissions with workflow_options.json
+      (see which keys needed)
+
+Central server service account:
+`cromwell-server@griffith-lab.iam.gserviceaccount.com`

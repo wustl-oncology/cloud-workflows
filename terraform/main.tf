@@ -37,7 +37,10 @@ module "cromwell" {
   project_id = local.project_id
   region     = local.region
   zone       = local.zone
-
+  # ----- Permissions --------------------------------------------------
+  user_emails = var.cromwell_user_emails
+  dependent_lab_service_accounts = var.dependent_lab_service_accounts
+  # ----- Networking ---------------------------------------------------
   network_id = google_compute_network.custom-default.id
   allowed_ip_ranges = [var.washu_vpn_range]
   cromwell_port = var.cromwell_port

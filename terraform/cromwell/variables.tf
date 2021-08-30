@@ -15,6 +15,12 @@ variable "cromwell_port" {
   type = string
 }
 
+variable "dependent_lab_service_accounts" {
+  type = list(string)
+}
+
+# ---- Database --------------------------------------------------------
+
 variable "db_instance_type" {
   type = string
 }

@@ -10,3 +10,7 @@ variable cromwell_port {
 variable washu_vpn_range {
   type = string
 }
+
+variable dependent_lab_service_accounts {
+  type = list(string)
+}

@@ -63,7 +63,7 @@ zip_analysis_wdls && ZIP=$ANALYSIS_WDLS/zips/workflows.zip
 # +---------------------+
 # | Submitting workflow |
 # +---------------------+
-
+cat $WORKFLOW_OPTIONS
 set -o xtrace
 curl -v "$CROMWELL_URL/api/workflows/v1" \
      -F workflowSource=@${WORKFLOW_DEFINITION} \
