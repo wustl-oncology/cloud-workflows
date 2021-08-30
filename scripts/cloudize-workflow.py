@@ -90,8 +90,11 @@ def get_in(coll, path):
 
 def deepest_shared_ancestor(paths):
     ancestors = [set(path.resolve().parents) for path in paths]
-    shared_ancestors = ancestors[0].intersection(*ancestors[1:])
-    return max(shared_ancestors, key=lambda x: len(str(x)))
+    if ancestors:
+        shared_ancestors = ancestors[0].intersection(*ancestors[1:])
+        return max(shared_ancestors, key=lambda x: len(str(x)))
+    else:
+        return None
 
 
 def is_ancestor(path, ancestor):
