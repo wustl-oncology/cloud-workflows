@@ -13,10 +13,14 @@ DEFAULT_OUTPUT_DIR = './outputs'
 GCS = storage.Client()
 
 
-# --- Local file system
+# --- File system
 
 def ensure_parent_dir_exists(filename):
     os.makedirs(filename.parent, exist_ok=True)
+
+def file_extensions(path):
+    "Extract all file extensions, e.g. 'foo.bam.bai' will return '.bam.bai'"
+    return ".".join(path.split("/")[-1].split(".")[:1])
 
 
 # --- Google Cloud Storage
@@ -50,25 +54,33 @@ def request_outputs(workflow_id, cromwell_url):
 
 def extract_file_locations(outputs_response):
     """Parse an outputs_response map, extracting primary and secondary output file locations."""
-    primary_files = [output['location'] for k, output in outputs_response['outputs'].items()]
+    primary_files = [output['location'] if isinstance(output, dict) else output
+                     for k, output in outputs_response['outputs'].items()]
     secondary_files = [sf['location']
                        for k, output in outputs_response['outputs'].items()
-                       if output['secondaryFiles']
+                       if isinstance(output, dict) and output['secondaryFiles']
                        for sf in output['secondaryFiles']]
     return primary_files + secondary_files
 
 
 # --- Do the download
 
-def download_locations(output_dir, gcs_locations):
-    return [Path(f"{output_dir}/{Path(loc).parent.stem}/{Path(loc).name}") for loc in gcs_locations]
+def structured_download(response, output_dir):
+    "Download outputs, maintaining their filepath structure."
+    for src in extract_file_locations(response):
+        download_from_gcs(src, Path(f"{output_dir}/{Path(src).parent.stem}/{Path(src).name}"))
+
+
+def flat_download(response, output_dir):
+    "Download outputs, using their output_name and file extension, not path structure."
+    for k, gcs_loc in response['outputs'].items():
+        output_name = k.split(".")[-1]
+        download_from_gcs(gcs_loc, Path(f"{output_dir}/{output_name}/{file_extensions(gcs_loc)}"))
 
 
 def download_outputs(workflow_id, output_dir, cromwell_url):
     response = request_outputs(workflow_id, cromwell_url)
-    gcs_locations = extract_file_locations(response)
-    for src, dest in zip(gcs_locations, download_locations(output_dir, gcs_locations)):
-        download_from_gcs(src, dest)
+    structured_download(response, output_dir)
 
 
 if __name__ == "__main__":
@@ -81,7 +93,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     output_dir = args.output or DEFAULT_OUTPUT_DIR
-    cromwell_url = args.cromwell_url or os.environ('CROMWELL_URL') or DEFAULT_CROMWELL_URL
+    cromwell_url = args.cromwell_url or os.environ['CROMWELL_URL'] or DEFAULT_CROMWELL_URL
 
     download_outputs(
         args.workflow_id,

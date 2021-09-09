@@ -28,7 +28,7 @@ def upload_to_gcs(bucket, src, dest, dryrun=False):
     if os.path.isdir(src):
         print(f"Source file {src} is a directory. Skipping.")
     elif os.path.isfile(src):
-        print(f"Uploading {src} to {dest}")
+        print(f"Uploading {src} to gs://{bucket}/{dest}")
         if not dryrun:
             # TODO: just use gsutil, behavior discrepancies, e.g. with .interval_list
             bucket.blob(dest).upload_from_filename(src, num_retries=3)
@@ -141,15 +141,6 @@ def get_path(node):
         return Path(node)
 
 
-def set_path(input_obj, file_input, new_value):
-    """Set the path value for `file_input` within `input_obj`.
-    Works for both objects and strings."""
-    if get_in(input_obj, file_input.input_path + ['path']):
-        set_in(input_obj, file_input.input_path + ['path'], new_value)
-    else:
-        set_in(input_obj, file_input.input_path, new_value)
-
-
 # ---- Workflow Language Classes ---------------------------------------
 
 class WorkflowLanguage:
@@ -158,16 +149,13 @@ class WorkflowLanguage:
         self.inputs_path = inputs_path
         self.inputs = yaml.load(inputs_path)
 
-    def _file_input(self, file_path, node_path):
-        return FileInput(file_path, node_path)
-
     def find_file_inputs(self):
         file_inputs = []
 
         def process_node(node, node_path):
             if (is_file_input(node, input_name(node_path), self.inputs_path.parent)):
                 file_path = expand_relative(get_path(node), self.inputs_path.parent)
-                file_inputs.append(self._file_input(file_path, node_path))
+                file_inputs.append(FileInput(file_path, node_path))
             return node
         walk_object(self.inputs, process_node)
         return file_inputs
@@ -260,7 +248,7 @@ def set_cloud_paths(file_inputs):
 def cloudize_file_paths(inputs, bucket, file_inputs):
     new_input_obj = deepcopy(inputs)
     for f in file_inputs:
-        set_path(new_input_obj, f, str(f"gs://{bucket.name}/{f.file_path.cloud}"))
+        set_in(new_input_obj, f.input_path, str(f"gs://{bucket.name}/{f.file_path.cloud}"))
     return new_input_obj
 
 
