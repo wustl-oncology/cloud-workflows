@@ -12,6 +12,13 @@ DEFAULT_OUTPUT_DIR = './outputs'
 
 GCS = storage.Client()
 
+def sizeof_fmt(num, suffix='B'):
+    for unit in ['','Ki','Mi','Gi','Ti','Pi','Ei','Zi']:
+        if abs(num) < 1024.0:
+            return "%3.1f%s%s" % (num, unit, suffix)
+        num /= 1024.0
+    return "%.1f%s%s" % (num, 'Yi', suffix)
+
 
 # --- File system
 
@@ -38,8 +45,17 @@ def storage_object_name(gcs_uri):
 
 def download_from_gcs(src, dest):
     ensure_parent_dir_exists(dest)
-    GCS.bucket(bucket_name(src)).blob(storage_object_name(src)).download_to_filename(dest)
-    print(f"Downloaded {src} to {dest}")
+    if Path(dest).is_file():
+        return
+
+    blob = GCS.bucket(bucket_name(src)).blob(storage_object_name(src))
+    if not blob.exists():
+        print(f"ERROR: source does not exist - {src}")
+        return
+
+    blob.reload()
+    print(f"Downloading ({sizeof_fmt(blob.size)}) {src} to {dest}")
+    blob.download_to_filename(dest)
 
 
 # --- Cromwell server
@@ -52,22 +68,20 @@ def request_outputs(workflow_id, cromwell_url):
     return response.json()
 
 
-def extract_file_locations(outputs_response):
-    """Parse an outputs_response map, extracting primary and secondary output file locations."""
-    primary_files = [output['location'] if isinstance(output, dict) else output
-                     for k, output in outputs_response['outputs'].items()]
-    secondary_files = [sf['location']
-                       for k, output in outputs_response['outputs'].items()
-                       if isinstance(output, dict) and output['secondaryFiles']
-                       for sf in output['secondaryFiles']]
-    return primary_files + secondary_files
-
+def flatten(x):
+    """Raises elements of sublists into the main list."""
+    def ensure_list(output):
+        if isinstance(output, list):
+            return output
+        else:
+            return [output]
+    return [z for y in x for z in ensure_list(y)]
 
 # --- Do the download
 
 def structured_download(response, output_dir):
     "Download outputs, maintaining their filepath structure."
-    for src in extract_file_locations(response):
+    for src in flatten(response['outputs'].values()):
         download_from_gcs(src, Path(f"{output_dir}/{Path(src).parent.stem}/{Path(src).name}"))
 
 
@@ -75,7 +89,12 @@ def flat_download(response, output_dir):
     "Download outputs, using their output_name and file extension, not path structure."
     for k, gcs_loc in response['outputs'].items():
         output_name = k.split(".")[-1]
-        download_from_gcs(gcs_loc, Path(f"{output_dir}/{output_name}/{file_extensions(gcs_loc)}"))
+        if isinstance(gcs_loc, list):
+            for loc in locs:
+                filename = loc.split("/")[-1]
+                download_from_gcs(loc, Path(f"{output_dir}/{output_name}/{filename}"))
+        else:
+            download_from_gcs(gcs_loc, Path(f"{output_dir}/{output_name}.{file_extensions(gcs_loc)}"))
 
 
 def download_outputs(workflow_id, output_dir, cromwell_url):

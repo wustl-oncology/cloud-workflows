@@ -13,7 +13,6 @@ from pathlib import Path
 
 
 # TODO: if string type, wrap with quotes
-# TODO: remove object wrapping for File types
 # IMPROVE: be able to drop and pick up the upload somehow.
 # long running process, may break near end
 
