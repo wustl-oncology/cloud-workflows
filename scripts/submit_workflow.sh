@@ -2,18 +2,55 @@
 
 set -eo pipefail
 
-if [[ $# -ne 2 || $1 == "--help" ]]; then
-    echo "total args $#"
-    echo "usage: $0 <workflow_definition> <inputs_yaml>"
-    echo "Submit a genome/analysis-workflow to a running Cromwell server."
+CROMWELL_URL=${CROMWELL_URL:-'http://35.188.155.31:8000'}
+function show_help {
+    echo "$0 - submit Analysis Workflow WDLs to Cromwell server"
     echo ""
-    echo "        --help\tshow this usage display"
-    exit 1
-fi
-if [[ ! -d $ANALYSIS_WDLS ]]; then
-    echo "ANALYSIS_WDLS must be an existing directory. Current value: $ANALYSIS_WDLS"
-    exit 1
-fi
+    echo "usage: $0 [options] <definition-wdl> <inputs-file>"
+    echo ""
+    echo "options:"
+    echo "-h, --help                  print this block"
+    echo "-w, --wdl-dir <DIR>         local dir of the analysis-wdls repo"
+    echo "-c, --cromwell-url <URL>    URL of the server [default $CROMWELL_URL]"
+    exit 0
+}
+
+# die and opts based on this example
+# http://mywiki.wooledge.org/BashFAQ/035
+# --long-opt* example here
+# https://stackoverflow.com/a/7069755
+function die {
+    printf '%s\n' "$1" >&2
+}
+
+while test $# -gt 0; do
+    case $1 in
+        -h|-\?|--help)
+            show_help  # TODO make show_help
+            exit
+            ;;
+        -w|--wdl-dir*)
+            if [ ! "$2" ] || [[ ! -d $2 ]]; then
+                # TODO make die
+                die 'ERROR: "--wdl-dir" requires an existing directory option argument.'
+            else
+                ANALYSIS_WDLS=$2
+                shift
+            fi
+            ;;
+        -c|--cromwell-url*)
+            if [ ! "$2" ]; then
+                die 'ERROR: "--cromwell-url" requires a non-empty option argument.'
+            else
+                CROMWELL_URL=$2
+                shift
+            fi
+            ;;
+        *)
+            break
+    esac
+    shift
+done
 
 # +--------------------+
 # | Configuration vars |
@@ -21,7 +58,6 @@ fi
 
 WORKFLOW_DEFINITION=$1
 WORKFLOW_INPUTS=$2
-CROMWELL_URL=${CROMWELL_URL:-'http://35.188.155.31:8000'}
 
 # derived
 SRC_DIR="$(dirname "${BASH_SOURCE[0]}")"
