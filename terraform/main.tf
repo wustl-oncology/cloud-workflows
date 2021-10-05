@@ -42,7 +42,7 @@ module "cromwell" {
   dependent_lab_service_accounts = var.dependent_lab_service_accounts
   # ----- Networking ---------------------------------------------------
   network_id = google_compute_network.custom-default.id
-  allowed_ip_ranges = [var.washu_vpn_range]
+  allowed_ip_ranges = [var.washu_internet_range, var.washu_internet2_range ]
   cromwell_port = var.cromwell_port
 
   db_instance_type = "db-n1-standard-2"
