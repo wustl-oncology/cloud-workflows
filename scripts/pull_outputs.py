@@ -59,10 +59,12 @@ def download_from_gcs(src, dest):
 
 
 # --- Cromwell server
+def endpoint(hostname, route):
+    return f"{hostname.strip('/')}/{route.strip('/')}"
 
 def request_outputs(workflow_id, cromwell_url):
     """Requests the output file paths for a given workflow_id."""
-    url = f"{cromwell_url}/api/workflows/v1/{workflow_id}/outputs"
+    url = endpoint(cromwell_url, f'/api/workflows/v1/{workflow_id}/outputs')
     response = requests.get(url)
     response.raise_for_status()
     return response.json()
