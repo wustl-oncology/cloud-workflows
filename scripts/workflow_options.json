@@ -3,5 +3,7 @@
     "default_runtime_attributes": {
         "backend": "GriffithLab"
     },
-    "backend": "GriffithLab"
+    "backend": "GriffithLab",
+    "final_workflow_log_dir": "gs://griffith-lab-cromwell/final-logs",
+    "use_relative_output_paths": false
 }

@@ -88,48 +88,29 @@ curl "$CROMWELL_URL/api/workflows/v1/$WORKFLOW_ID/status"
 
 ## Cromwell server logs
 
-We haven't found a good way to access cromwell server logs that
-_doesn't_ involve just SSHing in to the server and following the logs
-with journalctl, so... let's do that.
+Orchestration logs from the Cromwell server can be pulled from
+GCS. When submitting workflow, the `workflow_options.json` passed
+along should contain a `final_workflow_log_dir`. For griffith-lab this
+has the value `gs://griffith-lab-cromwell/final-logs`. Logs for a
+workflow are stored in this directory with the name
+`workflow.$WORKFLOW_ID.log`. To view these logs, run the command
 
-SSH in to the server using gcloud to leverage their authentication.
-This requires gcloud be installed/configured and you have SSH access to the VM.
-```
-gcloud beta compute ssh --zone "us-central1-c" "cromwell" --project "griffith-lab"
-```
-
-Once inside the VM, just run the command
-```
-journalctl -u cromwell | less
-```
-
-Do any variations you'd like with this, like follow with `-f` or
-`grep`. Just try not to dump everything out because it may be a large
-amount.
-
-Issues like parsing or bad requirements will be logged here, but most
-likely a runtime issue will happen in the logs of a specific
-task. Usually you'll find just above a large stacktrace an error
-message with a `gs://` path to the `.log` or `stderr` of a specific
-task.
+    gsutil cat gs://griffith-lab-cromwell/final-logs/workflow.$WORKFLOW_ID.log
 
 ### Checking task specific logs
 
 Most issues end up happening inside the runtime of a task. The easiest
 way to see these is to pull the `.log` or `stderr` of that
 task. Typically the way to find the relevant one is to check the
-server logs via SSH. If that's not possible, there are other ways to
-find the information but they're pretty hacky. You could use the
-timing diagram, or knowledge of the workflow, to find out the last
-tasks that ran and search for which failed, time consuming and tedious
-though.
+server logs as above.
 
 When you have a `gs://` file you want to pull from GCS, just use
-gsutil to interact with it. `gsutil cp gs://your/file/here
-local_version` to download a local copy. `gsutil cat
-gs://your/file/here` to print its contents. Plenty other options if
-you fiddle with `gsutil`, though these are the main two for inspecting
-existing files.
+gsutil to interact with it.
+
+    gsutil cat gs://your/file/here
+
+Files can be explored other ways using gsutil but cat is the easiest.
+
 
 # 4. Pull Output Files
 
