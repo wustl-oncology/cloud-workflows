@@ -1,5 +1,3 @@
-# third-party, pip install
-from google.cloud import storage
 # built-in
 import os
 import re
@@ -9,16 +7,6 @@ from pathlib import Path
 
 DEFAULT_CROMWELL_URL = "http://34.69.35.61:8000"
 DEFAULT_OUTPUT_DIR = './outputs'
-
-GCS = storage.Client()
-
-def sizeof_fmt(num, suffix='B'):
-    for unit in ['','Ki','Mi','Gi','Ti','Pi','Ei','Zi']:
-        if abs(num) < 1024.0:
-            return "%3.1f%s%s" % (num, unit, suffix)
-        num /= 1024.0
-    return "%.1f%s%s" % (num, 'Yi', suffix)
-
 
 # --- File system
 
@@ -32,30 +20,10 @@ def file_extensions(path):
 
 # --- Google Cloud Storage
 
-GCS_URI = r'gs:\/\/([^\/]+)\/(.+)'
-
-
-def bucket_name(gcs_uri):
-    return re.search(GCS_URI, gcs_uri).group(1)
-
-
-def storage_object_name(gcs_uri):
-    return re.search(GCS_URI, gcs_uri).group(2)
-
-
 def download_from_gcs(src, dest):
     ensure_parent_dir_exists(dest)
-    if Path(dest).is_file():
-        return
-
-    blob = GCS.bucket(bucket_name(src)).blob(storage_object_name(src))
-    if not blob.exists():
-        print(f"ERROR: source does not exist - {src}")
-        return
-
-    blob.reload()
-    print(f"Downloading ({sizeof_fmt(blob.size)}) {src} to {dest}")
-    blob.download_to_filename(dest)
+    if not Path(dest).is_file():
+        os.system(f"gsutil cp {src} {dest}")
 
 
 # --- Cromwell server

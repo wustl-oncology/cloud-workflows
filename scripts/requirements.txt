@@ -1,4 +1,3 @@
-google-cloud-storage
 cwl_utils
 miniwdl == 1.2.1
 

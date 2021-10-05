@@ -1,7 +1,6 @@
 # third-party, pip install
 import WDL as wdl  # https://miniwdl.readthedocs.io/en/latest/WDL.html#
 from ruamel.yaml import YAML
-from google.cloud import storage
 # built-in, hooray
 import json
 import os
@@ -18,21 +17,21 @@ from pathlib import Path
 
 UNIQUE_PATH = f"input_data/{getuser()}/" + date.today().strftime("%Y-%m-%d")
 yaml = YAML()
-
+yaml.width = float("Infinity")  # prevent line wrapping
 
 # ---- GCS interactions ------------------------------------------------
 
 def upload_to_gcs(bucket, src, dest, dryrun=False):
     """Upload a local file to GCS bucket. src is a filepath and dest is target GCS name."""
+    gcs_uri = f"gs://{bucket}/{dest}"
     if os.path.isdir(src):
         print(f"Source file {src} is a directory. Skipping.")
-    elif os.path.isfile(src):
-        print(f"Uploading {src} to gs://{bucket}/{dest}")
-        if not dryrun:
-            # TODO: just use gsutil, behavior discrepancies, e.g. with .interval_list
-            bucket.blob(dest).upload_from_filename(src, num_retries=3)
-    else:
+    elif not os.path.isfile(src):
         print(f"WARN: could not find source file, potentially just a basepath: {src}")
+    elif dryrun:
+        pass
+    else:
+        os.system(f"gsutil cp -n {src} {gcs_uri}")
 
 
 # ---- Generic functions -----------------------------------------------
@@ -247,7 +246,7 @@ def set_cloud_paths(file_inputs):
 def cloudize_file_paths(inputs, bucket, file_inputs):
     new_input_obj = deepcopy(inputs)
     for f in file_inputs:
-        set_in(new_input_obj, f.input_path, str(f"gs://{bucket.name}/{f.file_path.cloud}"))
+        set_in(new_input_obj, f.input_path, str(f"gs://{bucket}/{f.file_path.cloud}"))
     return new_input_obj
 
 
@@ -309,7 +308,7 @@ If this value ends with .json, JSON format used instead of YAML.""")
     args = parser.parse_args()
 
     cloudize(
-        storage.Client().bucket(args.bucket),
+        args.bucket,
         Path(args.workflow_definition),
         Path(args.workflow_inputs),
         Path(args.output or default_output(args.workflow_inputs)),
