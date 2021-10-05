@@ -1,12 +1,11 @@
 # Submitting a Workflow from Scratch
 
 This tutorial aims to walk through the complete steps of taking an
-existing workflow (e.g. the CWL and a set of YML inputs) and submit
+existing workflow (e.g. the WDL and a set of YML inputs) and submit
 that workflow on the remote GCS server.
 
 Prerequisites:
-1. Acquire original workflow CWL and inputs for cluster
-1. Acquire pre-converted WDL equivalent to your CWL from analysis-wdls
+1. Acquire workflow definition WDL and inputs YAML for cluster
 1. Write access to your labs GCS bucket
 1. gcloud installed and configured locally
 
@@ -27,7 +26,7 @@ moved to a non-personal account eventually.
 
 Spin up an interactive bsub with
 ```sh
-bsub -Is -q general-interactive -G $GROUP -a "docker(jackmaruska/cloudize-workflow:1.0.4)" /bin/bash
+bsub -Is -q general-interactive -G $GROUP -a "docker(jackmaruska/cloudize-workflow:latest)" /bin/bash
 ```
 
 Within the docker image, scripts are located at /opt, e.g. `/opt/cloudize-workflow.py`
@@ -39,11 +38,10 @@ readable and commands more copy-paste friendly. This isn't strictly
 necessary but hopefully it helps.
 
 ```sh
-export WORKFLOW_CWL=/storage1/fs1/bga/Active/shared/analysis-workflows/definitions/pipelines/somatic_exome.cwl
 export ANALYSIS_WDLS=/scratch1/fs1/oncology/maruska/analysis-wdls
-export WORKFLOW_WDL=$ANALYSIS_WDLS/definitions/pipelines/somatic_exome.wdl
-export CLUSTER_INPUT=/storage1/fs1/bga/Active/shared/analysis-workflows-example-data/somatic_exome.yaml
-export MODIFIED_INPUT=$PWD/somatic_exome_cloud.yaml
+export WORKFLOW_DEFINITION=$ANALYSIS_WDLS/definitions/pipelines/somatic_exome.wdl
+export LOCAL_INPUT=/storage1/fs1/mgriffit/Active/griffithlab/adhoc/somatic_exome_wdl.yaml
+export CLOUD_INPUT=$PWD/somatic_exome_cloud.yaml
 export GCS_BUCKET=griffith-lab-cromwell
 export CROMWELL_URL=http://35.188.155.31:8000
 ```
@@ -51,26 +49,8 @@ export CROMWELL_URL=http://35.188.155.31:8000
 # 1. Processing Input File
 
 ```sh
-python3 /opt/cloudize-workflow.py $GCS_BUCKET $WORKFLOW_CWL $CLUSTER_INPUT --output=$MODIFIED_INPUT --dryrun=True
+python3 /opt/cloudize-workflow.py $GCS_BUCKET $WORKFLOW_DEFINITION $LOCAL_INPUT --output=$CLOUD_INPUT
 ```
-
-# 1.5. Modify inputs for CWL to WDL change
-
-The script doesn't have an option to spit out an input file for a
-different workflow type, because there are differences between their
-inputs. For now this step is to be done manually. Generally what will
-change between types for most workflows are
-
-1. Secondary files explicitly included (e.g. bam_bai inputs)
-1. Directory type either a single .zip or an Array[File] type
-1. Extra inputs to handle lack of JavaScript embedding
-1. All inputs specify their workflow as a dot prefix,
-   e.g. `normal_sample_name` becomes `somaticExome.normal_sample_name`
-
-For our example of somatic exome, do the following modifications:
-1. Add secondary file inputs for reference, bqsr_known_sites,
-1. Replace `vep_cache_dir` with `vep_cache_dir_zip: gs://griffith-lab-cromwell/input_data/vep.zip`
-1. prepend `somaticExome.` to all top level inputs
 
 # 2. Submit Workflow
 
@@ -84,8 +64,11 @@ directory. Export that if you haven't in step 0.
 
 ```sh
 export ANALYSIS_WDLS=/scratch1/fs1/oncology/maruska/analysis-wdls
-sh /opt/submit_workflow.sh $WORKFLOW_WDL $MODIFIED_INPUT
+sh /opt/submit_workflow.sh $WORKFLOW_DEFINITION $CLOUD_INPUT
 ```
+
+The response to this call will provide you with your `$WORKFLOW_ID`
+which is needed for our other commands.
 
 # 3. Checking on the Workflow
 
@@ -164,6 +147,14 @@ for each file, either "Downloading" with its size and paths to both
 cloud location and target destination, or ERROR if the source doesn't
 exist (unsure why this happens or what it means, but I've seen it
 happen). On repeated calls, the script silently skips existing files.
+
+To view timing diagrams, the simplest way is using
+[cromshell](https://github.com/broadinstitute/cromshell). Using curl
+or swagger will provide you with the HTML but won't auto-open.
+
+```sh
+cromshell timing $WORKFLOW_ID
+```
 
 # Appendix
 
