@@ -162,23 +162,23 @@ class WorkflowLanguage:
 
 
 class WDL(WorkflowLanguage):
-    def _load_definition(self):
-        path_dir = self.definition_path.parent
-        deps_paths = [str(path_dir), str(path_dir.parent)]
-        return wdl.load(str(self.definition_path), deps_paths)
+    def __init__(self, definition_path, inputs_path):
+        super().__init__(definition_path, inputs_path)
+        path_dir = definition_path.parent
+        self.definition = wdl.load(str(definition_path), [str(path_dir), str(path_dir.parent)])
+        # validate inputs
+        missing_inputs = [f"{self.definition.workflow.name}.{inp.name}"
+                          for inp in self.definition.workflow.required_inputs
+                          if not f"{self.definition.workflow.name}.{inp.name}" in self.inputs]
+        if missing_inputs:
+            raise Exception(f"Missing required inputs", missing_inputs)
 
     def postprocess_inputs(self, processed_inputs):
-        return self._prepend_workflow_name(processed_inputs)
-
-    def _prepend_workflow_name(self, obj):
         def idempotent_prepend(s, prefix):
-            """Prepend a . prefix iff no . prefix already exists."""
-            if len(s.split(".")) == 1:
-                return f"{prefix}.{s}"
-            else:
-                return s
-        wf_name = self._load_definition().workflow.name
-        return {idempotent_prepend(k, wf_name): v for k, v in obj.items()}
+            return f"{prefix}.{s}" if len(s.split(".")) == 1 else s
+
+        return {idempotent_prepend(k, self.definition.workflow.name): v
+                for k, v in processed_inputs.items()}
 
 
 class CWL(WorkflowLanguage):
