@@ -31,7 +31,7 @@ bsub -Is -q general-interactive -G $GROUP -a "docker(jackmaruska/cloudize-workfl
 
 Within the docker image, scripts are located at /opt, e.g. `/opt/cloudize-workflow.py`
 
-# 0. Set up values
+# 0.1 Set up values
 
 I like to set up my values with environment variables to make it more
 readable and commands more copy-paste friendly. This isn't strictly
@@ -45,6 +45,22 @@ export CLOUD_INPUT=$PWD/somatic_exome_cloud.yaml
 export GCS_BUCKET=griffith-lab-cromwell
 export CROMWELL_URL=http://35.188.155.31:8000
 ```
+
+# 0.2 Authenticate with Google Cloud CLI
+
+This should only need to be done once but gcloud needs a login to
+authenticate and gain access. Set email and project configurations if
+needed. Your email should be your WashU email. Your project-id is
+easiest to find in the first tile on the home page of
+console.cloud.google.com, once the correct project is selected from
+the above dropdown menu.
+
+    gcloud config set account <email>
+    gcloud config set project <project>
+    gcloud auth login
+
+User permissions should be sufficient to run all the tools in this
+tutorial, assuming you're provided access permission.
 
 # 1. Processing Input File
 
