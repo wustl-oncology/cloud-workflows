@@ -166,10 +166,11 @@ class WDL(WorkflowLanguage):
         super().__init__(definition_path, inputs_path)
         path_dir = definition_path.parent
         self.definition = wdl.load(str(definition_path), [str(path_dir), str(path_dir.parent)])
+        root = self.definition.workflow or self.definition.tasks[0]
         # validate inputs
-        missing_inputs = [f"{self.definition.workflow.name}.{inp.name}"
-                          for inp in self.definition.workflow.required_inputs
-                          if not f"{self.definition.workflow.name}.{inp.name}" in self.inputs]
+        missing_inputs = [f"{root.name}.{inp.name}"
+                          for inp in root.required_inputs
+                          if not f"{root.name}.{inp.name}" in self.inputs]
         if missing_inputs:
             raise Exception(f"Missing required inputs", missing_inputs)
 
