@@ -244,7 +244,7 @@ def set_cloud_paths(file_inputs):
 
 
 def cloudize_file_paths(inputs, bucket, file_inputs):
-    new_input_obj = deepcopy(inputs)
+    new_input_obj = deepcopy(inputs) or {}
     for f in file_inputs:
         set_in(new_input_obj, f.input_path, str(f"gs://{bucket}/{f.file_path.cloud}"))
     return new_input_obj
