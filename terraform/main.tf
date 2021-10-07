@@ -40,6 +40,7 @@ module "cromwell" {
   # ----- Permissions --------------------------------------------------
   user_emails = var.cromwell_user_emails
   dependent_lab_service_accounts = var.dependent_lab_service_accounts
+  writer_service_accounts = [var.gms_service_account]
   # ----- Networking ---------------------------------------------------
   network_id = google_compute_network.custom-default.id
   allowed_ip_ranges = [var.washu_internet_range, var.washu_internet2_range ]

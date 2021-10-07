@@ -9,7 +9,10 @@ variable "user_emails" {
   type = list(string)
 }
 
-variable "dependent_lab_service_accounts" {
+variable "reader_service_accounts" {
+  type = list(string)
+}
+variable "writer_service_accounts" {
   type = list(string)
 }
 

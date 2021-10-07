@@ -34,9 +34,15 @@ resource "google_storage_bucket_iam_member" "user_read_access" {
 }
 
 resource "google_storage_bucket_iam_member" "service_account_read_access" {
-  for_each = toset(var.dependent_lab_service_accounts)
+  for_each = toset(concat(var.reader_service_accounts, var.writer_service_accounts))
   bucket   = google_storage_bucket.cromwell_executions.name
   role     = "roles/storage.objectViewer"
+  member   = "serviceAccount:${each.key}"
+}
+resource "google_storage_bucket_iam_member" "service_account_write_access" {
+  for_each = toset(var.writer_service_accounts)
+  bucket   = google_storage_bucket.cromwell_executions.name
+  role     = "roles/storage.objectCreator"
   member   = "serviceAccount:${each.key}"
 }
 

@@ -47,7 +47,8 @@ module "bucket" {
   project = var.project
   project_id = var.project_id
   user_emails = var.user_emails
-  dependent_lab_service_accounts = var.dependent_lab_service_accounts
+  reader_service_accounts = var.dependent_lab_service_accounts
+  writer_service_accounts = var.writer_service_accounts
   compute_account_email = google_service_account.compute.email
   server_account_email  = google_service_account.server.email
 }
