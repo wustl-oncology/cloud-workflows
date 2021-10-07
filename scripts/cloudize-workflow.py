@@ -219,7 +219,7 @@ def make_workflow(definition_path, inputs_path):
 
 class FilePath:
     def __init__(self, local):
-        self.local = local.resolve()
+        self.local = local
         self.cloud = None
 
     def set_cloud(self, cloud):
