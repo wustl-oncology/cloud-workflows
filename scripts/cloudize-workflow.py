@@ -87,7 +87,7 @@ def get_in(coll, path):
 # ---- Pathlib ---------------------------------------------------------
 
 def deepest_shared_ancestor(paths):
-    ancestors = [set(path.resolve().parents) for path in paths]
+    ancestors = [set(path.parents) for path in paths]
     if ancestors:
         shared_ancestors = ancestors[0].intersection(*ancestors[1:])
         return max(shared_ancestors, key=lambda x: len(str(x)))
@@ -96,14 +96,14 @@ def deepest_shared_ancestor(paths):
 
 
 def is_ancestor(path, ancestor):
-    return ancestor in set(path.resolve().parents)
+    return ancestor in set(path.parents)
 
 
 def strip_ancestor(path, ancestor):
     if is_ancestor(path, ancestor):
-        return path.resolve().relative_to(ancestor)
+        return path.relative_to(ancestor)
     else:  # absolute path if not an ancestor
-        return path.resolve()
+        return path
 
 
 def expand_relative(path, base_path):
