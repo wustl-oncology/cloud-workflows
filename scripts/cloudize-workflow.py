@@ -153,7 +153,7 @@ class WorkflowLanguage:
         def process_node(node, node_path):
             if (is_file_input(node, input_name(node_path), self.inputs_path.parent)):
                 file_path = expand_relative(get_path(node), self.inputs_path.parent)
-                file_inputs.append(FileInput(file_path, node_path))
+                file_inputs.append(FileInput(node_path, file_path))
             return node
         walk_object(self.inputs, process_node)
         return file_inputs
@@ -190,7 +190,7 @@ class CWL(WorkflowLanguage):
     def _file_input(self, file_path, node_path):
         suffixes = self.secondary_file_suffixes(input_name(node_path))
         secondary_files = [FilePath(f) for f in CWL.secondary_file_paths(file_path, suffixes)]
-        return FileInput(file_path, node_path, secondary_files)
+        return FileInput(node_path, file_path, secondary_files)
 
     def secondary_file_suffixes(self, yaml_input_name):
         return get_in(self.definition, ['inputs', yaml_input_name, 'secondaryFiles']) or []
@@ -225,13 +225,19 @@ class FilePath:
     def set_cloud(self, cloud):
         self.cloud = f"{UNIQUE_PATH}/{cloud}"
 
+    def __repr__(self):
+        return f"FilePath(\"{str(self.local)}\")"
+
 
 class FileInput:
-    def __init__(self, file_path, input_path, secondary_files=[]):
+    def __init__(self, input_path, file_path, secondary_files=[]):
         self.file_path = FilePath(file_path)
         self.input_path = input_path
         self.secondary_files = secondary_files
         self.all_file_paths = [self.file_path] + self.secondary_files
+
+    def __repr__(self):
+        return f"FileInput(input_path=\"{str(self.input_path)}\", file_path=\"{str(self.file_path)}\")"
 
 
 def set_cloud_paths(file_inputs):
