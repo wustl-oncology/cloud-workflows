@@ -51,8 +51,16 @@ def flatten(x):
 
 def structured_download(response, output_dir):
     "Download outputs, maintaining their filepath structure."
-    for src in flatten(response['outputs'].values()):
-        download_from_gcs(src, Path(f"{output_dir}/{Path(src).parent.stem}/{Path(src).name}"))
+    def download(gcs_path):
+        download_from_gcs(gcs_path, Path(f"{output_dir}/{Path(gcs_path).parent.stem}/{Path(gcs_path).name}"))
+    for output in flatten(response['outputs'].values()):
+        if isinstance(output, list):
+            for item in output:
+                download(item)
+        elif isinstance(output, str):
+            download(output)
+        else:
+            raise Exception(f"Unexpected output type {type(output)}")
 
 
 def flat_download(response, output_dir):
