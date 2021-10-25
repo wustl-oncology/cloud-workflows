@@ -32,9 +32,8 @@ def install_packages():
     ]
 
     os.system('apt-get update')
-    os.system('apt-get install -y' + ' '.join(packages))
+    os.system('apt-get install -y ' + ' '.join(packages))
     # Python deps
-    import pip
     os.system('python3 -m pip install requests>=2.20.0')
 
     print("Install packages... DONE")
@@ -60,11 +59,11 @@ def install_cromwell():
     print("Install cromwell...DONE")
 
 
-def download_cromwell_config():
-    print("Download cromwell config...")
-    with open(os.path.join(CONFIG_DIR, 'cromwell.conf'), 'w') as f:
-        f.write(_fetch_instance_info('cromwell-conf'))
-    print("Download cromwell config...DONE")
+def download_from_metadata(tag, dest_path):
+    print(f"Download {tag}...")
+    with open(dest_path, 'w') as f:
+        f.write(_fetch_instance_info(tag))
+    print(f"Download {tag}...DONE")
 
 
 def clone_analysis_wdls():
@@ -91,6 +90,7 @@ if __name__ == '__main__':
     create_directories()
     install_packages()
     install_cromwell()
-    download_cromwell_config()
+    download_from_metadata('cromwell-conf', os.path.join(CONFIG_DIR, 'cromwell.conf'))
+    download_from_metadata('helpers-sh', os.path.join(SHARED_DIR, 'helpers.sh'))
     clone_analysis_wdls()
     print("Startup script...DONE")

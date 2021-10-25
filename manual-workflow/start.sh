@@ -10,4 +10,4 @@ gcloud compute instances create test-vm \
        --confidential-compute --maintenance-policy=TERMINATE \
        --network=default --subnet=default \
        --metadata=cromwell-version=63 \
-       --metadata-from-file=startup-script=server_startup.py,cromwell-conf=cromwell.conf \
+       --metadata-from-file=startup-script=server_startup.py,cromwell-conf=cromwell.conf,helpers-sh=helpers.sh
