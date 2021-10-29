@@ -9,6 +9,19 @@ SHARED_DIR = os.path.join(os.path.sep, 'shared')
 GOOGLE_URL = "http://metadata.google.internal/computeMetadata/v1/instance/attributes"
 CROMWELL_DOWNLOAD = "https://github.com/broadinstitute/cromwell/releases/download"
 
+PACKAGES = [
+    # required to run
+    'curl',
+    'default-jdk',
+    'git',
+    'python3-pip',
+    # just useful
+    'less',
+    'emacs', 'vim',
+    'python3-dev',
+    'python3-setuptools'
+]
+
 
 def create_directories():
     print("Create directories...")
@@ -21,18 +34,8 @@ def create_directories():
 
 def install_packages():
     print("Install packages...")
-    packages = [
-        'curl',
-        'default-jdk', 'git',
-        'less',
-        'emacs', 'vim',
-        'python3-pip',
-        'python3-dev',
-        'python3-setuptools'
-    ]
-
     os.system('apt-get update')
-    os.system('apt-get install -y ' + ' '.join(packages))
+    os.system('apt-get install -y ' + ' '.join(PACKAGES))
     # Python deps
     os.system('python3 -m pip install requests>=2.20.0')
 
@@ -88,9 +91,9 @@ def _fetch_instance_info(name):
 
 if __name__ == '__main__':
     create_directories()
+    download_from_metadata('helpers-sh', os.path.join(SHARED_DIR, 'helpers.sh'))
     install_packages()
     install_cromwell()
     download_from_metadata('cromwell-conf', os.path.join(CONFIG_DIR, 'cromwell.conf'))
-    download_from_metadata('helpers-sh', os.path.join(SHARED_DIR, 'helpers.sh'))
     clone_analysis_wdls()
     print("Startup script...DONE")
