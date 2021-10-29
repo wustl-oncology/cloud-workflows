@@ -29,7 +29,7 @@ Spin up an interactive bsub with
 bsub -Is -q general-interactive -G $GROUP -a "docker(jackmaruska/cloudize-workflow:latest)" /bin/bash
 ```
 
-Within the docker image, scripts are located at /opt, e.g. `/opt/cloudize-workflow.py`
+Within the docker image, scripts are located at /opt/scripts, e.g. `/opt/scripts/cloudize-workflow.py`
 
 # 0.1 Set up values
 
@@ -65,7 +65,7 @@ tutorial, assuming you're provided access permission.
 # 1. Processing Input File
 
 ```sh
-python3 /opt/cloudize-workflow.py $GCS_BUCKET $WORKFLOW_DEFINITION $LOCAL_INPUT --output=$CLOUD_INPUT
+python3 /opt/scripts/cloudize-workflow.py $GCS_BUCKET $WORKFLOW_DEFINITION $LOCAL_INPUT --output=$CLOUD_INPUT
 ```
 
 # 2. Submit Workflow
@@ -80,7 +80,7 @@ directory. Export that if you haven't in step 0.
 
 ```sh
 export ANALYSIS_WDLS=/scratch1/fs1/oncology/maruska/analysis-wdls
-sh /opt/submit_workflow.sh $WORKFLOW_DEFINITION $CLOUD_INPUT
+sh /opt/scripts/submit_workflow.sh $WORKFLOW_DEFINITION $CLOUD_INPUT
 ```
 
 The response to this call will provide you with your `$WORKFLOW_ID`
@@ -135,7 +135,7 @@ pull_outputs.py script to download our output files back to WashU
 storage.
 
 ```sh
-python3 /opt/pull_outputs.py $WORKFLOW_ID --output=/path/to/destination
+python3 /opt/scripts/pull_outputs.py $WORKFLOW_ID --output=/path/to/destination
 ```
 
 The --output flag is optional, and if omitted will create an

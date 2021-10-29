@@ -29,10 +29,10 @@ case $1 in
         ;;
     "build-and-tag")
         echo "Building container image tagged latest"
-        docker build $SRC_DIR/scripts/ -t $DOCKER_IMAGE:latest
+        docker build $SRC_DIR -t $DOCKER_IMAGE:latest
         # this one will be cached, basically just doing a tag without having to find image ID
         echo "Building container image tagged $2"
-        docker build $SRC_DIR/scripts/ -t $DOCKER_IMAGE:$2
+        docker build $SRC_DIR -t $DOCKER_IMAGE:$2
 
         echo "Pushing container image tagged latest"
         docker push $DOCKER_IMAGE:latest
