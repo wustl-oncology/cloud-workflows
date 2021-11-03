@@ -20,6 +20,10 @@ gcloud compute instances create $INSTANCE_NAME \
        --metadata=cromwell-version=63 \
        --metadata-from-file=startup-script=$SRC_DIR/server_startup.py,cromwell-conf=$CROMWELL_CONF,helpers-sh=$SRC_DIR/helpers.sh
 
+echo "To use this instance, SSH into it via:"
+echo ""
+echo "    gcloud compute ssh $INSTANCE_NAME"
+echo ""
 echo "To delete the instance when you're done:"
 echo ""
 echo "    gcloud compute instances delete $INSTANCE_NAME"
