@@ -12,6 +12,7 @@ function show_help {
     echo "-h, --help                  print this block"
     echo "-w, --wdl-dir <DIR>         local dir of the analysis-wdls repo"
     echo "-c, --cromwell-url <URL>    URL of the server [default $CROMWELL_URL]"
+    echo "--options <FILE>            workflow options json"
     exit 0
 }
 
@@ -26,12 +27,11 @@ function die {
 while test $# -gt 0; do
     case $1 in
         -h|-\?|--help)
-            show_help  # TODO make show_help
+            show_help
             exit
             ;;
         -w|--wdl-dir*)
             if [ ! "$2" ] || [[ ! -d $2 ]]; then
-                # TODO make die
                 die 'ERROR: "--wdl-dir" requires an existing directory option argument.'
             else
                 ANALYSIS_WDLS=$2
@@ -43,6 +43,14 @@ while test $# -gt 0; do
                 die 'ERROR: "--cromwell-url" requires a non-empty option argument.'
             else
                 CROMWELL_URL=$2
+                shift
+            fi
+            ;;
+        --options)
+            if [ ! "$2" ] || [[ ! -f $2 ]]; then
+                die 'ERROR: "--options" requires an existing file.'
+            else
+                WORKFLOW_OPTIONS=$2
                 shift
             fi
             ;;
@@ -81,7 +89,7 @@ cd $OLD_DIR
 cat $WORKFLOW_OPTIONS
 set -o xtrace
 
-curl -v "$CROMWELL_URL/api/workflows/v1" \
+curl "$CROMWELL_URL/api/workflows/v1" \
      -F workflowSource=@${WORKFLOW_DEFINITION} \
      -F workflowInputs=@${WORKFLOW_INPUTS} \
      -F workflowDependencies=@${ZIP} \
