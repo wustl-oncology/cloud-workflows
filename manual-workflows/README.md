@@ -18,6 +18,7 @@ If google-cloud-sdk isn't installed, start there.
 
 
 ## Installing google-cloud-sdk
+
 On compute1 clients it should already be installed.
 
 To work from a docker container, the image `google/cloud-sdk:latest`
@@ -34,82 +35,69 @@ This package will give you access to the commands `gcloud` and
 
 ## Configuration
 
-Log in through Google with your WashU account
-
-    gcloud auth login
-
-They'll provide a link which sends you to Google authentication, and
-will either automatically log in on verification, or provide a code
-for the terminal prompt.
-
-Once you're logged in, set your project and zone. If you don't know
-your project name, it can be viewed at
-[console.cloud.google.com](console.cloud.google.com) in the top-left
-corner, in a dropdown menu of your account's projects.
-
-    gcloud config set project PROJECT-NAME
-    gcloud config set zone us-central1-c
-
+[Authenticate with Google Cloud CLI](../docs/gcloud_auth.md)
 
 # Project Setup
 
-For manual Cromwell workflows only two requirements must be met for
-first-time setup:
-1. You must have access to a GCS bucket for your data.
-1. Your user must have permissions to read/write from the bucket, and
-   to create/delete compute VMs.
+First-time set-up has a few complexities. Use the `resources.sh`
+helper script to create resources as needed.
 
-## Create a GCS bucket
+To initialize the project and create necessary resources
 
-A user with proper permissions can execute this command to create a bucket.
+    sh resources.sh init-project --project $PROJECT --bucket $GCS_BUCKET
 
-    gsutil mb -b on gs://BUCKET_NAME
+To enable a non-administrator user to run workflows
 
-Bucket names are globally-unique so it may take a few tries to get a
-name that works.
+    sh resources.sh grant-permissions --project $PROJECT --bucket $GCS_BUCKET --email $USER_EMAIL
 
+To revoke these permissions from a
 
-## Grant a new user permissions
-
-Ideally at some point these will be merged into a single permission.
-
-    gsutil iam ch user:EMAIL:objectViewer gs://BUCKET_NAME
-    gsutil iam ch user:EMAIL:objectCreator gs://BUCKET_NAME
-    gcloud projects add-iam-policy-binding PROJECT_NAME \
-        --member=user:EMAIL --role=roles/compute.instanceAdmin
-
-
-## Remove a user's permissions
-
-Ideally at some point these will be merged into a single permission.
-
-    gsutil iam ch -d user:EMAIL gs://BUCKET_NAME
-    gcloud projects remove-iam-policy-binding PROJECT_NAME \
-        --member=user:EMAIL --role=roles/compute.instanceAdmin
-
+    sh resources.sh revoke-permissions --project $PROJECT --bucket $GCS_BUCKET --email $USER_EMAIL
 
 # Workflow Preparation
 
 Assuming you have a WDL workflow that works in the cloud, the only
 preparation you have to do is make sure your data files exist on a GCS
-bucket. If you had to create one in [[First-Time Setup]] then you'll
-have to upload your files and create an inputs file with those new
-paths.
+bucket. If you had to create one in [Project
+Setup](./README.md#project-setup) then you'll have to upload your
+files and create an inputs file with those new paths.
 
 If you already have a compute1 workflow you'd like to run in the
-cloud, use [cloudize-workflow.py](../scripts/cloudize-workflow.py) to ease the
-process.
+cloud, use `../scripts/cloudize-workflow.py` to ease the process.
 
-For a detailed walkthrough, see [the tutorial](../docs/tutorial.md)
-through section 1. Processing Input File.
+Jump into a docker container with the script available
+```sh
+bsub -Is -q general-interactive -G $GROUP -a "docker(jackmaruska/cloudize-workflow:latest)" /bin/bash
+```
 
+Execute the script
+```sh
+python3 /opt/scripts/cloudize-workflow.py $GCS_BUCKET $WORKFLOW_DEFINITION $LOCAL_INPUT --output=$CLOUD_INPUT
+```
+
+Each $VAR should be either set or replaced with your value, e.g.
+```sh
+export GCS_BUCKET=griffith-lab-cromwell
+export WORKFLOW_DEFINITION=/scratch1/fs1/oncology/maruska/analysis-wdls/definitions/pipelines/somatic_exome.wdl
+export LOCAL_INPUT=/storage1/fs1/mgriffit/Active/griffithlab/adhoc/somatic_exome_wdl.yaml
+export CLOUD_INPUT=$PWD/somatic_exome_cloud.yaml
+python3 /opt/scripts/cloudize-workflow.py $GCS_BUCKET $WORKFLOW_DEFINITION $LOCAL_INPUT --output=$CLOUD_INPUT
+```
+or
+```sh
+python3 /opt/scripts/cloudize-workflow.py \
+    griffith-lab-cromwell \
+    /scratch1/fs1/oncology/maruska/analysis-wdls/definitions/pipelines/somatic_exome.wdl \
+    /storage1/fs1/mgriffit/Active/griffithlab/adhoc/somatic_exome_wdl.yaml \
+    --output=$PWD/somatic_exome_cloud.yaml
+```
 
 # Create the VM
 
 This repo contains a shell wrapper for this command. You should only
 need to run this command.
 
-    sh ./start INSTANCE-NAME
+    sh ./start.sh INSTANCE-NAME
 
 If you want to modify the settings of the VM in any way, either modify
 that script or execute its `gcloud` call manually with whatever
