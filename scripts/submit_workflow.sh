@@ -12,7 +12,7 @@ function show_help {
     echo "-h, --help                  print this block"
     echo "-w, --wdl-dir <DIR>         local dir of the analysis-wdls repo"
     echo "-c, --cromwell-url <URL>    URL of the server [default $CROMWELL_URL]"
-    echo "--options <FILE>            workflow options json"
+    echo "--workflow-options <FILE>   workflow options json file"
     exit 0
 }
 
@@ -46,11 +46,13 @@ while test $# -gt 0; do
                 shift
             fi
             ;;
-        --options)
+        --workflow-options*)
+            echo "it is here"
             if [ ! "$2" ] || [[ ! -f $2 ]]; then
-                die 'ERROR: "--options" requires an existing file.'
+                die 'ERROR: "--workflow-options" requires an existing file.'
             else
                 WORKFLOW_OPTIONS=$2
+                echo "set options $2"
                 shift
             fi
             ;;
@@ -69,7 +71,11 @@ WORKFLOW_INPUTS=$2
 
 # derived
 SRC_DIR="$(dirname "${BASH_SOURCE[0]}")"
-WORKFLOW_OPTIONS=$SRC_DIR/workflow_options.json
+
+if [ -z $WORKFLOW_OPTIONS ]; then
+    echo "ERROR: must set '--workflow-options' or submitted workflow won't run"
+    exit 1
+fi
 
 # +---------------------+
 # | ZIP dependencies    |
