@@ -20,6 +20,3 @@ variable cromwell_user_emails {
 variable dependent_lab_service_accounts {
   type = list(string)
 }
-variable gms_service_account {
-  type = string
-}

@@ -21,11 +21,11 @@ case $1 in
         ;;
     "create-deploy")
         echo "Creating new deployment"
-        gcloud deployment-manager deployments create $DEPLOY_NAME --config $SRC_DIR/jinja/deployment.yaml
+        gcloud deployment-manager deployments create $DEPLOY_NAME --config $SRC_DIR/central-server/jinja/deployment.yaml
         ;;
     "update-deploy")
         echo "Updating previous deployment"
-        gcloud deployment-manager deployments update $DEPLOY_NAME --config $SRC_DIR/jinja/deployment.yaml
+        gcloud deployment-manager deployments update $DEPLOY_NAME --config $SRC_DIR/central-server/jinja/deployment.yaml
         ;;
     "build-and-tag")
         echo "Building container image tagged latest"
