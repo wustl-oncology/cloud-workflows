@@ -151,13 +151,54 @@ dependencies at `/shared/analysis-wdls/workflows.zip`.
 Once you're in the VM instance, Cromwell commands can be executed as
 normal with the following base command
 
-    java -Dconfig.file=/opt/cromwell/config/cromwell.conf -jar /opt/cromwell/jar/cromwell.jar
+    java -Dconfig.file=/shared/cromwell.conf -jar /shared/cromwell.jar
+
+Alternatively, the alias `cromwell` is available if you run the
+command `source /shared/helpers.sh`. Examples below.
 
 Any modifications to cromwell.conf can be made in the VM if they're a
 one-off, or in this repo to apply for subsequent instances.
 
-TODO: expand to "run a workflow", "run a server", execute helper for
-timing diagram
+
+## Run a Workflow
+
+Example call for Somatic Exome pipeline with example data
+
+    java -Dconfig.file=/shared/cromwell.conf -jar /shared/cromwell.jar \
+        run /shared/analysis-wdls/definitions/somatic_exome.wdl \
+        --inputs /shared/analysis-wdls/example-data/somatic_exome.yml \
+        --imports /shared/analysis-wdls/workflows.zip
+
+Alternatively, if you `source /shared/helpers.sh` a short-hand command
+is available, the entire first line replaced with `cromwell`, e.g.
+
+    cromwell run /shared/analysis-wdls/definitions/somatic_exome.wdl \
+        --inputs /shared/analysis-wdls/example-data/somatic_exome.yml \
+        --imports /shared/analysis-wdls/workflows.zip
+
+
+# Save Timing Diagram and Outputs List
+
+After a workflow is run, before exiting and deleting your VM, make
+sure that the timing diagram and the list of outputs are available so
+you can make use of the data outside of the cloud.
+
+
+After `source /shared/helpers.sh` is done, the following command will
+persist these artifacts to your bucket
+
+    save_artifacts WORKFLOW_ID gs://BUCKET/desired/path
+
+This command will upload the workflow's artifacts to GCS so they can
+be used after the VM is deleted. They can be found at paths
+
+    gs://BUCKET/desired/path/WORKFLOW_ID/timing.html
+    gs://BUCKET/desired/path/WORKFLOW_ID/outputs.json
+
+The file `outputs.json` will simply be a map of output names to their
+GCS locations. The `pull_outputs.py` script can be used to retrieve
+the actual files.
+
 
 
 # Additional Tools in VM
@@ -170,12 +211,34 @@ server_startup.py. Anything you'd like to add can be added one-off
 with `sudo apt-get` or on subsequent instances by modifying the value
 of `PACKAGES` in the startup script.
 
-There also is a file, `/shared/helpers.sh` containing helpers for the
-shell. I mostly use it to remember lengthy commands or file
-locations. If there's anything you find useful in that file, `source
-/shared/helpers.sh` to use them from the terminal.
 
-TODO: more hand-holding
+## Viewing Startup Logs
+
+This is easiest done via `journalctl`.
+
+    journalctl -u google-startup-scripts.service
+
+For additional settings see `journalctl --help`
+
+
+# Pulling the Outputs from GCS back to the Cluster
+
+After the work in your compute instance is all done, including
+`save_artifacts`, and you want to bring your results back to the
+cluster, leverage the `pull_outputs.py` script with the generated
+`outputs.json` to retrieve the files.
+
+On compute1 cluster, jump into a docker container with the script available
+```sh
+bsub -Is -q general-interactive -G $GROUP -a "docker(jackmaruska/cloudize-workflow:latest)" /bin/bash
+```
+
+Execute the script
+```sh
+python3 /opt/scripts/pull_outputs.py
+    --outputs-file=gs://BUCKET/desired/path/WORKFLOW_ID/outputs.json \
+    --outputs-dir=/path/to/outputs/dir
+```
 
 
 # Q&A

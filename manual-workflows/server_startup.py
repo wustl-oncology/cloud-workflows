@@ -1,9 +1,6 @@
 #!/usr/bin/env python3
 import os
 
-INSTALL_DIR = os.path.join(os.path.sep, 'opt', 'cromwell')
-JAR_DIR = os.path.join(INSTALL_DIR, "jar")
-CONFIG_DIR = os.path.join(INSTALL_DIR, "config")
 SHARED_DIR = os.path.join(os.path.sep, 'shared')
 
 GOOGLE_URL = "http://metadata.google.internal/computeMetadata/v1/instance/attributes"
@@ -25,9 +22,8 @@ PACKAGES = [
 
 def create_directories():
     print("Create directories...")
-    for dn in (INSTALL_DIR, JAR_DIR, CONFIG_DIR, SHARED_DIR):
-        if not os.path.exists(dn):
-            os.makedirs(dn)
+    if not os.path.exists(SHARED_DIR):
+        os.makedirs(SHARED_DIR)
     os.system(f'chmod -R 777 {SHARED_DIR}')
     print("Create directories... DONE")
 
@@ -45,7 +41,7 @@ def install_packages():
 def install_cromwell():
     print("Install cromwell...")
     import requests
-    jar_path = os.path.join(JAR_DIR, "cromwell.jar")
+    jar_path = os.path.join(SHARED_DIR, "cromwell.jar")
     if os.path.exists(jar_path):
         print("Already installed at {} ...".format(jar_path))
     else:
@@ -94,6 +90,6 @@ if __name__ == '__main__':
     download_from_metadata('helpers-sh', os.path.join(SHARED_DIR, 'helpers.sh'))
     install_packages()
     install_cromwell()
-    download_from_metadata('cromwell-conf', os.path.join(CONFIG_DIR, 'cromwell.conf'))
+    download_from_metadata('cromwell-conf', os.path.join(SHARED_DIR, 'cromwell.conf'))
     clone_analysis_wdls()
     print("Startup script...DONE")

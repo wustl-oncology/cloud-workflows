@@ -3,7 +3,7 @@
 function show_help {
     echo "$0 - Create/Destroy resources for manual Cromwell workflow execution"
     echo ""
-    echo "usage: $0 COMMAND --project <PROJECT> --bucket <BUCKET> [--email <EMAIL>]"
+    echo "usage: sh $0 COMMAND --project <PROJECT> --bucket <BUCKET> [--email <EMAIL>]"
     echo ""
     echo "commands:"
     echo "    grant-permissions       Grant a new user required permissions to run workflows"
@@ -104,6 +104,7 @@ case $COMMAND in
         gcloud iam service-accounts add-iam-policy-binding $COMPUTE_ACCOUNT \
                --member=user:$EMAIL \
                --role='roles/iam.serviceAccountUser' > /dev/null
+        echo ""
         ;;
     "revoke-permissions")
         if [ -z $EMAIL ]; then
@@ -120,6 +121,7 @@ case $COMMAND in
                --member=user:$EMAIL \
                --role='roles/iam.serviceAccountUser' \
                --project=$PROJECT > /dev/null
+        echo ""
         ;;
     "init-project")
         # Create Service Account
@@ -133,13 +135,14 @@ case $COMMAND in
         gsutil mb -b on gs://$BUCKET
         # Generate cromwell.conf
         generate_cromwell_conf
+        echo ""
         ;;
     "generate-cromwell-conf")
         generate_cromwell_conf
         ;;
 esac
 
-echo ""
 echo "Completed $COMMAND. Check stderr logs and make sure nothing unexpected"
 echo "happened. Script optimistically executes and will relay gcloud's error on"
 echo "redundant operations, e.g. creating a resource that already exists."
+echo ""

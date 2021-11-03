@@ -1,6 +1,12 @@
 SRC_DIR="$(dirname "${BASH_SOURCE[0]}")"
 
 INSTANCE_NAME=$1
+if [ -z $INSTANCE_NAME ]; then
+    echo "ERROR: must set instance name."
+    echo "usage: sh $0 INSTANCE"
+    exit 1
+fi
+
 CROMWELL_CONF=${2:-"$SRC_DIR/cromwell.conf"}
 if [ ! -f $CROMWELL_CONF ]; then
     echo "cromwell.conf does not exist. Check passed value or generate via"
