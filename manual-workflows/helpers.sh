@@ -17,7 +17,7 @@ function refresh_zip_deps () {
     cd $OLD_DIR
 }
 
-function save_timing_chart () {
+function save_artifacts () {
     WORKFLOW_ID=$1
     GCS_PATH=$2
     if [[ -z $WORKFLOW_ID || -z $GCS_PATH ]]; then
@@ -34,12 +34,18 @@ function save_timing_chart () {
             kill  $CROMWELL_PID $(pgrep -P $CROMWELL_PID)
         else
             echo "Cromwell server completed startup"
-            curl --fail http://localhost:8000/api/workflows/v1/$WORKFLOW_ID/timing > ${WORKFLOW_ID}_timing.html
-            if [[ $? -ne 0 ]]; then
+            mkdir -p $WORKFLOW_ID
+            curl --fail http://localhost:8000/api/workflows/v1/$WORKFLOW_ID/timing \
+                 > ${WORKFLOW_ID}/timing.html
+            if [ $? -ne 0 ]; then
                 echo "Request for timing diagram on workflow $WORKFLOW_ID failed."
-            else
-                gsutil cp $GCS_PATH ${WORKFLOW_ID}_timing.html
             fi
+            curl --fail http://localhost:8000/api/workflows/v1/$WORKFLOW_ID/outputs \
+                 > ${WORKFLOW_ID}/outputs.json
+            if [ $? -ne 0 ]; then
+                echo "Request for outputs on workflow $WORKFLOW_ID failed."
+            fi
+            gsutil cp -r ${WORKFLOW_ID} $GCS_PATH/${WORKFLOW_ID}
             kill $CROMWELL_PID $(pgrep -P $CROMWELL_PID)
         fi
     fi
