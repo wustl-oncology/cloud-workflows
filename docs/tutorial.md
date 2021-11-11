@@ -38,8 +38,7 @@ readable and commands more copy-paste friendly. This isn't strictly
 necessary but hopefully it helps.
 
 ```sh
-export ANALYSIS_WDLS=/scratch1/fs1/oncology/maruska/analysis-wdls
-export WORKFLOW_DEFINITION=$ANALYSIS_WDLS/definitions/pipelines/somatic_exome.wdl
+export WORKFLOW_DEFINITION=/scratch1/fs1/oncology/maruska/analysis-wdls/definitions/pipelines/somatic_exome.wdl
 export LOCAL_INPUT=/storage1/fs1/mgriffit/Active/griffithlab/adhoc/somatic_exome_wdl.yaml
 export CLOUD_INPUT=$PWD/somatic_exome_cloud.yaml
 export GCS_BUCKET=griffith-lab-cromwell
@@ -74,13 +73,9 @@ Submitting a workflow has two parts, the first is zipping all
 dependency workflows together, and the second is sending the submit
 request to the server.
 
-Until a change is made to move this to a flag, `submit_workflow.sh`
-expects an env var `ANALYSIS_WDLS` to be set to the location of that
-directory. Export that if you haven't in step 0.
-
 ```sh
-export ANALYSIS_WDLS=/scratch1/fs1/oncology/maruska/analysis-wdls
-sh /opt/scripts/submit_workflow.sh $WORKFLOW_DEFINITION $CLOUD_INPUT
+sh /opt/scripts/submit_workflow.sh $WORKFLOW_DEFINITION $CLOUD_INPUT \
+    --wdl-dir=/scratch1/fs1/oncology/maruska/analysis-wdls
 ```
 
 The response to this call will provide you with your `$WORKFLOW_ID`
@@ -164,9 +159,11 @@ path `backend.provider.<YOUR_LAB>.config.root`, whose value will be
 `gs://<YOUR_BUCKET>/<subpath>`.
 
 
-## Saturating pipe on uploads
+## Saturating Pipe to GCS
 
 When uploading input files to GCS form a bsub job, add to your
-`rusage` the value `internet2_upload_mbps=5000`. Or lower if you're
-worried about leaving room for others. This removes an overhead cap
-and should help you get maximum bandwidth on WashU's pipe to Google.
+`rusage` the value `internet2_upload_mbps=500`. This value maxes out
+at 5000 across the entire organization. This removes an overhead cap
+and should help you get faster uploads.
+
+The same applies to downloads with `internet2_download_mbps`

@@ -17,7 +17,7 @@ function save_artifacts () {
     WORKFLOW_ID=$1
     GCS_PATH=$2
     if [[ -z $WORKFLOW_ID || -z $GCS_PATH ]]; then
-        echo "Usage: save_timing_chart WORKFLOW_ID GCS_PATH"
+        echo "Usage: save_artifacts WORKFLOW_ID GCS_PATH"
     else
         # Server start-up and destruction
         cromwell server > cromwell.log & > /dev/null
