@@ -27,6 +27,12 @@ case $1 in
         echo "Updating previous deployment"
         gcloud deployment-manager deployments update $DEPLOY_NAME --config $SRC_DIR/central-server/jinja/deployment.yaml
         ;;
+    "redeploy")
+        echo "Deleting previous deployment"
+        gcloud deployment-manager deployments delete $DEPLOY_NAME
+        echo "Creating new deployment"
+        gcloud deployment-manager deployments create $DEPLOY_NAME --config $SRC_DIR/central-server/jinja/deployment.yaml
+        ;;
     "build-and-tag")
         echo "Building container image tagged latest"
         docker build $SRC_DIR -t $DOCKER_IMAGE:latest

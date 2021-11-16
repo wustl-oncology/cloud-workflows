@@ -9,7 +9,7 @@ resources:
       cromwell_db_ip: "35.239.226.220"
       cromwell_db_password: <PASSWORD>
       cromwell_service_mem: 11
-      cromwell_version: 56
+      cromwell_version: 71
       region: us-central1
       network_target_tag: "cromwell-server"
       vm_boot_disk_size: 10
