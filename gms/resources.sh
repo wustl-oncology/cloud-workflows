@@ -1,8 +1,7 @@
 #!/bin/bash
 
-function show-help {
+function show_help {
     echo "$0 - One-time setup to create resources required by GMS to run workflows"
-    echo ""
     echo "usage: $0 --project PROJECT --bucket BUCKET"
     echo ""
     echo "arguments:"
@@ -18,14 +17,14 @@ function show-help {
 
 function die {
     printf '%s\n' "$1" >&2
-    show-help
+    show_help
     exit 1
 }
 
 while test $# -gt 0; do
     case $1 in
         -h|-\?|--help)
-            show-help
+            show_help
             exit 0
             ;;
         --project*)
