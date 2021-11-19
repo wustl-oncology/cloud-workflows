@@ -1,0 +1,16 @@
+[Unit]
+Description=Cromwell Server
+After=network.target
+
+[Service]
+User=root
+Group=root
+Restart=always
+TimeoutStopSec=10
+RestartSec=5
+WorkingDirectory=/opt/cromwell
+Environment=LOG_MODE=standard
+ExecStart=/usr/bin/java -Dconfig.file=/opt/cromwell/cromwell.conf -jar /opt/cromwell/cromwell.jar server
+
+[Install]
+WantedBy=multi-user.target
