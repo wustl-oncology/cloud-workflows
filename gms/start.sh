@@ -5,23 +5,25 @@ SRC_DIR=$(dirname "$0")
 CROMWELL_VERSION=71
 
 show_help () {
-    echo "$0 - Start a new Cromwell VM instance to run workflow"
-    echo ""
-    echo "usage: $0 [--argument value]*"
-    echo ""
-    echo "arguments:"
-    echo "-h, --help             print this block and immediately exits"
-    echo "--build                Used to distinguish resources in a shared project"
-    echo "                       Assumes only one cloud run per build at a time"
-    echo "--bucket               Name of the GCS bucket to store artifacts like timing diagram"
-    echo "--deps-zip             GCS path to WDL dependencies in a .zip file"
-    echo "--service-account      Email identifier of service account used by main Cromwell instance"
-    echo "--cromwell-conf        Local path to configuration file for Cromwell server"
-    echo "--workflow-definition  Local path to workflow definition .wdl file"
-    echo "--workflow-inputs      Local path to workflow inputs .yaml file"
-    echo "--workflow-options     Local path to workflow options .json file"
-    echo ""
-    echo "All arguments (besides help) are required and have an associated value. None are flags."
+    cat <<EOF
+$0 - Start a new Cromwell VM instance to run workflow
+
+usage: $0 [--argument value]*
+
+arguments:
+-h, --help             print this block and immediately exits
+--build                Used to distinguish resources in a shared project
+                       Assumes only one cloud run per build at a time
+--bucket               Name of the GCS bucket to store artifacts like timing diagram
+--deps-zip             GCS path to WDL dependencies in a .zip file
+--service-account      Email identifier of service account used by main Cromwell instance
+--cromwell-conf        Local path to configuration file for Cromwell server
+--workflow-definition  Local path to workflow definition .wdl file
+--workflow-inputs      Local path to workflow inputs .yaml file
+--workflow-options     Local path to workflow options .json file
+
+All arguments (besides help) are required and have an associated value. None are flags.
+EOF
 }
 
 
