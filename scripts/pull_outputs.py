@@ -106,7 +106,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     outputs_dir = args.outputs_dir or DEFAULT_OUTPUTS_DIR
-    cromwell_url = args.cromwell_url or os.environ['CROMWELL_URL'] or DEFAULT_CROMWELL_URL
+    cromwell_url = args.cromwell_url or os.environ.get('CROMWELL_URL', DEFAULT_CROMWELL_URL)
     dir_structure = args.dir_structure or DEFAULT_DIR_STRUCTURE
     if not dir_structure in ["FLAT", "DEEP"]:
         raise Exception("--dir-structure must be given a value of either FLAT or DEEP")
