@@ -97,7 +97,7 @@ if __name__ == "__main__":
                         help="the UUID of the workflow run to pull outputs for. Exclusive with outputs_file")
     parser.add_argument("--outputs-file",
                         help="JSON file of workflow outputs to pull. Exclusive with workflow_id.")
-    parser.add_argument("-o", "--outputs-dir",
+    parser.add_argument("--outputs-dir",
                         help=f"directory path to download outputs to. Defaults to {DEFAULT_OUTPUTS_DIR}")
     parser.add_argument("--cromwell-url",
                         help=f"URL of the relevant Cromwell server. Honors env var CROMWELL_URL. Defaults to {DEFAULT_CROMWELL_URL}")
