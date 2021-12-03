@@ -1,10 +1,10 @@
 #!/bin/bash
 
-SRC_DIR="$(dirname "${BASH_SOURCE[0]}")"
+SRC_DIR=$(dirname "$0")
 
 CROMWELL_VERSION=71
 
-function show-help {
+show_help () {
     echo "$0 - Start a new Cromwell VM instance to run workflow"
     echo ""
     echo "usage: $0 [--argument value]*"
@@ -29,16 +29,16 @@ function show-help {
 # http://mywiki.wooledge.org/BashFAQ/035
 # --long-opt* example here
 # https://stackoverflow.com/a/7069755
-function die {
+die () {
     printf '%s\n' "$1" >&2
-    show-help
+    show_help
     exit 1
 }
 
 while test $# -gt 0; do
     case $1 in
         -h|-\?|--help)
-            show-help
+            show_help
             exit 0
             ;;
         --workflow-definition*)
@@ -50,7 +50,7 @@ while test $# -gt 0; do
             fi
             ;;
         --workflow-inputs*)
-            if [[ ! -e $2 ]]; then
+            if [ ! -e $2 ]; then
                 die 'ERROR: "--workflow-inputs" requires an existing file argument.'
             else
                 WORKFLOW_INPUTS=$2
@@ -58,7 +58,7 @@ while test $# -gt 0; do
             fi
             ;;
         --workflow-options*)
-            if [[ ! -e $2 ]]; then
+            if [ ! -e $2 ]; then
                 die 'ERROR: "--workflow-options" requires an existing file argument.'
             else
                 WORKFLOW_OPTIONS=$2
@@ -98,7 +98,7 @@ while test $# -gt 0; do
             fi
             ;;
         --cromwell-conf*)
-            if [[ ! -e $2 ]]; then
+            if [ ! -e $2 ]; then
                 die 'ERROR: "--cromwell-conf" requires an existing file argument.'
             else
                 CROMWELL_CONF=$2
