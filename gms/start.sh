@@ -7,7 +7,6 @@ CROMWELL_VERSION=71
 show_help () {
     cat <<EOF
 $0 - Start a new Cromwell VM instance to run workflow
-
 usage: $0 [--argument value]*
 
 arguments:
@@ -32,7 +31,7 @@ EOF
 # --long-opt* example here
 # https://stackoverflow.com/a/7069755
 die () {
-    printf '%s\n' "$1" >&2
+    printf '%s\n\n' "$1" >&2
     show_help
     exit 1
 }
@@ -111,14 +110,14 @@ while test $# -gt 0; do
     shift
 done
 
-[ -z $BUCKET ] && die "Missing --bucket argument."
-[ -z $BUILD ] && die "Missing --build argument."
-[ -z $CROMWELL_CONF ] && die "Missing --cromwell-conf argument."
-[ -z $DEPS_ZIP ] && die "Missing --deps-zip argument."
-[ -z $SERVICE_ACCOUNT ] && die "Missing --service-account argument."
-[ -z $WORKFLOW_DEFINITION ] && die "Missing --workflow-definition argument."
-[ -z $WORKFLOW_INPUTS ] && die "Missing --workflow-inputs argument."
-[ -z $WORKFLOW_OPTIONS ] && die "Missing --workflow-options argument."
+[ -z $BUCKET              ] && die "Missing argument --bucket"
+[ -z $BUILD               ] && die "Missing argument --build"
+[ -z $CROMWELL_CONF       ] && die "Missing argument --cromwell-conf"
+[ -z $DEPS_ZIP            ] && die "Missing argument --deps-zip"
+[ -z $SERVICE_ACCOUNT     ] && die "Missing argument --service-account"
+[ -z $WORKFLOW_DEFINITION ] && die "Missing argument --workflow-definition"
+[ -z $WORKFLOW_INPUTS     ] && die "Missing argument --workflow-inputs"
+[ -z $WORKFLOW_OPTIONS    ] && die "Missing argument --workflow-options"
 
 gcloud compute instances create $BUILD \
        --image-family debian-11 \
