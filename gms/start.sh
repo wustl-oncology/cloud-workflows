@@ -129,10 +129,10 @@ done
 [ -z $WORKFLOW_OPTIONS    ] && die "Missing argument --workflow-options"
 
 MEMORY_GB=${MEMORY_GB:-"2"}
-MEMORY_MB=$(expr $MEMORY_GB * 1024)
+MEMORY_MB=$(expr $MEMORY_GB "*" 1024)
+VCPUS=$(( $MEMORY_GB * 10 / 65 + 1))  # 6.5GB RAM per vCPU
 CROMWELL_SERVICE_MEM=$(expr $MEMORY_MB - 512)
 
-echo "Using ${MEMORY_GB}GB memory, with ${CROMWELL_SERVICE_MEM}MB for Cromwell"
 cat <<EOF > $SRC_DIR/cromwell.service
 [Unit]
 Description=Cromwell Server
@@ -153,7 +153,7 @@ WantedBy=multi-user.target
 EOF
 
 gcloud compute instances create "build-$BUILD" \
-       --custom-memory="${MEMORY_GB}GB" \
+       --custom-memory="${MEMORY_GB}GB" --custom-cpu $VCPUS \
        --image-family debian-11 \
        --image-project debian-cloud \
        --zone us-central1-c \
