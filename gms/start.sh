@@ -20,6 +20,7 @@ arguments:
 --workflow-definition  Local path to workflow definition .wdl file
 --workflow-inputs      Local path to workflow inputs .yaml file
 --workflow-options     Local path to workflow options .json file
+--memory-gb            Amount of memory to request for the Cromwell server instance, in GB
 
 All arguments (besides help) are required and have an associated value. None are flags.
 EOF
@@ -106,6 +107,14 @@ while test $# -gt 0; do
                 shift
             fi
             ;;
+        --memory-gb*)
+            if [ ! "$2" ]; then
+                die 'ERROR: "--memory" requires a string for amount of memory to assign the instance.'
+            else
+                MEMORY_GB=$2
+                shift
+            fi
+            ;;
     esac
     shift
 done
@@ -119,7 +128,32 @@ done
 [ -z $WORKFLOW_INPUTS     ] && die "Missing argument --workflow-inputs"
 [ -z $WORKFLOW_OPTIONS    ] && die "Missing argument --workflow-options"
 
-gcloud compute instances create $BUILD \
+MEMORY_GB=${MEMORY_GB:-"2"}
+MEMORY_MB=$(expr $MEMORY_GB * 1024)
+CROMWELL_SERVICE_MEM=$(expr $MEMORY_MB - 512)
+
+echo "Using ${MEMORY_GB}GB memory, with ${CROMWELL_SERVICE_MEM}MB for Cromwell"
+cat <<EOF > $SRC_DIR/cromwell.service
+[Unit]
+Description=Cromwell Server
+After=network.target
+
+[Service]
+User=root
+Group=root
+Restart=always
+TimeoutStopSec=10
+RestartSec=5
+WorkingDirectory=/opt/cromwell
+Environment=LOG_MODE=standard
+ExecStart=/usr/bin/java -Xmx${CROMWELL_SERVICE_MEM}M -Dconfig.file=/opt/cromwell/cromwell.conf -jar /opt/cromwell/cromwell.jar server
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+gcloud compute instances create "build-$BUILD" \
+       --custom-memory="${MEMORY_GB}GB" \
        --image-family debian-11 \
        --image-project debian-cloud \
        --zone us-central1-c \
