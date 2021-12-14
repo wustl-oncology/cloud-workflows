@@ -115,10 +115,19 @@ while test $# -gt 0; do
                 shift
             fi
             ;;
+        --tmp-dir*)
+            if [ -e $2 ]; then
+                TMP_DIR=$2
+                shift
+            else
+                die 'ERROR: "--tmp-dir" requires an existing file argument.'
+            fi
+            ;;
     esac
     shift
 done
 
+# Required args
 [ -z $BUCKET              ] && die "Missing argument --bucket"
 [ -z $BUILD               ] && die "Missing argument --build"
 [ -z $CROMWELL_CONF       ] && die "Missing argument --cromwell-conf"
@@ -127,13 +136,15 @@ done
 [ -z $WORKFLOW_DEFINITION ] && die "Missing argument --workflow-definition"
 [ -z $WORKFLOW_INPUTS     ] && die "Missing argument --workflow-inputs"
 [ -z $WORKFLOW_OPTIONS    ] && die "Missing argument --workflow-options"
-
+# Optional args
 MEMORY_GB=${MEMORY_GB:-"2"}
+TMP_DIR=${TMP_DIR:-$(cwd)}
+# Derived values
 MEMORY_MB=$(expr $MEMORY_GB "*" 1024)
 VCPUS=$(( $MEMORY_GB * 10 / 65 + 1))  # 6.5GB RAM per vCPU
 CROMWELL_SERVICE_MEM=$(expr $MEMORY_MB - 512)
 
-cat <<EOF > $SRC_DIR/cromwell.service
+cat <<EOF > $TMP_DIR/cromwell.service
 [Unit]
 Description=Cromwell Server
 After=network.target
@@ -161,4 +172,4 @@ gcloud compute instances create "build-$BUILD" \
        --scopes=cloud-platform \
        --service-account=$SERVICE_ACCOUNT \
        --metadata=cromwell-version=$CROMWELL_VERSION,deps-zip=$DEPS_ZIP,bucket=$BUCKET,build-id=$BUILD,auto-shutdown=1 \
-       --metadata-from-file=startup-script=$SRC_DIR/server_startup.py,cromwell-conf=$CROMWELL_CONF,cromwell-service=$SRC_DIR/cromwell.service,workflow-wdl=$WORKFLOW_DEFINITION,inputs-yaml=$WORKFLOW_INPUTS,options-json=$WORKFLOW_OPTIONS
+       --metadata-from-file=startup-script=$SRC_DIR/server_startup.py,cromwell-conf=$CROMWELL_CONF,cromwell-service=$TMP_DIR/cromwell.service,workflow-wdl=$WORKFLOW_DEFINITION,inputs-yaml=$WORKFLOW_INPUTS,options-json=$WORKFLOW_OPTIONS

@@ -26,7 +26,7 @@ def file_extensions(path):
 def download_from_gcs(src, dest):
     ensure_parent_dir_exists(dest)
     if not Path(dest).is_file():
-        os.system(f"gsutil cp {src} {dest}")
+        os.system(f"gsutil cp -n {src} {dest}")
 
 
 # --- Cromwell server
@@ -115,6 +115,7 @@ if __name__ == "__main__":
         raise Exception("must specify only one of --workflow-id and --outputs-file")
     elif args.workflow_id:
         outputs = request_outputs(args.workflow_id, cromwell_url)
+        outputs_dir = f"{outputs_dir}/{args.workflow_id}"
     elif args.outputs_file:
         outputs = read_json(args.outputs_file)
     else:  # not (workflow_id or outputs_file):
@@ -122,6 +123,6 @@ if __name__ == "__main__":
 
 
     if args.dir_structure == "FLAT":
-        flat_download(outputs, f"{outputs_dir}/{args.workflow_id}")
+        flat_download(outputs, outputs_dir)
     else:
-        deep_download(outputs, f"{outputs_dir}/{args.workflow_id}")
+        deep_download(outputs, outputs_dir)
