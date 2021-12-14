@@ -6,4 +6,3 @@ dependent_lab_service_accounts = [
   "cromwell-compute@oncology-bolton-lab.iam.gserviceaccount.com"
 ]
 cromwell_user_emails = []
-cromwell_db_instance_type = "db-n1-standard-2"

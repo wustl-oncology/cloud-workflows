@@ -1,10 +1,10 @@
 {
+    "final_workflow_outputs_dir": "gs://kbolton-lab-cromwell/output_data",
     "final_workflow_log_dir": "gs://kbolton-lab-cromwell/final-logs",
     "final_call_logs_dir": "gs://kbolton-lab-cromwell/call-logs",
     "enable_ssh_access": true,
     "default_runtime_attributes": {
-        "backend": "BoltonLab",
-        "preemptible": 1
+        "backend": "BoltonLab"
     },
     "backend": "BoltonLab",
     "use_relative_output_paths": false

@@ -2,9 +2,6 @@ variable cromwell_db_root_password {
   type = string
   sensitive = true
 }
-variable cromwell_db_instance_type {
-  type = string
-}
 
 variable cromwell_port {
   type = string
