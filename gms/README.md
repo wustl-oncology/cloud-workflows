@@ -27,3 +27,18 @@ configuration.
 
 You should now be able to run a workflow on the cloud via your new
 environment configuration.
+
+
+## Who can use these resources?
+
+Permissions required to run a GMS workflow are:
+- create a compute instance
+- read/write files to bucket
+- use Cromwell server service account
+  which enables using the Cromwell compute service account, and run
+  lifesciences workflows
+
+GMS should be enforcing these requirements on the running user,
+meaning you have to be `gcloud auth`d to operate. This works for
+manual workflow kickoffs but not for automated ingestion, which will
+be tackled later.
