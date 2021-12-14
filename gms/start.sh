@@ -50,7 +50,7 @@ while test $# -gt 0; do
             fi
             ;;
         --workflow-inputs*)
-            if [[ ! -e $2 ]]; then
+            if [ ! -e $2 ]; then
                 die 'ERROR: "--workflow-inputs" requires an existing file argument.'
             else
                 WORKFLOW_INPUTS=$2
@@ -58,7 +58,7 @@ while test $# -gt 0; do
             fi
             ;;
         --workflow-options*)
-            if [[ ! -e $2 ]]; then
+            if [ ! -e $2 ]; then
                 die 'ERROR: "--workflow-options" requires an existing file argument.'
             else
                 WORKFLOW_OPTIONS=$2
@@ -98,7 +98,7 @@ while test $# -gt 0; do
             fi
             ;;
         --cromwell-conf*)
-            if [[ ! -e $2 ]]; then
+            if [ ! -e $2 ]; then
                 die 'ERROR: "--cromwell-conf" requires an existing file argument.'
             else
                 CROMWELL_CONF=$2
