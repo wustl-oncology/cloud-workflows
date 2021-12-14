@@ -261,7 +261,7 @@ def write_new_inputs(new_input_obj, output_path):
     """Write a Python object to a file. Defaults to YAML format unless output_path ends .json"""
     if output_path.suffix == ".json":
         with open(output_path, 'w+') as f:
-            json.dump(new_input_obj, f)
+            f.write(json.dump(new_input_obj, output_path))
     else:
         yaml.dump(new_input_obj, output_path)
     print(f"Inputs dumped to {output_path}")

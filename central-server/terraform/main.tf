@@ -46,6 +46,6 @@ module "cromwell" {
   allowed_ip_ranges = [var.washu_internet_range, var.washu_internet2_range ]
   cromwell_port = var.cromwell_port
 
-  db_instance_type = var.cromwell_db_instance_type
+  db_instance_type = "db-n1-standard-2"
   db_root_password = var.cromwell_db_root_password
 }
