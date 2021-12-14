@@ -64,6 +64,9 @@ gcloud projects add-iam-policy-binding $PROJECT \
 gcloud projects add-iam-policy-binding $PROJECT \
        --member="serviceAccount:$SERVER_ACCOUNT" \
        --role='roles/compute.instanceAdmin' > /dev/null
+gcloud projects add-iam-policy-binding $PROJECT \
+       --member="serviceAccount:$SERVER_ACCOUNT" \
+       --role='roles/iam.serviceAccountUser' > /dev/null
 
 # Task compute VM service account
 gcloud iam service-accounts create $COMPUTE_NAME \

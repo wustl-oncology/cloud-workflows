@@ -1,11 +1,11 @@
 {
     "enable_ssh_access": true,
     "default_runtime_attributes": {
-        "backend": "GriffithLab"
+        "backend": "GriffithLab",
+        "preemptible": 1
     },
     "backend": "GriffithLab",
     "final_workflow_log_dir": "gs://griffith-lab-cromwell/final-logs",
-    "final_workflow_outputs_dir": "gs://griffith-lab-cromwell/outputs",
     "final_call_logs": "gs://griffith-lab-cromwell/call-logs",
     "use_relative_output_paths": false,
     "read_from_cache": true

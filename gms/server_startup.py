@@ -158,9 +158,10 @@ def persist_vm_logs(gcs_dir):
     We want this to troubleshoot issues since the VM dies.
     This won't help when there are issues with uploading to bucket, though..
     """
-    timestamp = datetime.datetime.now().replace(microsecond=0).isoformat()
     os.system('journalctl -u google-startup-scripts > vm.log')
-    os.system(f"gsutil cp vm.log {gcs_dir}/vm_{timestamp}.log")
+    os.system('journalctl -u cromwell > cromwell.log')
+    os.system(f"gsutil cp vm.log {gcs_dir}/vm.log")
+    os.system(f"gsutil cp cromwell.log {gcs_dir}/cromwell.log")
 
 
 def persist_url_response(url, gcs_dir, filename):
@@ -199,13 +200,19 @@ if __name__ == '__main__':
 
     os.makedirs(CROMWELL_DIR, exist_ok=True)
 
-    # Pull required parameters from instance tags
+    # Pull required parameters from instance tags.
+    #
+    # These are outside the try because they're required by the
+    # finally.  If failure occurs before the try, auto-shutdown and
+    # log persistence won't happen and troubleshooting must be done
+    # via SSH.
     bucket = _fetch_instance_attribute('bucket')
     build = _fetch_instance_attribute('build-id')
-    cromwell_version = _fetch_instance_attribute('cromwell-version')
+    outdir = f"gs://{bucket}/build.{build}"
     auto_shutdown = bool(_fetch_instance_attribute('auto-shutdown'))
 
     try:
+        cromwell_version = _fetch_instance_attribute('cromwell-version')
         # Pull required files from instance tags
         write_from_metadata('cromwell-conf', CROMWELL_CONF)
         write_from_metadata('cromwell-service', CROMWELL_SERVICE)
@@ -240,7 +247,13 @@ if __name__ == '__main__':
         logging.info(f"Final status is {status}")
 
         # Persist artifacts
-        outdir = f"gs://{bucket}/build.{build}/workflow.{workflow_id}"
+        #
+        # This current approach will overwrite previous artifacts if
+        # the same build is re-ran. If this is a problem then we can
+        # come back and add a separate identifier to store
+        # them. workflow_id WON'T work because that value isn't
+        # exposed to GMS. Probably will have to have GMS create that
+        # identifier and pass in as attribute.
         persist_url_response(f"{CROMWELL_URL}/{workflow_id}/timing", outdir, 'timing.html')
         logging.info("Persisted timing.html")
         if status == "Succeeded":
@@ -251,6 +264,11 @@ if __name__ == '__main__':
         logging.info("Startup script...DONE")
 
     finally:
-        persist_vm_logs(f"gs://{bucket}/build.{build}")
+        # VM logs persisted to GCS to enable troubleshooting when
+        # instance self-destructs or in case where SSH is disabled.
+        # Will NOT be persisted if there is an issue with the
+        # bucket. This case will require starting with auto_shutdown
+        # flag disabled, ssh in and check `journalctl google-startup-scripts`
+        persist_vm_logs(outdir)
         if auto_shutdown:
             self_destruct_vm()

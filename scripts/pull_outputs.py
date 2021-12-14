@@ -26,7 +26,7 @@ def file_extensions(path):
 def download_from_gcs(src, dest):
     ensure_parent_dir_exists(dest)
     if not Path(dest).is_file():
-        os.system(f"gsutil cp {src} {dest}")
+        os.system(f"gsutil cp -n {src} {dest}")
 
 
 # --- Cromwell server
@@ -97,7 +97,7 @@ if __name__ == "__main__":
                         help="the UUID of the workflow run to pull outputs for. Exclusive with outputs_file")
     parser.add_argument("--outputs-file",
                         help="JSON file of workflow outputs to pull. Exclusive with workflow_id.")
-    parser.add_argument("-o", "--outputs-dir",
+    parser.add_argument("--outputs-dir",
                         help=f"directory path to download outputs to. Defaults to {DEFAULT_OUTPUTS_DIR}")
     parser.add_argument("--cromwell-url",
                         help=f"URL of the relevant Cromwell server. Honors env var CROMWELL_URL. Defaults to {DEFAULT_CROMWELL_URL}")
@@ -106,7 +106,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     outputs_dir = args.outputs_dir or DEFAULT_OUTPUTS_DIR
-    cromwell_url = args.cromwell_url or os.environ['CROMWELL_URL'] or DEFAULT_CROMWELL_URL
+    cromwell_url = args.cromwell_url or os.environ.get('CROMWELL_URL', DEFAULT_CROMWELL_URL)
     dir_structure = args.dir_structure or DEFAULT_DIR_STRUCTURE
     if not dir_structure in ["FLAT", "DEEP"]:
         raise Exception("--dir-structure must be given a value of either FLAT or DEEP")
@@ -115,6 +115,7 @@ if __name__ == "__main__":
         raise Exception("must specify only one of --workflow-id and --outputs-file")
     elif args.workflow_id:
         outputs = request_outputs(args.workflow_id, cromwell_url)
+        outputs_dir = f"{outputs_dir}/{args.workflow_id}"
     elif args.outputs_file:
         outputs = read_json(args.outputs_file)
     else:  # not (workflow_id or outputs_file):
@@ -122,6 +123,6 @@ if __name__ == "__main__":
 
 
     if args.dir_structure == "FLAT":
-        flat_download(outputs, f"{outputs_dir}/{args.workflow_id}")
+        flat_download(outputs, outputs_dir)
     else:
-        deep_download(outputs, f"{outputs_dir}/{args.workflow_id}")
+        deep_download(outputs, outputs_dir)
