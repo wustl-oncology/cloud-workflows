@@ -64,6 +64,9 @@ gcloud projects add-iam-policy-binding $PROJECT \
 gcloud projects add-iam-policy-binding $PROJECT \
        --member="serviceAccount:$SERVER_ACCOUNT" \
        --role='roles/compute.instanceAdmin' > /dev/null
+gcloud projects add-iam-policy-binding $PROJECT \
+       --member="serviceAccount:$SERVER_ACCOUNT" \
+       --role='roles/iam.serviceAccountUser' > /dev/null
 
 # Task compute VM service account
 gcloud iam service-accounts create $COMPUTE_NAME \
@@ -79,3 +82,16 @@ gsutil mb -b on gs://$BUCKET
 # Service account can use bucket
 gsutil iam ch serviceAccount:$COMPUTE_ACCOUNT:objectAdmin gs://$BUCKET
 gsutil iam ch serviceAccount:$SERVER_ACCOUNT:objectAdmin gs://$BUCKET
+
+
+cat <<EOF
+Check above outputs to make sure nothing unexpected
+happened.  If all is well, you can add these values to your
+environment configuration and run workflows via GMS as normal
+
+    cwlrunner: cromwell_gcp
+    cromwell_gcp_service_account: $SERVER_ACCOUNT
+    cromwell_gcp_bucket: $BUCKET
+    cromwell_gcp_project: $PROJECT
+
+EOF

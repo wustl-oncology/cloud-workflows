@@ -15,8 +15,6 @@ cromwell/cromwell-*.jar
 
 # Manually created untracked files
 outputs/*
-*.log
-gms/cromwell.conf
 
 # Emacs temp files
 *~
