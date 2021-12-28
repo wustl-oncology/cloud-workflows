@@ -89,7 +89,7 @@ Check above outputs to make sure nothing unexpected
 happened.  If all is well, you can add these values to your
 environment configuration and run workflows via GMS as normal
 
-    cwlrunner: cromwell_gcp
+    cwl_runner: cromwell_gcp
     cromwell_gcp_service_account: $SERVER_ACCOUNT
     cromwell_gcp_bucket: $BUCKET
     cromwell_gcp_project: $PROJECT
