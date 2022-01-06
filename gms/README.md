@@ -7,7 +7,9 @@ Enter docker container for this repo, `jackmaruska/cloudize-workflow:latest`
 
 
 Enable requisite APIs in Google Cloud Platform. Easiest way to do this
-is probably just to navigate to them in the web console.
+is probably just to navigate to them in the web console. Follow each
+link and you should see something like this Enable view:
+![Enable view](../docs/enable_api.png)
 
 - https://console.cloud.google.com/storage
 - https://console.cloud.google.com/compute
@@ -19,7 +21,7 @@ Create requisite resources. Any that already exist will spit out an
 "already exists" stderr but these can be safely ignored. This creates
 the required service accounts, bucket, and permissions.
 ```
-sh /opt/resources.sh --project PROJECT --bucket BUCKET
+sh /opt/gms/resources.sh --project PROJECT --bucket BUCKET
 ```
 
 Add the values given from this script to your environment

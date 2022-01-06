@@ -15,6 +15,7 @@ arguments:
                        Assumes only one cloud run per build at a time
 --bucket               Name of the GCS bucket to store artifacts like timing diagram
 --deps-zip             GCS path to WDL dependencies in a .zip file
+--project              GCP project name
 --service-account      Email identifier of service account used by main Cromwell instance
 --cromwell-conf        Local path to configuration file for Cromwell server
 --workflow-definition  Local path to workflow definition .wdl file
@@ -91,6 +92,14 @@ while test $# -gt 0; do
                 shift
             fi
             ;;
+        --project*)
+            if [ ! "$2" ]; then
+                die 'Error: "--project" requires a string argument for the GCP project name used'
+            else
+                PROJECT=$2
+                shift
+            fi
+            ;;
         --bucket*)
             if [ ! "$2" ]; then
                 die 'ERROR: "--bucket" requires a string for the name of your bucket.'
@@ -128,6 +137,7 @@ while test $# -gt 0; do
 done
 
 # Required args
+[ -z $PROJECT             ] && die "Missing argument --project"
 [ -z $BUCKET              ] && die "Missing argument --bucket"
 [ -z $BUILD               ] && die "Missing argument --build"
 [ -z $CROMWELL_CONF       ] && die "Missing argument --cromwell-conf"
@@ -164,6 +174,7 @@ WantedBy=multi-user.target
 EOF
 
 gcloud compute instances create "build-$BUILD" \
+       --project $PROJECT \
        --custom-memory="${MEMORY_GB}GB" --custom-cpu $VCPUS \
        --image-family debian-11 \
        --image-project debian-cloud \
