@@ -62,6 +62,8 @@ SUBNET_NAME="cromwell-subnet"
 COMPUTE_ACCOUNT="$COMPUTE_NAME@$PROJECT.iam.gserviceaccount.com"
 SERVER_ACCOUNT="$SERVER_NAME@$PROJECT.iam.gserviceaccount.com"
 BUCKET_MAX_AGE_DAYS=30
+WASHU_1 = "128.252.0.0/16"
+WASHU_2 = "65.254.96.0/19"
 
 # Cromwell server VM service account
 gcloud iam service-accounts create $SERVER_NAME \
@@ -116,6 +118,7 @@ gcloud compute firewall-rules create cromwell-allow-ssh \
 gcloud compute networks subnets create $SUBNET_NAME \
        --network=$NETWORK_NAME \
        --region=us-central1 \
+       --source-ranges="${WASHU_1},${WASHU_2}" \
        --range=10.10.0.0/16
 
 
