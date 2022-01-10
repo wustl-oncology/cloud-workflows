@@ -55,6 +55,7 @@ NETWORK_NAME="cromwell-network"
 SUBNET_NAME="cromwell-subnet"
 COMPUTE_ACCOUNT="$COMPUTE_NAME@$PROJECT.iam.gserviceaccount.com"
 SERVER_ACCOUNT="$SERVER_NAME@$PROJECT.iam.gserviceaccount.com"
+BUCKET_MAX_AGE_DAYS=30
 
 # Cromwell server VM service account
 gcloud iam service-accounts create $SERVER_NAME \
@@ -81,6 +82,16 @@ gcloud iam service-accounts add-iam-policy-binding $COMPUTE_ACCOUNT \
 
 # Create bucket
 gsutil ls -p $PROJECT -b gs://$BUCKET || gsutil mb -b on gs://$BUCKET
+# Lifecycle rules on the bucket
+cat <<EOF > lifecycle_rules.json
+{
+    "rule": [
+        { "action": {"type": "Delete"}, "condition": {"age": $BUCKET_MAX_AGE_DAYS} }
+    ]
+}
+EOF
+gsutil lifecycle set lifecycle_rules.json gs://$BUCKET
+rm lifecycle_rules.json
 # Service account can use bucket
 gsutil iam ch serviceAccount:$COMPUTE_ACCOUNT:objectAdmin gs://$BUCKET
 gsutil iam ch serviceAccount:$SERVER_ACCOUNT:objectAdmin gs://$BUCKET
