@@ -51,6 +51,8 @@ done
 
 COMPUTE_NAME="cromwell-compute"
 SERVER_NAME="cromwell-server"
+NETWORK_NAME="cromwell-network"
+SUBNET_NAME="cromwell-subnet"
 COMPUTE_ACCOUNT="$COMPUTE_NAME@$PROJECT.iam.gserviceaccount.com"
 SERVER_ACCOUNT="$SERVER_NAME@$PROJECT.iam.gserviceaccount.com"
 
@@ -78,10 +80,26 @@ gcloud iam service-accounts add-iam-policy-binding $COMPUTE_ACCOUNT \
        --role='roles/iam.serviceAccountUser' > /dev/null
 
 # Create bucket
-gsutil mb -b on gs://$BUCKET
+gsutil ls -p $PROJECT -b gs://$BUCKET || gsutil mb -b on gs://$BUCKET
 # Service account can use bucket
 gsutil iam ch serviceAccount:$COMPUTE_ACCOUNT:objectAdmin gs://$BUCKET
 gsutil iam ch serviceAccount:$SERVER_ACCOUNT:objectAdmin gs://$BUCKET
+
+
+# Create new network
+gcloud compute networks create $NETWORK_NAME \
+       --subnet-mode=custom
+# Create firewall rules for network
+gcloud compute firewall-rules create cromwell-allow-ssh \
+       --network $NETWORK_NAME \
+       --action allow --rules tcp:22
+# TODO(john): enable http? https? icmp? cromwell port?
+
+# Create new subnetwork
+gcloud compute networks subnets create $SUBNET_NAME \
+       --network=$NETWORK_NAME \
+       --region=us-central1 \
+       --range=10.10.0.0/16
 
 
 cat <<EOF
@@ -93,5 +111,6 @@ environment configuration and run workflows via GMS as normal
     cromwell_gcp_service_account: $SERVER_ACCOUNT
     cromwell_gcp_bucket: $BUCKET
     cromwell_gcp_project: $PROJECT
+    cromwell_gcp_subnetwork: $SUBNET_NAME
 
 EOF

@@ -108,6 +108,15 @@ while test $# -gt 0; do
                 shift
             fi
             ;;
+        --subnet*)
+            if [ ! "$2" ]; then
+                die 'ERROR: "--subnet" requires a string for the name of your subnet.'
+            else
+                SUBNET=$2
+                shift
+            fi
+            ;;
+
         --cromwell-conf*)
             if [ ! -e $2 ]; then
                 die 'ERROR: "--cromwell-conf" requires an existing file argument.'
@@ -139,6 +148,7 @@ done
 # Required args
 [ -z $PROJECT             ] && die "Missing argument --project"
 [ -z $BUCKET              ] && die "Missing argument --bucket"
+[ -z $SUBNET              ] && die "Missing argument --subnet"
 [ -z $BUILD               ] && die "Missing argument --build"
 [ -z $CROMWELL_CONF       ] && die "Missing argument --cromwell-conf"
 [ -z $DEPS_ZIP            ] && die "Missing argument --deps-zip"
@@ -179,7 +189,7 @@ gcloud compute instances create "build-$BUILD" \
        --image-family debian-11 \
        --image-project debian-cloud \
        --zone us-central1-c \
-       --network=default --subnet=default \
+       --subnet=$SUBNET \
        --scopes=cloud-platform \
        --service-account=$SERVICE_ACCOUNT \
        --metadata=cromwell-version=$CROMWELL_VERSION,deps-zip=$DEPS_ZIP,bucket=$BUCKET,build-id=$BUILD,auto-shutdown=1 \
