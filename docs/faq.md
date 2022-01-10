@@ -1,3 +1,10 @@
+# Why do workflows have to be in WDL?
+
+We ran into issues with Cromwell not sizing up disk space on worker
+instances. If you want to wrestle with that or if you think your data
+won't exceed the default, go for it.
+
+
 # How do I check the cost of a workflow run?
 
 TODO(john): this requires some BigQuery fiddling. Talk to Eric Suiter.
@@ -141,3 +148,29 @@ above error. Simply leaving that out resolved the issue.
 # My workflow is failing and the Cromwell logs show `WorkflowStoreHeartbeatWriteActor Failed to properly process data`
 
 TODO(john) I... don't have an answer for this one yet. Stay tuned.
+
+
+# Can I improve my upload/download speed to the GCP bucket?
+
+When uploading input files to GCS form a bsub job, add to your
+`rusage` the value `internet2_upload_mbps=500`. This value maxes out
+at 5000 across the entire organization. This removes an overhead cap
+and should help you get faster uploads.
+
+The same applies to downloads with `internet2_download_mbps`
+
+
+# How do I get call caching in the cloud?
+
+That involves extra infrastructure, which means extra setup complexity
+and more importantly extra costs.
+
+Setting up call caching requires a persistent database. That database
+is going to have a cost for storage, and that cost is just going to
+increase as the amount of storage required increases. For most use
+cases we believe it won't be necessary, and haven't implemented it
+yet. That said, if it's needed just ping us and modifications can be
+made to allow easily setting up a database for caching.
+
+TODO(john): implement optional database for caching, gms/resources.sh
+and manual-workflows/resources.sh

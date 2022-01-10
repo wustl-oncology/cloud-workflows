@@ -1,10 +1,13 @@
 # Running Workflows via GMS
 
+This codebase is primarily concerned with first-time setup and
+providing required resources to operate the GMS integration. Details
+on how to use these resources through the GMS interface are provided
+[on the GMS
+wiki](https://github.com/genome/genome/wiki/Running-on-Google-Cloud)
 
-## Initial Setup
 
-Enter docker container for this repo, `jackmaruska/cloudize-workflow:latest`
-
+# Initial Setup
 
 Enable requisite APIs in Google Cloud Platform. Easiest way to do this
 is probably just to navigate to them in the web console. Follow each
@@ -16,6 +19,8 @@ link and you should see something like this Enable view:
 - https://console.cloud.google.com/lifesciences/pipelines
 - https://console.cloud.google.com/iam-admin
 
+
+Enter docker container for this repo, `jackmaruska/cloudize-workflow:latest`
 
 Create requisite resources. Any that already exist will spit out an
 "already exists" stderr but these can be safely ignored. This creates
@@ -31,7 +36,7 @@ You should now be able to run a workflow on the cloud via your new
 environment configuration.
 
 
-## Who can use these resources?
+# Who can use these resources?
 
 Permissions required to run a GMS workflow are:
 - create a compute instance

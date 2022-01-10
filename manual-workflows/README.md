@@ -12,30 +12,10 @@ the irretrievable depths of Google metrics. Take care to upload any
 files you plan to keep up to your bucket before deleting the instance.
 
 
-# Interacting with the CLI for the first time
+# Interacting with the Google Cloud CLI for the first time
 
-If google-cloud-sdk isn't installed, start there.
-
-
-## Installing google-cloud-sdk
-
-On compute1 clients it should already be installed.
-
-To work from a docker container, the image `google/cloud-sdk:latest`
-can be used.
-
-To work from a local machine, use your package manager to install
-it. For MacOS the command is
-
-    brew install --cask google-cloud-sdk
-
-This package will give you access to the commands `gcloud` and
-`gsutil`.
-
-
-## Configuration
-
-[Authenticate with Google Cloud CLI](../docs/gcloud_auth.md)
+The Google Cloud CLI (gcloud + gsutil) require first-time setup,
+[detailed here](../docs/gcloud_setup.md)
 
 # Project Setup
 
@@ -77,19 +57,19 @@ python3 /opt/scripts/cloudize-workflow.py $GCS_BUCKET $WORKFLOW_DEFINITION $LOCA
 
 Each $VAR should be either set or replaced with your value, e.g.
 ```sh
-export GCS_BUCKET=griffith-lab-cromwell
-export WORKFLOW_DEFINITION=/scratch1/fs1/oncology/maruska/analysis-wdls/definitions/pipelines/somatic_exome.wdl
-export LOCAL_INPUT=/storage1/fs1/mgriffit/Active/griffithlab/adhoc/somatic_exome_wdl.yaml
-export CLOUD_INPUT=$PWD/somatic_exome_cloud.yaml
+export GCS_BUCKET=your-bucket-name
+export WORKFLOW_DEFINITION=/path/to/workflow.wdl
+export LOCAL_INPUT=/path/to/input.yaml
+export CLOUD_INPUT=$PWD/input_cloud.yaml
 python3 /opt/scripts/cloudize-workflow.py $GCS_BUCKET $WORKFLOW_DEFINITION $LOCAL_INPUT --output=$CLOUD_INPUT
 ```
 or
 ```sh
 python3 /opt/scripts/cloudize-workflow.py \
     griffith-lab-cromwell \
-    /scratch1/fs1/oncology/maruska/analysis-wdls/definitions/pipelines/somatic_exome.wdl \
-    /storage1/fs1/mgriffit/Active/griffithlab/adhoc/somatic_exome_wdl.yaml \
-    --output=$PWD/somatic_exome_cloud.yaml
+    /path/to/workflow.wdl \
+    /path/to/input.yaml \
+    --output=$PWD/input_cloud.yaml
 ```
 
 # Create the VM
@@ -200,7 +180,6 @@ GCS locations. The `pull_outputs.py` script can be used to retrieve
 the actual files.
 
 
-
 # Additional Tools in VM
 
 The instance should start with any tools built into the base operating
@@ -239,11 +218,3 @@ python3 /opt/scripts/pull_outputs.py
     --outputs-file=gs://BUCKET/desired/path/WORKFLOW_ID/outputs.json \
     --outputs-dir=/path/to/outputs/dir
 ```
-
-
-# Q&A
-
-Q: Why do workflows have to be in WDL?
-A: We ran into issues with Cromwell not sizing up disk space on worker
-instances. If you want to wrestle with that or if you think your data
-won't exceed the default, go for it.
