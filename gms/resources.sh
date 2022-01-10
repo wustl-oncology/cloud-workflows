@@ -1,20 +1,26 @@
 #!/bin/bash
 
 function show_help {
-    echo "$0 - One-time setup to create resources required by GMS to run workflows"
-    echo "usage: $0 --project PROJECT --bucket BUCKET"
-    echo ""
-    echo "arguments:"
-    echo "-h, --help     print this block and immediately exit"
-    echo "--project      name of the Google Cloud Project to create resources"
-    echo "--bucket       name to use for GCS bucket"
-    echo ""
-    echo "All arguments (besides help) are required and have an associated value. None are flags."
-    echo ""
-    echo "No guards in place for existing objects. Resource already exists messages"
-    echo "in stderr may be ignored."
+    cat <<EOF
+$0 - One-time setup to create resources required by GMS to run workflows
+usage: $0 --project PROJECT --bucket BUCKET
+
+arguments:
+-h, --help     print this block and immediately exit
+--project      name of the Google Cloud Project to create resources
+--bucket       name to use for GCS bucket
+
+All arguments (besides help) are required and have an associated value. None are flags.
+
+No guards in place for existing objects. Resource already exists messages
+in stderr may be ignored.
+EOF
 }
 
+# die and opts based on this example
+# http://mywiki.wooledge.org/BashFAQ/035
+# --long-opt* example here
+# https://stackoverflow.com/a/7069755
 function die {
     printf '%s\n' "$1" >&2
     show_help
