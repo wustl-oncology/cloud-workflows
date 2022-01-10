@@ -131,18 +131,20 @@ case $COMMAND in
         gcloud projects add-iam-policy-binding $PROJECT \
                --member="serviceAccount:$COMPUTE_ACCOUNT" \
                --role='roles/iam.serviceAccountUser' > /dev/null
-        # Create bucket
-        gsutil mb -b on gs://$BUCKET
+        # Create bucket if not exists
+        gsutil mb -p $PROJECT -b on gs://$BUCKET
         # Generate cromwell.conf
         generate_cromwell_conf
-        echo ""
         ;;
     "generate-cromwell-conf")
         generate_cromwell_conf
         ;;
 esac
 
-echo "Completed $COMMAND. Check stderr logs and make sure nothing unexpected"
-echo "happened. Script optimistically executes and will relay gcloud's error on"
-echo "redundant operations, e.g. creating a resource that already exists."
-echo ""
+cat <<EOF
+
+Completed $COMMAND. Check stderr logs and make sure nothing unexpected
+happened. Script optimistically executes and will relay gcloud's error on
+redundant operations, e.g. creating a resource that already exists.
+
+EOF
