@@ -80,10 +80,10 @@ function generate_cromwell_conf {
     cp base_cromwell.conf cromwell.conf
     cat << EOF >> cromwell.conf
 backend.providers.default.config {
-    project = $PROJECT
-    root = $BUCKET
-    genomics.compute-service-account = $COMPUTE_ACCOUNT
-    filesystems.gcs.project = $PROJECT
+    project = "$PROJECT"
+    root = "$BUCKET"
+    genomics.compute-service-account = "$COMPUTE_ACCOUNT"
+    filesystems.gcs.project = "$PROJECT"
 }
 EOF
 }
