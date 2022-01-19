@@ -41,11 +41,19 @@ while test $# -gt 0; do
                 shift
             fi
             ;;
-        --bucket*)
+        --executions-bucket*)
             if [ -z "$2" ]; then
-                die 'ERROR: "--bucket" requires non-empty string argument.'
+                die 'ERROR: "--executions-bucket" requires non-empty string argument.'
             else
-                BUCKET=$2
+                EXECUTIONS_BUCKET=$2
+                shift
+            fi
+            ;;
+        --inputs-bucket*)
+            if [ -z "$2" ]; then
+                die 'ERROR: "--inputs-bucket" requires non-empty string argument.'
+            else
+                INPUTS_BUCKET=$2
                 shift
             fi
             ;;
@@ -55,8 +63,9 @@ while test $# -gt 0; do
     esac
     shift
 done
-[ -z $BUCKET ] && die 'Missing --bucket argument.'
-[ -z $PROJECT ] && die 'Missing --project argument.'
+[ -z $EXECUTIONS_BUCKET ] && die 'Missing --executions-bucket argument.'
+[ -z $INPUTS_BUCKET     ] && die 'Missing --inputs-bucket argument.'
+[ -z $PROJECT           ] && die 'Missing --project argument.'
 
 COMPUTE_NAME="cromwell-compute"
 SERVER_NAME="cromwell-server"
@@ -65,13 +74,14 @@ SUBNET_NAME="cromwell-subnet"
 COMPUTE_ACCOUNT="$COMPUTE_NAME@$PROJECT.iam.gserviceaccount.com"
 SERVER_ACCOUNT="$SERVER_NAME@$PROJECT.iam.gserviceaccount.com"
 BUCKET_MAX_AGE_DAYS=30
-WASHU_1 = "128.252.0.0/16"
-WASHU_2 = "65.254.96.0/19"
+WASHU1="128.252.0.0/16"
+WASHU2="65.254.96.0/19"
 
 sh ../scripts/create_service_accounts.sh $PROJECT $SERVER_NAME $COMPUTE_NAME
 
 # Create bucket
-gsutil ls -p $PROJECT -b gs://$BUCKET || gsutil mb -b on gs://$BUCKET
+gsutil mb -b on gs://$INPUTS_BUCKET
+gsutil mb -b on gs://$EXECUTIONS_BUCKET
 # Lifecycle rules on the bucket
 cat <<EOF > lifecycle_rules.json
 {
@@ -80,11 +90,13 @@ cat <<EOF > lifecycle_rules.json
     ]
 }
 EOF
-gsutil lifecycle set lifecycle_rules.json gs://$BUCKET
+gsutil lifecycle set lifecycle_rules.json gs://$EXECUTIONS_BUCKET
 rm lifecycle_rules.json
 # Service account can use bucket
-gsutil iam ch serviceAccount:$COMPUTE_ACCOUNT:objectAdmin gs://$BUCKET
-gsutil iam ch serviceAccount:$SERVER_ACCOUNT:objectAdmin gs://$BUCKET
+gsutil iam ch serviceAccount:$COMPUTE_ACCOUNT:objectAdmin gs://$EXECUTIONS_BUCKET
+gsutil iam ch serviceAccount:$SERVER_ACCOUNT:objectAdmin gs://$EXECUTIONS_BUCKET
+gsutil iam ch serviceAccount:$COMPUTE_ACCOUNT:objectAdmin gs://$INPUTS_BUCKET
+gsutil iam ch serviceAccount:$SERVER_ACCOUNT:objectAdmin gs://$INPUTS_BUCKET
 
 
 # Create new network
@@ -93,6 +105,7 @@ gcloud compute networks create $NETWORK_NAME \
 # Create firewall rules for network
 gcloud compute firewall-rules create cromwell-allow-ssh \
        --network $NETWORK_NAME \
+       --source-ranges="${WASHU1},${WASHU2}" \
        --action allow --rules tcp:22
 # TODO(john): enable http? https? icmp? cromwell port?
 
@@ -100,7 +113,6 @@ gcloud compute firewall-rules create cromwell-allow-ssh \
 gcloud compute networks subnets create $SUBNET_NAME \
        --network=$NETWORK_NAME \
        --region=us-central1 \
-       --source-ranges="${WASHU_1},${WASHU_2}" \
        --range=10.10.0.0/16
 
 
@@ -111,7 +123,8 @@ environment configuration and run workflows via GMS as normal
 
     cwl_runner: cromwell_gcp
     cromwell_gcp_service_account: $SERVER_ACCOUNT
-    cromwell_gcp_bucket: $BUCKET
+    cromwell_gcp_inputs_bucket: $INPUTS_BUCKET
+    cromwell_gcp_executions_bucket: $EXECUTIONS_BUCKET
     cromwell_gcp_project: $PROJECT
     cromwell_gcp_subnetwork: $SUBNET_NAME
 
