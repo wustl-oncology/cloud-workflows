@@ -141,6 +141,9 @@ while test $# -gt 0; do
                 die 'ERROR: "--tmp-dir" requires an existing file argument.'
             fi
             ;;
+        *)
+            break
+            ;;
     esac
     shift
 done

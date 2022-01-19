@@ -49,6 +49,9 @@ while test $# -gt 0; do
                 shift
             fi
             ;;
+        *)
+            break
+            ;;
     esac
     shift
 done
@@ -65,28 +68,7 @@ BUCKET_MAX_AGE_DAYS=30
 WASHU_1 = "128.252.0.0/16"
 WASHU_2 = "65.254.96.0/19"
 
-# Cromwell server VM service account
-gcloud iam service-accounts create $SERVER_NAME \
-       --display-name="Cromwell Server VM" \
-       --project=$PROJECT
-gcloud projects add-iam-policy-binding $PROJECT \
-       --member="serviceAccount:$SERVER_ACCOUNT" \
-       --role='roles/lifesciences.workflowsRunner' > /dev/null
-gcloud projects add-iam-policy-binding $PROJECT \
-       --member="serviceAccount:$SERVER_ACCOUNT" \
-       --role='roles/compute.instanceAdmin' > /dev/null
-gcloud projects add-iam-policy-binding $PROJECT \
-       --member="serviceAccount:$SERVER_ACCOUNT" \
-       --role='roles/iam.serviceAccountUser' > /dev/null
-
-# Task compute VM service account
-gcloud iam service-accounts create $COMPUTE_NAME \
-       --display-name="Cromwell Task Compute VM" \
-       --project=$PROJECT
-gcloud iam service-accounts add-iam-policy-binding $COMPUTE_ACCOUNT \
-       --member="serviceAccount:$SERVER_ACCOUNT" \
-       --project=$PROJECT \
-       --role='roles/iam.serviceAccountUser' > /dev/null
+sh ../scripts/create_service_accounts.sh $PROJECT $SERVER_NAME $COMPUTE_NAME
 
 # Create bucket
 gsutil ls -p $PROJECT -b gs://$BUCKET || gsutil mb -b on gs://$BUCKET

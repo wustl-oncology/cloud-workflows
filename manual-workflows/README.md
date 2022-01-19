@@ -77,7 +77,7 @@ python3 /opt/scripts/cloudize-workflow.py \
 This repo contains a shell wrapper for this command. You should only
 need to run this command.
 
-    sh ./start.sh INSTANCE-NAME
+    sh ./start.sh INSTANCE-NAME --server-account SERVER_ACCOUNT
 
 If you want to modify the settings of the VM in any way, either modify
 that script or execute its `gcloud` call manually with whatever
@@ -131,10 +131,7 @@ dependencies at `/shared/analysis-wdls/workflows.zip`.
 Once you're in the VM instance, Cromwell commands can be executed as
 normal with the following base command
 
-    java -Dconfig.file=/shared/cromwell.conf -jar /shared/cromwell.jar
-
-Alternatively, the alias `cromwell` is available if you run the
-command `source /shared/helpers.sh`. Examples below.
+    systemctl start cromwell
 
 Any modifications to cromwell.conf can be made in the VM if they're a
 one-off, or in this repo to apply for subsequent instances.
@@ -144,17 +141,8 @@ one-off, or in this repo to apply for subsequent instances.
 
 Example call for Somatic Exome pipeline with example data
 
-    java -Dconfig.file=/shared/cromwell.conf -jar /shared/cromwell.jar \
-        run /shared/analysis-wdls/definitions/somatic_exome.wdl \
-        --inputs /shared/analysis-wdls/example-data/somatic_exome.yml \
-        --imports /shared/analysis-wdls/workflows.zip
-
-Alternatively, if you `source /shared/helpers.sh` a short-hand command
-is available, the entire first line replaced with `cromwell`, e.g.
-
-    cromwell run /shared/analysis-wdls/definitions/somatic_exome.wdl \
-        --inputs /shared/analysis-wdls/example-data/somatic_exome.yml \
-        --imports /shared/analysis-wdls/workflows.zip
+    source /shared/helpers.sh
+    submit_workflow /shared/analysis-wdls/definitions/somatic_exome.wdl /shared/analysis-wdls/example-data/somatic_exome.yaml
 
 
 # Save Timing Diagram and Outputs List
@@ -163,10 +151,7 @@ After a workflow is run, before exiting and deleting your VM, make
 sure that the timing diagram and the list of outputs are available so
 you can make use of the data outside of the cloud.
 
-
-After `source /shared/helpers.sh` is done, the following command will
-persist these artifacts to your bucket
-
+    source /shared/helpers.sh
     save_artifacts WORKFLOW_ID gs://BUCKET/desired/path
 
 This command will upload the workflow's artifacts to GCS so they can
@@ -191,11 +176,17 @@ with `sudo apt-get` or on subsequent instances by modifying the value
 of `PACKAGES` in the startup script.
 
 
-## Viewing Startup Logs
+## Viewing Logs
 
 This is easiest done via `journalctl`.
 
-    journalctl -u google-startup-scripts.service
+For startup script logs, use service `google-startup-scripts`, e.g.
+
+    journalctl -u google-startup-scripts
+
+For cromwell logs, use service `cromwell`, e.g.
+
+    journalctl -u cromwell
 
 For additional settings see `journalctl --help`
 

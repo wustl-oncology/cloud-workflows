@@ -22,8 +22,7 @@ PACKAGES = [
 
 def create_directories():
     print("Create directories...")
-    if not os.path.exists(SHARED_DIR):
-        os.makedirs(SHARED_DIR)
+    os.system(f'mkdir -p {SHARED_DIR}/cromwell')
     os.system(f'chmod -R 777 {SHARED_DIR}')
     print("Create directories... DONE")
 
@@ -41,7 +40,7 @@ def install_packages():
 def install_cromwell():
     print("Install cromwell...")
     import requests
-    jar_path = os.path.join(SHARED_DIR, "cromwell.jar")
+    jar_path = os.path.join(SHARED_DIR, "cromwell", "cromwell.jar")
     if os.path.exists(jar_path):
         print("Already installed at {} ...".format(jar_path))
     else:
@@ -56,6 +55,12 @@ def install_cromwell():
         print(f"Installed cromwell version {version} at {jar_path}")
 
     print("Install cromwell...DONE")
+
+
+def start_cromwell_service():
+    download_from_metadata('cromwell-service', os.path.join(os.path.sep, 'etc', 'systemd', 'system', 'cromwell.service'))
+    os.system('systemctl daemon-reload')
+    os.system('systemctl start cromwell')
 
 
 def download_from_metadata(tag, dest_path):
@@ -87,9 +92,10 @@ def _fetch_instance_info(name):
 
 if __name__ == '__main__':
     create_directories()
-    download_from_metadata('helpers-sh', os.path.join(SHARED_DIR, 'helpers.sh'))
     install_packages()
     install_cromwell()
-    download_from_metadata('cromwell-conf', os.path.join(SHARED_DIR, 'cromwell.conf'))
+    download_from_metadata('helpers-sh', os.path.join(SHARED_DIR, 'helpers.sh'))
+    download_from_metadata('cromwell-conf', os.path.join(SHARED_DIR, 'cromwell', 'cromwell.conf'))
+    start_cromwell_service()
     clone_analysis_wdls()
     print("Startup script...DONE")

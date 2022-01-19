@@ -1,30 +1,73 @@
 SRC_DIR="$(dirname "${BASH_SOURCE[0]}")"
 
+show_help () {
+    cat <<EOF
+$0 - Start a new Cromwell VM instance
+usage: $0 INSTANCE_NAME [--argument value]*
+
+arguments:
+-h, --help             print this block and immediately exits
+--server_account      Email identifier of service account used by main Cromwell instance
+--cromwell-conf        Local path to configuration file for Cromwell server
+EOF
+}
+
+die () {
+    printf '%s\n\n' "$1" >&2
+    show_help
+    exit 1
+}
+
+
 INSTANCE_NAME=$1
 if [ -z $INSTANCE_NAME ]; then
-    echo "ERROR: must set instance name."
-    echo "usage: sh $0 INSTANCE"
+    show_help
     exit 1
 fi
 
-CROMWELL_CONF=${2:-"$SRC_DIR/cromwell.conf"}
-if [ ! -f $CROMWELL_CONF ]; then
-    echo "cromwell.conf does not exist. Check passed value or generate via"
-    echo ""
-    echo "    sh resources.sh generate-cromwell-conf --project PROJECT --bucket BUCKET"
-    echo ""
+
+while test $# -gt 0; do
+    case $1 in
+        -h|-\?|--help)
+            show_help
+            exit 0
+            ;;
+        --server-account*)
+            if [ ! "$2" ]; then
+                die 'ERROR: "--server_account" requires an email argument.'
+            else
+                SERVER_ACCOUNT=$2
+                shift
+            fi
+            ;;
+        *)
+            break
+            ;;
+    esac
+    shift
+done
+
+[ -z $SERVER_ACCOUNT     ] && die "Missing argument --server_account"
+
+CROMWELL_CONF="$SRC_DIR/cromwell.conf"
+if [[ ! -f $CROMWELL_CONF ]]; then
+    cat <<EOF
+cromwell.conf does not exist. Check passed value or generate via
+    sh resources.sh generate-cromwell-conf --project PROJECT --bucket BUCKET
+
+EOF
     exit 1
 fi
 
 gcloud compute instances create $INSTANCE_NAME \
-       --image-family ubuntu-2004-lts \
-       --image-project ubuntu-os-cloud \
+       --image-family debian-11 \
+       --image-project debian-cloud \
        --zone us-central1-c \
-       --shielded-secure-boot \
-       --confidential-compute --maintenance-policy=TERMINATE \
+       --machine-type=e2-standard-2 \
+       --service-account=$SERVER_ACCOUNT --scopes=cloud-platform \
        --network=default --subnet=default \
-       --metadata=cromwell-version=63 \
-       --metadata-from-file=startup-script=$SRC_DIR/server_startup.py,cromwell-conf=$CROMWELL_CONF,helpers-sh=$SRC_DIR/helpers.sh
+       --metadata=cromwell-version=71 \
+       --metadata-from-file=startup-script=$SRC_DIR/server_startup.py,cromwell-conf=$CROMWELL_CONF,helpers-sh=$SRC_DIR/helpers.sh,cromwell-service=$SRC_DIR/cromwell.service
 
 echo "To use this instance, SSH into it via:"
 echo ""

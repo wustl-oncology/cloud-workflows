@@ -74,14 +74,17 @@ if [ -z $BUCKET ]; then
     die 'ERROR: "--bucket" must be set.'
 fi
 
-COMPUTE_ACCOUNT="cromwell-compute@$PROJECT.iam.gserviceaccount.com"
+COMPUTE_NAME="cromwell-compute"
+SERVER_NAME="cromwell-server"
+COMPUTE_ACCOUNT="$COMPUTE_NAME@$PROJECT.iam.gserviceaccount.com"
+SERVER_ACCOUNT="SERVER_NAME@$PROJECT.iam.gserviceaccount.com"
 
 function generate_cromwell_conf {
     cp base_cromwell.conf cromwell.conf
     cat << EOF >> cromwell.conf
 backend.providers.default.config {
     project = "$PROJECT"
-    root = "$BUCKET"
+    root = "gs://$BUCKET/cromwell-executions"
     genomics.compute-service-account = "$COMPUTE_ACCOUNT"
     filesystems.gcs.project = "$PROJECT"
 }
@@ -124,13 +127,8 @@ case $COMMAND in
         echo ""
         ;;
     "init-project")
-        # Create Service Account
-        gcloud iam service-accounts create cromwell-compute \
-               --display-name="Cromwell Task Compute VM" \
-               --project=$PROJECT
-        gcloud projects add-iam-policy-binding $PROJECT \
-               --member="serviceAccount:$COMPUTE_ACCOUNT" \
-               --role='roles/iam.serviceAccountUser' > /dev/null
+        # Create service accounts
+        sh ../scripts/create_service_accounts.sh $PROJECT $SERVER_NAME $COMPUTE_NAME
         # Create bucket if not exists
         gsutil mb -p $PROJECT -b on gs://$BUCKET
         # Generate cromwell.conf
@@ -146,5 +144,7 @@ cat <<EOF
 Completed $COMMAND. Check stderr logs and make sure nothing unexpected
 happened. Script optimistically executes and will relay gcloud's error on
 redundant operations, e.g. creating a resource that already exists.
+
+    Service Account: $COMPUTE_ACCOUNT
 
 EOF

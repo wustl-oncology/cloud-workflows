@@ -1,9 +1,16 @@
-export CROMWELL_JAR=/opt/cromwell/jar/cromwell.jar
-export CROMWELL_CONF=/opt/cromwell/config/cromwell.conf
-export ANALYSIS_WDLS=/shared/analysis-wdls
+#!/bin/bash
 
-function cromwell () {
-    java -Dconfig.file=/shared/cromwell.conf -jar /shared/cromwell.jar $@
+function submit_workflow () {
+    WORKFLOW_DEFINITION=$1
+    WORKFLOW_INPUTS=$2
+    if [[ -z $1 || -z $2 ]]; then
+        echo "Usage: submit_workflow WORKFLOW_DEFINITION WORKFLOW_INPUTS"
+    else
+        curl localhost:8000/api/workflows/v1 \
+             -F workflowSource=@${WORKFLOW_DEFINITION} \
+             -F workflowInputs=@${WORKFLOW_INPUTS} \
+             -F workflowDependencies=@/shared/analysis-wdls/workflows.zip
+    fi
 }
 
 function refresh_zip_deps () {
@@ -18,31 +25,21 @@ function save_artifacts () {
     GCS_PATH=$2
     if [[ -z $WORKFLOW_ID || -z $GCS_PATH ]]; then
         echo "Usage: save_artifacts WORKFLOW_ID GCS_PATH"
+    elif [[ $(systemctl is-active --quiet cromwell) -ne 0 ]]; then
+        echo "Make sure Cromwell service is active before saving.\n\n    sudo systemctl start cromwell\n"
     else
-        # Server start-up and destruction
-        cromwell server > cromwell.log & > /dev/null
-        CROMWELL_PID=$!
-
-        echo "Instantiating cromwell server on pid [$CROMWELL_PID]"
-        RESULT=$(( tail -f cromwell.log & ) | grep -oh -m 1 'service started\|Shutting down')
-        if [[ $RESULT = "Shutting down" ]]; then
-            echo "Cromwell failed to instantiate. View error logs at cromwell.log"
-            kill  $CROMWELL_PID $(pgrep -P $CROMWELL_PID)
-        else
-            echo "Cromwell server completed startup"
-            mkdir -p $WORKFLOW_ID
-            curl --fail http://localhost:8000/api/workflows/v1/$WORKFLOW_ID/timing \
-                 > ${WORKFLOW_ID}/timing.html
-            if [ $? -ne 0 ]; then
-                echo "Request for timing diagram on workflow $WORKFLOW_ID failed."
-            fi
-            curl --fail http://localhost:8000/api/workflows/v1/$WORKFLOW_ID/outputs \
-                 > ${WORKFLOW_ID}/outputs.json
-            if [ $? -ne 0 ]; then
-                echo "Request for outputs on workflow $WORKFLOW_ID failed."
-            fi
-            gsutil cp -r ${WORKFLOW_ID} $GCS_PATH/${WORKFLOW_ID}
-            kill $CROMWELL_PID $(pgrep -P $CROMWELL_PID)
+        echo "Cromwell server completed startup"
+        mkdir -p $WORKFLOW_ID
+        curl --fail http://localhost:8000/api/workflows/v1/$WORKFLOW_ID/timing \
+             > ${WORKFLOW_ID}/timing.html
+        if [ $? -ne 0 ]; then
+            echo "Request for timing diagram on workflow $WORKFLOW_ID failed."
         fi
+        curl --fail http://localhost:8000/api/workflows/v1/$WORKFLOW_ID/outputs \
+             > ${WORKFLOW_ID}/outputs.json
+        if [ $? -ne 0 ]; then
+            echo "Request for outputs on workflow $WORKFLOW_ID failed."
+        fi
+        gsutil cp -r ${WORKFLOW_ID} $GCS_PATH/${WORKFLOW_ID}
     fi
 }
