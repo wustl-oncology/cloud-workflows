@@ -15,7 +15,7 @@ files you plan to keep up to your bucket before deleting the instance.
 # Interacting with the Google Cloud CLI for the first time
 
 The Google Cloud CLI (gcloud + gsutil) require first-time setup,
-[detailed here](../docs/gcloud_setup.md)
+[detailed here](../docs/gcloud_setup.md).
 
 # Project Setup
 
@@ -24,15 +24,15 @@ helper script to create resources as needed.
 
 To initialize the project and create necessary resources
 
-    sh resources.sh init-project --project $PROJECT --bucket $GCS_BUCKET
+    bash resources.sh init-project --project $PROJECT --bucket $GCS_BUCKET
 
 To enable a non-administrator user to run workflows
 
-    sh resources.sh grant-permissions --project $PROJECT --bucket $GCS_BUCKET --email $USER_EMAIL
+    bash resources.sh grant-permissions --project $PROJECT --bucket $GCS_BUCKET --email $USER_EMAIL
 
 To revoke these permissions from a
 
-    sh resources.sh revoke-permissions --project $PROJECT --bucket $GCS_BUCKET --email $USER_EMAIL
+    bash resources.sh revoke-permissions --project $PROJECT --bucket $GCS_BUCKET --email $USER_EMAIL
 
 # Workflow Preparation
 
@@ -77,7 +77,7 @@ python3 /opt/scripts/cloudize-workflow.py \
 This repo contains a shell wrapper for this command. You should only
 need to run this command.
 
-    sh ./start.sh INSTANCE-NAME --server-account SERVER_ACCOUNT
+    bash start.sh INSTANCE-NAME --server-account SERVER_ACCOUNT
 
 If you want to modify the settings of the VM in any way, either modify
 that script or execute its `gcloud` call manually with whatever
@@ -105,6 +105,30 @@ The only reasons I've seen this fail are
 There's no need by default to fuss with SSH keys, your gcloud auth
 command should be enough unless configuration has been changed.
 
+Once you're in the VM, wait until the startup script completes with
+
+    journalctl -u google-startup-scripts -f
+
+These logs will stop with a message roughly reading
+
+> google_metadata_script_runner[489]: Finished running startup scripts.
+> systemd[1]: google-startup-scripts.service: Succeeded.
+> systemd[1]: Finished Google Compute Engine Startup Scripts.
+> systemd[1]: google-startup-scripts.service: Consumed 2min 28.421s CPU time.
+
+Then wait until the Cromwell service has started with
+
+    journalctl -u cromwell -f
+
+The Cromwell service will be ready for workflow submissions after a
+message roughly reading
+
+> java[13936]: 2022-01-19 21:55:27,357 cromwell-system-akka.dispatchers.engine-dispatcher-7 INFO  - Cromwell 71 service started on 0:0:0:0:0:0:0:0:8000...
+
+
+When this message is printed, the service is ready to use. If errors
+are printed in either log, those will need to be addressed.
+
 
 # Localize Your Inputs File
 
@@ -124,17 +148,6 @@ it creates. All you need is your inputs file and the analysis-wdls
 repo located at `/shared/analysis-wdls`. Workflow definitions are
 located at `/shared/analysis-wdls/definitions/` and a zipfile of the
 dependencies at `/shared/analysis-wdls/workflows.zip`.
-
-
-# Interact with Cromwell
-
-Once you're in the VM instance, Cromwell commands can be executed as
-normal with the following base command
-
-    systemctl start cromwell
-
-Any modifications to cromwell.conf can be made in the VM if they're a
-one-off, or in this repo to apply for subsequent instances.
 
 
 ## Run a Workflow

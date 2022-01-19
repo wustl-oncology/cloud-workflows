@@ -24,6 +24,7 @@ if [ -z $INSTANCE_NAME ]; then
     show_help
     exit 1
 fi
+shift
 
 
 while test $# -gt 0; do
@@ -34,7 +35,7 @@ while test $# -gt 0; do
             ;;
         --server-account*)
             if [ ! "$2" ]; then
-                die 'ERROR: "--server_account" requires an email argument.'
+                die 'ERROR: "--server-account" requires an email argument.'
             else
                 SERVER_ACCOUNT=$2
                 shift
@@ -47,7 +48,7 @@ while test $# -gt 0; do
     shift
 done
 
-[ -z $SERVER_ACCOUNT     ] && die "Missing argument --server_account"
+[ -z $SERVER_ACCOUNT     ] && die "Missing argument --server-account"
 
 CROMWELL_CONF="$SRC_DIR/cromwell.conf"
 if [[ ! -f $CROMWELL_CONF ]]; then
