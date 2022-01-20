@@ -3,12 +3,13 @@
 function show_help {
     cat <<EOF
 $0 - One-time setup to create resources required by GMS to run workflows
-usage: $0 --project PROJECT --bucket BUCKET
+usage: $0 --project PROJECT --inputs-bucket INPUTS_BUCKET --executions-bucket EXECUTIONS_BUCKET
 
 arguments:
--h, --help     print this block and immediately exit
---project      name of the Google Cloud Project to create resources
---bucket       name to use for GCS bucket
+-h, --help            print this block and immediately exit
+--project             name of the Google Cloud Project to create resources
+--inputs-bucket       name to use for GCS bucket
+--execution-bucket    name to use for GCS bucket
 
 All arguments (besides help) are required and have an associated value. None are flags.
 
@@ -27,6 +28,8 @@ function die {
     exit 1
 }
 
+ARG_NUM=$#
+[ $((ARG_NUM % 2)) -ne 0 ] && die 'Expected even number of args for key value pairs'
 while test $# -gt 0; do
     case $1 in
         -h|-\?|--help)
