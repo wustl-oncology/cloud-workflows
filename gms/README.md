@@ -9,12 +9,6 @@ wiki](https://github.com/genome/genome/wiki/Running-on-Google-Cloud)
 
 # Initial Setup
 
-
-In order to create and use resources for the various Google Cloud
-APIs, you must manually enter the web console and enable them for the
-project. [See instructions here](../docs/enable_api.md).
-
-
 Create requisite resources. Any that already exist will spit out an
 "already exists" stderr but these can be safely ignored. This creates
 the required service accounts, bucket, and permissions.

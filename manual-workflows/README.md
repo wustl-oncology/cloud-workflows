@@ -19,10 +19,6 @@ The Google Cloud CLI (gcloud + gsutil) require first-time setup,
 
 # Project Setup
 
-In order to create and use resources for the various Google Cloud
-APIs, you must manually enter the web console and enable them for the
-project. [See instructions here](../docs/enable_api.md).
-
 First-time set-up has a few complexities. Use the `resources.sh`
 helper script to create resources as needed.
 
