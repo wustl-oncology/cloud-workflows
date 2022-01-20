@@ -6,11 +6,11 @@ function show_help {
     echo "usage: sh $0 COMMAND --project <PROJECT> --bucket <BUCKET> [--email <EMAIL>]"
     echo ""
     echo "commands:"
-    echo "    grant-permissions       Grant a new user required permissions to run workflows"
-    echo "    revoke-permissions      Revoke permissions to run workflows from a user"
-    echo "    init-project            Create required resources for the project"
-    echo "    generate-cromwell-conf  Generate the cromwell.conf file required by the VM"
-    echo "                            Use this when project init'd but no local copy"
+    echo "    grant-user-permissions    Grant a new user required permissions to run workflows"
+    echo "    revoke-user-permissions   Revoke permissions to run workflows from a user"
+    echo "    init-project              Create required resources for the project"
+    echo "    generate-cromwell-conf    Generate the cromwell.conf file required by the VM"
+    echo "                              Use this when project init'd but no local copy"
     echo ""
     echo "arguments:"
     echo "    -h, --help     print this block"
@@ -77,7 +77,7 @@ fi
 COMPUTE_NAME="cromwell-compute"
 SERVER_NAME="cromwell-server"
 COMPUTE_ACCOUNT="$COMPUTE_NAME@$PROJECT.iam.gserviceaccount.com"
-SERVER_ACCOUNT="SERVER_NAME@$PROJECT.iam.gserviceaccount.com"
+SERVER_ACCOUNT="$SERVER_NAME@$PROJECT.iam.gserviceaccount.com"
 
 function generate_cromwell_conf {
     cp base_cromwell.conf cromwell.conf
@@ -94,7 +94,7 @@ EOF
 sh ../scripts/enable_api.sh
 
 case $COMMAND in
-    "grant-permissions")
+    "grant-user-permissions")
         if [ -z $EMAIL ]; then
             die 'ERROR: "--email" must be set.'
         fi
@@ -111,7 +111,7 @@ case $COMMAND in
                --role='roles/iam.serviceAccountUser' > /dev/null
         echo ""
         ;;
-    "revoke-permissions")
+    "revoke-user-permissions")
         if [ -z $EMAIL ]; then
             die 'ERROR: "--email" must be set.'
         fi
@@ -133,6 +133,8 @@ case $COMMAND in
         sh ../scripts/create_service_accounts.sh $PROJECT $SERVER_NAME $COMPUTE_NAME
         # Create bucket if not exists
         gsutil mb -p $PROJECT -b on gs://$BUCKET
+        gsutil iam ch serviceAccount:$COMPUTE_ACCOUNT:objectAdmin gs://$BUCKET
+        gsutil iam ch serviceAccount:$SERVER_ACCOUNT:objectAdmin gs://$BUCKET
         # Generate cromwell.conf
         generate_cromwell_conf
         ;;

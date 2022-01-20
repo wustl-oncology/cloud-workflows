@@ -30,7 +30,7 @@ To enable a non-administrator user to run workflows
 
     bash resources.sh grant-permissions --project $PROJECT --bucket $GCS_BUCKET --email $USER_EMAIL
 
-To revoke these permissions from a
+To revoke these permissions from a user
 
     bash resources.sh revoke-permissions --project $PROJECT --bucket $GCS_BUCKET --email $USER_EMAIL
 
