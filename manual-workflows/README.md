@@ -19,6 +19,10 @@ The Google Cloud CLI (gcloud + gsutil) require first-time setup,
 
 # Project Setup
 
+In order to create and use resources for the various Google Cloud
+APIs, you must manually enter the web console and enable them for the
+project. [See instructions here](../docs/enable_api.md).
+
 First-time set-up has a few complexities. Use the `resources.sh`
 helper script to create resources as needed.
 
@@ -139,8 +143,9 @@ are:
    emacs, vim installed by default. Others available via `sudo
    apt-get`).
 1. Upload it to your GCS bucket, download into the VM
-   On compute1: gsutil cp /local/path/to.yaml gs://BUCKET/path/to.yaml
-   On cloud VM: gsutil cp gs://BUCKET/path/to.yaml /local/path/to.yaml
+
+> On compute1: `gsutil cp /local/path/to.yaml gs://BUCKET/path/to.yaml`
+> On cloud VM: `gsutil cp gs://BUCKET/path/to.yaml /local/path/to.yaml`
 
 There's no need to download any of your data from GCS to the
 VM. Cromwell will handle providing those files to the worker instances

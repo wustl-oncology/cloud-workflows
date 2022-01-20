@@ -9,24 +9,19 @@ wiki](https://github.com/genome/genome/wiki/Running-on-Google-Cloud)
 
 # Initial Setup
 
-Enable requisite APIs in Google Cloud Platform. Easiest way to do this
-is probably just to navigate to them in the web console. Follow each
-link and you should see something like this Enable view:
-![Enable view](../docs/enable_api.png)
 
-- https://console.cloud.google.com/storage
-- https://console.cloud.google.com/compute
-- https://console.cloud.google.com/lifesciences/pipelines
-- https://console.cloud.google.com/iam-admin
+In order to create and use resources for the various Google Cloud
+APIs, you must manually enter the web console and enable them for the
+project. [See instructions here](../docs/enable_api.md).
 
-
-Enter docker container for this repo, `jackmaruska/cloudize-workflow:latest`
 
 Create requisite resources. Any that already exist will spit out an
 "already exists" stderr but these can be safely ignored. This creates
 the required service accounts, bucket, and permissions.
 ```
-sh /opt/gms/resources.sh --project PROJECT --bucket BUCKET
+sh resources.sh --project PROJECT \
+    --inputs-bucket INPUTS_BUCKET \
+    --executions-bucket EXECUTIONS_BUCKET
 ```
 
 Add the values given from this script to your environment

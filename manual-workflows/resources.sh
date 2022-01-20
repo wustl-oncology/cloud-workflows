@@ -145,6 +145,6 @@ Completed $COMMAND. Check stderr logs and make sure nothing unexpected
 happened. Script optimistically executes and will relay gcloud's error on
 redundant operations, e.g. creating a resource that already exists.
 
-    Service Account: $COMPUTE_ACCOUNT
+    Service Account: $SERVER_ACCOUNT
 
 EOF

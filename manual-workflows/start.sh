@@ -7,7 +7,7 @@ usage: $0 INSTANCE_NAME [--argument value]*
 
 arguments:
 -h, --help             print this block and immediately exits
---server_account      Email identifier of service account used by main Cromwell instance
+--server-account      Email identifier of service account used by main Cromwell instance
 --cromwell-conf        Local path to configuration file for Cromwell server
 EOF
 }
@@ -48,7 +48,7 @@ while test $# -gt 0; do
     shift
 done
 
-[ -z $SERVER_ACCOUNT     ] && die "Missing argument --server-account"
+[ -z $SERVER_ACCOUNT ] && die "Missing argument --server-account"
 
 CROMWELL_CONF="$SRC_DIR/cromwell.conf"
 if [[ ! -f $CROMWELL_CONF ]]; then
