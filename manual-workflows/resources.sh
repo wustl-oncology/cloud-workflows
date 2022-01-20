@@ -91,6 +91,8 @@ backend.providers.default.config {
 EOF
 }
 
+sh ../scripts/enable_api.sh
+
 case $COMMAND in
     "grant-permissions")
         if [ -z $EMAIL ]; then

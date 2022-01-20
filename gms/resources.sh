@@ -77,7 +77,9 @@ BUCKET_MAX_AGE_DAYS=30
 WASHU1="128.252.0.0/16"
 WASHU2="65.254.96.0/19"
 
+sh ../scripts/enable_api.sh
 sh ../scripts/create_service_accounts.sh $PROJECT $SERVER_NAME $COMPUTE_NAME
+
 
 # Create bucket
 gsutil mb -b on gs://$INPUTS_BUCKET
