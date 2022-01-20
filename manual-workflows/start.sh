@@ -79,7 +79,7 @@ gcloud compute instances create $INSTANCE_NAME \
        --service-account=$SERVER_ACCOUNT --scopes=cloud-platform \
        --network=default --subnet=default \
        --metadata=cromwell-version=71 \
-       --metadata-from-file=startup-script=$SRC_DIR/server_startup.py,cromwell-conf=$CROMWELL_CONF,helpers-sh=$SRC_DIR/helpers.sh,cromwell-service=$SRC_DIR/cromwell.service
+       --metadata-from-file=startup-script=$SRC_DIR/server_startup.py,cromwell-conf=$CROMWELL_CONF,helpers-sh=$SRC_DIR/helpers.sh,cromwell-service=$SRC_DIR/cromwell.service,workflow-options=$SRC_DIR/workflow_options.json
 
 cat <<EOF
 To use this instance, SSH into it via:
@@ -92,4 +92,3 @@ To delete the instance when you're done:
 
 EOF
 exit 0
-n

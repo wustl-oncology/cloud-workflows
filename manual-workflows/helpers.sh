@@ -9,7 +9,8 @@ function submit_workflow () {
         curl localhost:8000/api/workflows/v1 \
              -F workflowSource=@${WORKFLOW_DEFINITION} \
              -F workflowInputs=@${WORKFLOW_INPUTS} \
-             -F workflowDependencies=@/shared/analysis-wdls/workflows.zip
+             -F workflowDependencies=@/shared/analysis-wdls/workflows.zip \
+             -F workflowOptions=@/shared/cromwell/workflow_options.json
     fi
 }
 
