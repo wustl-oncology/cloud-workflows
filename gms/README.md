@@ -13,9 +13,7 @@ Create requisite resources. Any that already exist will spit out an
 "already exists" stderr but these can be safely ignored. This creates
 the required service accounts, bucket, and permissions.
 ```
-sh resources.sh --project PROJECT \
-    --inputs-bucket INPUTS_BUCKET \
-    --executions-bucket EXECUTIONS_BUCKET
+sh resources.sh --project PROJECT --bucket BUCKET
 ```
 
 Add the values given from this script to your environment

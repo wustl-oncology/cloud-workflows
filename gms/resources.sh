@@ -3,13 +3,12 @@
 function show_help {
     cat <<EOF
 $0 - One-time setup to create resources required by GMS to run workflows
-usage: $0 --project PROJECT --inputs-bucket INPUTS_BUCKET --executions-bucket EXECUTIONS_BUCKET
+usage: $0 --project PROJECT --bucket BUCKET
 
 arguments:
--h, --help            print this block and immediately exit
---project             name of the Google Cloud Project to create resources
---inputs-bucket       name to use for GCS bucket
---execution-bucket    name to use for GCS bucket
+-h, --help    print this block and immediately exit
+--project     name of the Google Cloud Project to create resources
+--bucket      name to use for GCS bucket
 
 All arguments (besides help) are required and have an associated value. None are flags.
 
@@ -44,19 +43,11 @@ while test $# -gt 0; do
                 shift
             fi
             ;;
-        --executions-bucket*)
+        --bucket*)
             if [ -z "$2" ]; then
-                die 'ERROR: "--executions-bucket" requires non-empty string argument.'
+                die 'ERROR: "--bucket" requires non-empty string argument.'
             else
-                EXECUTIONS_BUCKET=$2
-                shift
-            fi
-            ;;
-        --inputs-bucket*)
-            if [ -z "$2" ]; then
-                die 'ERROR: "--inputs-bucket" requires non-empty string argument.'
-            else
-                INPUTS_BUCKET=$2
+                BUCKET=$2
                 shift
             fi
             ;;
@@ -66,9 +57,8 @@ while test $# -gt 0; do
     esac
     shift
 done
-[ -z $EXECUTIONS_BUCKET ] && die 'Missing --executions-bucket argument.'
-[ -z $INPUTS_BUCKET     ] && die 'Missing --inputs-bucket argument.'
-[ -z $PROJECT           ] && die 'Missing --project argument.'
+[ -z $BUCKET  ] && die 'Missing --bucket argument.'
+[ -z $PROJECT ] && die 'Missing --project argument.'
 
 COMPUTE_NAME="cromwell-compute"
 SERVER_NAME="cromwell-server"
@@ -85,8 +75,7 @@ sh ../scripts/create_service_accounts.sh $PROJECT $SERVER_NAME $COMPUTE_NAME
 
 
 # Create bucket
-gsutil mb -b on gs://$INPUTS_BUCKET
-gsutil mb -b on gs://$EXECUTIONS_BUCKET
+gsutil mb -b on gs://$BUCKET
 # Lifecycle rules on the bucket
 cat <<EOF > lifecycle_rules.json
 {
@@ -95,13 +84,11 @@ cat <<EOF > lifecycle_rules.json
     ]
 }
 EOF
-gsutil lifecycle set lifecycle_rules.json gs://$EXECUTIONS_BUCKET
+gsutil lifecycle set lifecycle_rules.json gs://$BUCKET
 rm lifecycle_rules.json
 # Service account can use bucket
-gsutil iam ch serviceAccount:$COMPUTE_ACCOUNT:objectAdmin gs://$EXECUTIONS_BUCKET
-gsutil iam ch serviceAccount:$SERVER_ACCOUNT:objectAdmin gs://$EXECUTIONS_BUCKET
-gsutil iam ch serviceAccount:$COMPUTE_ACCOUNT:objectAdmin gs://$INPUTS_BUCKET
-gsutil iam ch serviceAccount:$SERVER_ACCOUNT:objectAdmin gs://$INPUTS_BUCKET
+gsutil iam ch serviceAccount:$COMPUTE_ACCOUNT:objectAdmin gs://$BUCKET
+gsutil iam ch serviceAccount:$SERVER_ACCOUNT:objectAdmin gs://$BUCKET
 
 
 # Create new network
@@ -128,8 +115,7 @@ environment configuration and run workflows via GMS as normal
 
     cwl_runner: cromwell_gcp
     cromwell_gcp_service_account: $SERVER_ACCOUNT
-    cromwell_gcp_inputs_bucket: $INPUTS_BUCKET
-    cromwell_gcp_executions_bucket: $EXECUTIONS_BUCKET
+    cromwell_gcp_bucket: $BUCKET
     cromwell_gcp_project: $PROJECT
     cromwell_gcp_subnetwork: $SUBNET_NAME
 
