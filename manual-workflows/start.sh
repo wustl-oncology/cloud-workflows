@@ -7,6 +7,7 @@ usage: $0 INSTANCE_NAME [--argument value]*
 
 arguments:
 -h, --help         print this block and immediately exits
+--project          GCP project name
 --server-account   Email identifier of service account used by main Cromwell instance
 --cromwell-conf    Local path to configuration file for Cromwell server. DEFAULT $SRC_DIR/cromwell.conf
 --machine-type     GCP machine type for the instance. DEFAULT e2-standard-2
@@ -34,6 +35,14 @@ while test $# -gt 0; do
             show_help
             exit 0
             ;;
+        --project*)
+            if [ ! "$2" ]; then
+                die 'Error: "--project" requires a string argument for the GCP project name used'
+            else
+                PROJECT=$2
+                shift
+            fi
+            ;;
         --server-account*)
             if [ ! "$2" ]; then
                 die 'ERROR: "--server-account" requires an email argument.'
@@ -50,6 +59,14 @@ while test $# -gt 0; do
                 shift
             fi
             ;;
+        --boot-disk-size*)
+            if [ ! "$2" ]; then
+                die 'ERROR: "--boot-disk-size" requires a string argument e.g. 50GB'
+            else
+                BOOT_DISK_SIZE=$2
+                shift
+            fi
+            ;;
         *)
             break
             ;;
@@ -58,7 +75,9 @@ while test $# -gt 0; do
 done
 
 MACHINE_TYPE=${MACHINE_TYPE:-"e2-standard-2"}
+BOOT_DISK_SIZE=${BOOT_DISK_SIZE:-"50GB"}
 [ -z $SERVER_ACCOUNT ] && die "Missing argument --server-account"
+[ -z $PROJECT        ] && die "Missing argument --project"
 
 CROMWELL_CONF="$SRC_DIR/cromwell.conf"
 if [[ ! -f $CROMWELL_CONF ]]; then
@@ -72,10 +91,12 @@ EOF
 fi
 
 gcloud compute instances create $INSTANCE_NAME \
+       --project $PROJECT \
        --image-family debian-11 \
        --image-project debian-cloud \
        --zone us-central1-c \
        --machine-type=$MACHINE_TYPE \
+       --boot-disk-size=$BOOT_DISK_SIZE \
        --service-account=$SERVER_ACCOUNT --scopes=cloud-platform \
        --network=default --subnet=default \
        --metadata=cromwell-version=71 \
