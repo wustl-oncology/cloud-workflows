@@ -26,13 +26,15 @@ To initialize the project and create necessary resources
 
     bash resources.sh init-project --project $PROJECT --bucket $GCS_BUCKET
 
-To enable a non-administrator user to run workflows
+To enable a non-administrator user to run workflows. This is to allow
+other people who don't have an Owner role to execute the necessary
+calls. Service accounts are set up with above `init-project` command.
 
-    bash resources.sh grant-permissions --project $PROJECT --bucket $GCS_BUCKET --email $USER_EMAIL
+    bash user_permissions.sh grant --project $PROJECT --bucket $GCS_BUCKET --email $USER_EMAIL
 
 To revoke these permissions from a user
 
-    bash resources.sh revoke-permissions --project $PROJECT --bucket $GCS_BUCKET --email $USER_EMAIL
+    bash user_permissions.sh revoke --project $PROJECT --bucket $GCS_BUCKET --email $USER_EMAIL
 
 # Workflow Preparation
 

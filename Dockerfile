@@ -21,6 +21,7 @@ ADD gms/start.sh /opt/gms/start.sh
 ADD manual-workflows/base_cromwell.conf /opt/manual-workflows/base_cromwell.conf
 ADD manual-workflows/helpers.sh /opt/manual-workflows/helpers.sh
 ADD manual-workflows/resources.sh /opt/manual-workflows/resources.sh
+ADD manual-workflows/user_permissions.sh /opt/manual-workflows/user_permissions.sh
 ADD manual-workflows/server_startup.py /opt/manual-workflows/server_startup.py
 ADD manual-workflows/start.sh /opt/manual-workflows/start.sh
 ADD manual-workflows/cromwell.service /opt/manual-workflows/cromwell.service
