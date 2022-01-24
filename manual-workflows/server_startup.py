@@ -13,6 +13,7 @@ PACKAGES = [
     'git',
     'python3-pip',
     # just useful
+    'zip',
     'less',
     'emacs', 'vim',
     'python3-dev',

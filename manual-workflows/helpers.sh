@@ -15,9 +15,9 @@ function submit_workflow () {
 }
 
 function refresh_zip_deps () {
-    rm /shared/analysis-wdls/workflows.zip
+    sudo rm /shared/analysis-wdls/workflows.zip
     OLD_DIR=$PWD; cd /shared/analysis-wdls/definitions/
-    zip -r /shared/analysis-wdls/workflows.zip . 1> /dev/null
+    sudo zip -r /shared/analysis-wdls/workflows.zip .
     cd $OLD_DIR
 }
 
