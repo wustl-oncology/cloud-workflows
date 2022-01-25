@@ -158,8 +158,6 @@ class WorkflowLanguage:
         walk_object(self.inputs, process_node)
         return file_inputs
 
-    def postprocess_inputs(self, processed_inputs): return processed_inputs
-
 
 class WDL(WorkflowLanguage):
     def __init__(self, definition_path, inputs_path):
@@ -167,6 +165,7 @@ class WDL(WorkflowLanguage):
         path_dir = definition_path.parent
         self.definition = wdl.load(str(definition_path), [str(path_dir), str(path_dir.parent)])
         root = self.definition.workflow or self.definition.tasks[0]
+        self.inputs = WDL.prefix_inputs(self.inputs, self.definition.workflow.name)
         # validate inputs
         missing_inputs = [f"{root.name}.{inp.name}"
                           for inp in root.required_inputs
@@ -174,12 +173,10 @@ class WDL(WorkflowLanguage):
         if missing_inputs:
             raise Exception(f"Missing required inputs", missing_inputs)
 
-    def postprocess_inputs(self, processed_inputs):
-        def idempotent_prepend(s, prefix):
-            return f"{prefix}.{s}" if len(s.split(".")) == 1 else s
-
-        return {idempotent_prepend(k, self.definition.workflow.name): v
-                for k, v in processed_inputs.items()}
+    def prefix_inputs(inputs, prefix):
+        def prepend(s, p):
+            return f"{p}.{s}" if len(s.split(".")) == 1 else s
+        return {prepend(k, prefix): v for k, v in inputs.items()}
 
 
 class CWL(WorkflowLanguage):
@@ -281,9 +278,7 @@ def cloudize(bucket, wf_path, inputs_path, output_path, dryrun=False):
     workflow = make_workflow(wf_path, inputs_path)
     file_inputs = workflow.find_file_inputs()
     set_cloud_paths(file_inputs)
-    cloudized_inputs = workflow.postprocess_inputs(
-        cloudize_file_paths(workflow.inputs, bucket, file_inputs)
-    )
+    cloudized_inputs = cloudize_file_paths(workflow.inputs, bucket, file_inputs)
     write_new_inputs(cloudized_inputs, output_path)
     upload_all(file_inputs, bucket, dryrun)
     print("Completed file upload process.")
