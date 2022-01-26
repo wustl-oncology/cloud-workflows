@@ -71,8 +71,8 @@ COMPUTE_ACCOUNT="$COMPUTE_NAME@$PROJECT.iam.gserviceaccount.com"
 SERVER_ACCOUNT="$SERVER_NAME@$PROJECT.iam.gserviceaccount.com"
 
 function generate_cromwell_conf {
-    cp base_cromwell.conf cromwell.conf
-    cat << EOF >> cromwell.conf
+    cp $SRC_DIR/base_cromwell.conf $SRC_DIR/cromwell.conf
+    cat << EOF >> $SRC_DIR/cromwell.conf
 backend.providers.default.config {
     project = "$PROJECT"
     root = "gs://$BUCKET/cromwell-executions"
