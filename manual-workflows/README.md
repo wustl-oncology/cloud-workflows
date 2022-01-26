@@ -20,11 +20,15 @@ The Google Cloud CLI (gcloud + gsutil) require first-time setup,
 # Project Setup
 
 First-time set-up has a few complexities. Use the `resources.sh`
-helper script to create resources as needed.
+helper script to create resources and `user_permissions.sh` script to
+add/remove users permitted to run workflows. These scripts are located
+in this (manual-workflows) directory, or in the docker image at
+`/opt/manual-workflows/`.
 
 To initialize the project and create necessary resources
 
     bash resources.sh init-project --project $PROJECT --bucket $GCS_BUCKET
+
 
 To enable a non-administrator user to run workflows. This is to allow
 other people who don't have an Owner role to execute the necessary
