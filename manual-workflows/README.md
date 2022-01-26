@@ -153,7 +153,7 @@ located at `/shared/analysis-wdls/definitions/` and a zipfile of the
 dependencies at `/shared/analysis-wdls/workflows.zip`.
 
 
-## Run a Workflow
+# Run a Workflow
 
 Example call for Somatic Exome pipeline with example data
 
@@ -161,7 +161,7 @@ Example call for Somatic Exome pipeline with example data
     submit_workflow /shared/analysis-wdls/definitions/somatic_exome.wdl /shared/analysis-wdls/example-data/somatic_exome.yaml
 
 
-# Save Timing Diagram and Outputs List
+## Save Timing Diagram and Outputs List
 
 After a workflow is run, before exiting and deleting your VM, make
 sure that the timing diagram and the list of outputs are available so
@@ -179,6 +179,19 @@ be used after the VM is deleted. They can be found at paths
 The file `outputs.json` will simply be a map of output names to their
 GCS locations. The `pull_outputs.py` script can be used to retrieve
 the actual files.
+
+
+## Modifying WDLs in the VM
+
+Workflow files are stored in `/shared/analysis-wdls` directory. This
+is a cloned version of the [analysis-wdls repo](https://github.com/griffithlab/analysis-wdls).
+You can leverage git to change commits/branches/forks/etc as
+needed. For manual changes, use terminal editor of your choice (you
+may need to install with `apt-get`), then refresh the workflows.zip
+which gets used to submit workflows. You can do this with
+
+    source /shared/helpers.sh
+    refresh_zip_deps
 
 
 # Additional Tools in VM

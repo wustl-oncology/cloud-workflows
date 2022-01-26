@@ -13,7 +13,14 @@ Create requisite resources. Any that already exist will spit out an
 "already exists" stderr but these can be safely ignored. This creates
 the required service accounts, bucket, and permissions.
 ```
-sh resources.sh --project PROJECT --bucket BUCKET
+bash resources.sh --project PROJECT --bucket BUCKET
+```
+
+Alternatively, these files are available via the docker image
+`jackmaruska/cloudize-workflow:latest` in the directory `/opt/gms/`,
+so the above command would be
+```
+bash /opt/gms/resources.sh --project PROJECT --bucket BUCKET
 ```
 
 Add the values given from this script to your environment
