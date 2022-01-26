@@ -26,9 +26,12 @@ for the terminal prompt.
 Once you're logged in, set your project and zone. If you don't know
 your project name, it can be viewed at
 [console.cloud.google.com](https://console.cloud.google.com) in the top-left
-corner, in a dropdown menu of your account's projects.
+corner, in a dropdown menu of your account's projects. The value
+should be from the `id` column. Google separates the concept of a
+projects name, its ID, and its _numerical_ ID. The name and numerical
+ID values will not work here.
 
-    gcloud config set project PROJECT-NAME
+    gcloud config set project PROJECT-ID
     gcloud config set zone us-central1-c
 
 This should only need to be done once per machine. If you change which
