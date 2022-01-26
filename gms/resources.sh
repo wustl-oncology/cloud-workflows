@@ -1,5 +1,7 @@
 #!/bin/bash
 
+SRC_DIR=$(dirname "$0")
+
 function show_help {
     cat <<EOF
 $0 - One-time setup to create resources required by GMS to run workflows
@@ -70,8 +72,8 @@ BUCKET_MAX_AGE_DAYS=30
 WASHU1="128.252.0.0/16"
 WASHU2="65.254.96.0/19"
 
-sh ../scripts/enable_api.sh
-sh ../scripts/create_service_accounts.sh $PROJECT $SERVER_NAME $COMPUTE_NAME
+sh $SRC_DIR/../scripts/enable_api.sh
+sh $SRC_DIR/../scripts/create_service_accounts.sh $PROJECT $SERVER_NAME $COMPUTE_NAME
 
 
 # Create bucket

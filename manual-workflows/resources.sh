@@ -1,5 +1,7 @@
 #!/bin/bash
 
+SRC_DIR=$(dirname "$0")
+
 function show_help {
     echo "$0 - Create/Destroy resources for manual Cromwell workflow execution"
     echo ""
@@ -80,12 +82,12 @@ backend.providers.default.config {
 EOF
 }
 
-sh ../scripts/enable_api.sh
+sh $SRC_DIR/../scripts/enable_api.sh
 
 case $COMMAND in
     "init-project")
         # Create service accounts
-        sh ../scripts/create_service_accounts.sh $PROJECT $SERVER_NAME $COMPUTE_NAME
+        sh $SRC_DIR/../scripts/create_service_accounts.sh $PROJECT $SERVER_NAME $COMPUTE_NAME
         # Create bucket if not exists
         gsutil mb -p $PROJECT -b on gs://$BUCKET
         gsutil iam ch serviceAccount:$COMPUTE_ACCOUNT:objectAdmin gs://$BUCKET
