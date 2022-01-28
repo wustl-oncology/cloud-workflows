@@ -26,7 +26,10 @@ def file_extensions(path):
 def download_from_gcs(src, dest):
     ensure_parent_dir_exists(dest)
     if not Path(dest).is_file():
-        os.system(f"gsutil cp -n {src} {dest}")
+        print(f"Downloading {src} to {dest}")
+        os.system(f"gsutil -q cp -n {src} {dest}")
+    else:
+        print(f"File already exists, skipping download {src} to {dest}")
 
 
 # --- Cromwell server
