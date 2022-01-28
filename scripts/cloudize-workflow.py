@@ -18,6 +18,7 @@ from pathlib import Path
 UNIQUE_PATH = f"input_data/{getuser()}/" + date.today().strftime("%Y-%m-%d")
 yaml = YAML()
 yaml.width = float("Infinity")  # prevent line wrapping
+yaml.preserve_quotes = True
 
 # ---- GCS interactions ------------------------------------------------
 
@@ -176,7 +177,11 @@ class WDL(WorkflowLanguage):
     def prefix_inputs(inputs, prefix):
         def prepend(s, p):
             return f"{p}.{s}" if len(s.split(".")) == 1 else s
-        return {prepend(k, prefix): v for k, v in inputs.items()}
+        prefixed = inputs.copy()
+        for k, v in inputs.items():
+            del prefixed[k]
+            prefixed[prepend(k, prefix)] = v
+        return prefixed
 
 
 class CWL(WorkflowLanguage):
