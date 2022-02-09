@@ -11,6 +11,8 @@ from subprocess import Popen, PIPE
 DEFAULT_CROMWELL_URL = "http://34.69.35.61:8000"
 DEFAULT_OUTPUTS_DIR = './outputs'
 DEFAULT_DIR_STRUCTURE = 'FLAT'
+DEFAULT_DRYRUN = False
+
 # --- File system
 
 def ensure_parent_dir_exists(filename):
@@ -23,11 +25,12 @@ def file_extensions(path):
 
 # --- Google Cloud Storage
 
-def download_from_gcs(src, dest):
+def download_from_gcs(src, dest, dryrun=DEFAULT_DRYRUN):
     ensure_parent_dir_exists(dest)
     if not Path(dest).is_file():
         print(f"Downloading {src} to {dest}")
-        os.system(f"gsutil -q cp -n {src} {dest}")
+        if not dryrun:
+            os.system(f"gsutil -q cp -n {src} {dest}")
     else:
         print(f"File already exists, skipping download {src} to {dest}")
 
@@ -69,16 +72,16 @@ def deep_download(response, outputs_dir):
             raise Exception(f"Unexpected output type {type(output)}")
 
 
-def flat_download(response, outputs_dir):
+def flat_download(response, outputs_dir, dryrun=DEFAULT_DRYRUN):
     "Download outputs, using their output_name and file extension, not path structure."
     for k, gcs_loc in response['outputs'].items():
         output_name = k.split(".")[-1]
         if isinstance(gcs_loc, list):
-            for loc in locs:
+            for loc in gcs_loc:
                 filename = loc.split("/")[-1]
-                download_from_gcs(loc, Path(f"{outputs_dir}/{output_name}/{filename}"))
+                download_from_gcs(loc, Path(f"{outputs_dir}/{output_name}/{filename}"), dryrun=dryrun)
         else:
-            download_from_gcs(gcs_loc, Path(f"{outputs_dir}/{output_name}.{file_extensions(gcs_loc)}"))
+            download_from_gcs(gcs_loc, Path(f"{outputs_dir}/{output_name}.{file_extensions(gcs_loc)}"), dryrun=dryrun)
 
 
 def read_json(filename):
@@ -106,7 +109,11 @@ if __name__ == "__main__":
                         help=f"URL of the relevant Cromwell server. Honors env var CROMWELL_URL. Defaults to {DEFAULT_CROMWELL_URL}")
     parser.add_argument("--dir-structure",
                         help=f"Structure to store downloaded output files. Options are FLAT or DEEP. DEEP is Cromwell default. FLAT renames files to match their output name. Defaults to {DEFAULT_DIR_STRUCTURE}.")
+    parser.add_argument("--dryrun",
+                        help=f"If this arg is set to True, skips the actual download and just prints progress info. Useful for troubleshooting the script. Defaults to {DEFAULT_DRYRUN}")
     args = parser.parse_args()
+
+    dryrun = args.dryrun or DEFAULT_DRYRUN
 
     outputs_dir = args.outputs_dir or DEFAULT_OUTPUTS_DIR
     cromwell_url = args.cromwell_url or os.environ.get('CROMWELL_URL', DEFAULT_CROMWELL_URL)
@@ -124,8 +131,7 @@ if __name__ == "__main__":
     else:  # not (workflow_id or outputs_file):
         raise Exception("must specify either --workflow-id or --outputs-file")
 
-
     if args.dir_structure == "FLAT":
-        flat_download(outputs, outputs_dir)
+        flat_download(outputs, outputs_dir, dryrun=dryrun)
     else:
         deep_download(outputs, outputs_dir)
