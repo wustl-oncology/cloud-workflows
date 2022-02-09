@@ -52,12 +52,18 @@ def request_outputs(workflow_id, cromwell_url):
 
 def flat_download(response, outputs_dir, dryrun=DEFAULT_DRYRUN):
     "Download outputs, using their output_name and file extension, not path structure."
+    def download_array(arr, output_name):
+        for loc in arr:
+            if not loc.startswith("gs://"):
+                print(f"INFO: Output {output_name} likely not a File output. had a non-GCS path value of {gcs_loc}")
+                break
+            filename = loc.split("/")[-1]
+            download_from_gcs(loc, Path(f"{outputs_dir}/{output_name}/{filename}"), dryrun=dryrun)
+
     for k, gcs_loc in response['outputs'].items():
         output_name = k.split(".")[-1]
         if isinstance(gcs_loc, list):
-            for loc in gcs_loc:
-                filename = loc.split("/")[-1]
-                download_from_gcs(loc, Path(f"{outputs_dir}/{output_name}/{filename}"), dryrun=dryrun)
+            download_array(gcs_loc, output_name)
         else:
             download_from_gcs(gcs_loc, Path(f"{outputs_dir}/{output_name}.{file_extensions(gcs_loc)}"), dryrun=dryrun)
 
