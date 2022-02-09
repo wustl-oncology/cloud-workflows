@@ -21,7 +21,7 @@ def ensure_parent_dir_exists(filename):
 
 def file_extensions(path):
     "Extract all file extensions, e.g. 'foo.bam.bai' will return '.bam.bai'"
-    return ".".join(path.split("/")[-1].split(".")[:1])
+    return ".".join(path.split("/")[-1].split(".")[1:])
 
 
 # --- Google Cloud Storage
