@@ -8,9 +8,9 @@ function show_help {
     echo "usage: sh $0 COMMAND --project <PROJECT> --bucket <BUCKET>"
     echo ""
     echo "commands:"
-    echo "    init-project              Create required resources for the project. You'll almost always want this one."
-    echo "    generate-cromwell-conf    Generate the cromwell.conf file required by the VM"
-    echo "                              Use this when project init'd but no local copy"
+    echo "    init-project        Create required resources for the project. You'll almost always want this one."
+    echo "    generate-config     Generate the cromwell.conf file required by the VM"
+    echo "                        Use this when project init'd but no local copy"
     echo ""
     echo "arguments:"
     echo "    -h, --help     print this block"
@@ -70,7 +70,7 @@ SERVER_NAME="cromwell-server"
 COMPUTE_ACCOUNT="$COMPUTE_NAME@$PROJECT.iam.gserviceaccount.com"
 SERVER_ACCOUNT="$SERVER_NAME@$PROJECT.iam.gserviceaccount.com"
 
-function generate_cromwell_conf {
+function generate_config {
     cp $SRC_DIR/base_cromwell.conf $SRC_DIR/cromwell.conf
     cat << EOF >> $SRC_DIR/cromwell.conf
 backend.providers.default.config {
@@ -78,6 +78,14 @@ backend.providers.default.config {
     root = "gs://$BUCKET/cromwell-executions"
     genomics.compute-service-account = "$COMPUTE_ACCOUNT"
     filesystems.gcs.project = "$PROJECT"
+}
+EOF
+    cat <<EOF > workflow_options.json
+{
+    "default_runtime_attributes": {
+        "preemptible": 1
+    }
+    "final_workflow_log_dir": "gs://$BUCKET/final-logs"
 }
 EOF
 }
@@ -93,10 +101,10 @@ case $COMMAND in
         gsutil iam ch serviceAccount:$COMPUTE_ACCOUNT:objectAdmin gs://$BUCKET
         gsutil iam ch serviceAccount:$SERVER_ACCOUNT:objectAdmin gs://$BUCKET
         # Generate cromwell.conf
-        generate_cromwell_conf
+        generate_config
         ;;
-    "generate-cromwell-conf")
-        generate_cromwell_conf
+    "generate-config")
+        generate_config
         ;;
 esac
 

@@ -5,6 +5,7 @@ central-server/terraform/.terraform.lock.hcl
 central-server/terraform/secrets.auto.tfvars
 
 manual-workflows/cromwell.conf
+manual-workflows/workflow_options.json
 
 # Credentials
 *service-account.json

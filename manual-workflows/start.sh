@@ -11,6 +11,13 @@ arguments:
 --server-account   Email identifier of service account used by main Cromwell instance
 --cromwell-conf    Local path to configuration file for Cromwell server. DEFAULT $SRC_DIR/cromwell.conf
 --machine-type     GCP machine type for the instance. DEFAULT e2-standard-2
+
+Additional arguments are passed directly to gsutil compute instances
+create command. For more information on those arguments, check that commands
+help page with
+
+    gsutil compute instances create --help
+
 EOF
 }
 
@@ -59,14 +66,6 @@ while test $# -gt 0; do
                 shift
             fi
             ;;
-        --boot-disk-size*)
-            if [ ! "$2" ]; then
-                die 'ERROR: "--boot-disk-size" requires a string argument e.g. 50GB'
-            else
-                BOOT_DISK_SIZE=$2
-                shift
-            fi
-            ;;
         *)
             break
             ;;
@@ -75,7 +74,7 @@ while test $# -gt 0; do
 done
 
 MACHINE_TYPE=${MACHINE_TYPE:-"e2-standard-2"}
-BOOT_DISK_SIZE=${BOOT_DISK_SIZE:-"50GB"}
+
 [ -z $SERVER_ACCOUNT ] && die "Missing argument --server-account"
 [ -z $PROJECT        ] && die "Missing argument --project"
 
@@ -84,7 +83,18 @@ if [[ ! -f $CROMWELL_CONF ]]; then
     cat <<EOF
 cromwell.conf does not exist. Check passed value or generate via
 
-    sh resources.sh generate-cromwell-conf --project PROJECT --bucket BUCKET
+    sh resources.sh generate-config --project PROJECT --bucket BUCKET
+
+EOF
+    exit 1
+fi
+
+WORKFLOW_OPTIONS="$SRC_DIR/workflow_options.json"
+if [[ ! -f $WORKFLOW_OPTIONS ]]; then
+    cat <<EOF
+workflow_options.json does not exist. Check passed value or generate via
+
+    sh resources.sh generate-config --project PROJECT --bucket BUCKET
 
 EOF
     exit 1
@@ -96,11 +106,11 @@ gcloud compute instances create $INSTANCE_NAME \
        --image-project debian-cloud \
        --zone us-central1-c \
        --machine-type=$MACHINE_TYPE \
-       --boot-disk-size=$BOOT_DISK_SIZE \
        --service-account=$SERVER_ACCOUNT --scopes=cloud-platform \
        --network=default --subnet=default \
        --metadata=cromwell-version=71 \
-       --metadata-from-file=startup-script=$SRC_DIR/server_startup.py,cromwell-conf=$CROMWELL_CONF,helpers-sh=$SRC_DIR/helpers.sh,cromwell-service=$SRC_DIR/cromwell.service,workflow-options=$SRC_DIR/workflow_options.json
+       --metadata-from-file=startup-script=$SRC_DIR/server_startup.py,cromwell-conf=$CROMWELL_CONF,helpers-sh=$SRC_DIR/helpers.sh,cromwell-service=$SRC_DIR/cromwell.service,workflow-options=$WORKFLOW_OPTIONS \
+       $@
 
 cat <<EOF
 To use this instance, SSH into it via:
