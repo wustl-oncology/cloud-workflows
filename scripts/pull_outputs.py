@@ -1,5 +1,6 @@
 # built-in
 import json
+import logging
 import os
 import re
 import requests
@@ -29,11 +30,11 @@ def file_extensions(path):
 def download_from_gcs(src, dest, dryrun=DEFAULT_DRYRUN):
     ensure_parent_dir_exists(dest)
     if not Path(dest).is_file():
-        print(f"Downloading {src} to {dest}")
+        logging.info(f"Downloading {src} to {dest}")
         if not dryrun:
             os.system(f"gsutil -q cp -n {src} {dest}")
     else:
-        print(f"File already exists, skipping download {src} to {dest}")
+        logging.info(f"File already exists, skipping download {src} to {dest}")
 
 
 # --- Cromwell server
@@ -55,7 +56,7 @@ def flat_download(response, outputs_dir, dryrun=DEFAULT_DRYRUN):
     def download_array(arr, output_name):
         for loc in arr:
             if not loc.startswith("gs://"):
-                print(f"INFO: Output {output_name} likely not a File output. had a non-GCS path value of {gcs_loc}")
+                logging.info(f"Output {output_name} likely not a File output. had a non-GCS path value of {gcs_loc}")
                 break
             filename = loc.split("/")[-1]
             download_from_gcs(loc, Path(f"{outputs_dir}/{output_name}/{filename}"), dryrun=dryrun)
@@ -99,6 +100,12 @@ if __name__ == "__main__":
 
     outputs_dir = args.outputs_dir or DEFAULT_OUTPUTS_DIR
     cromwell_url = args.cromwell_url or os.environ.get('CROMWELL_URL', DEFAULT_CROMWELL_URL)
+
+    log_level = os.environ.get("LOGLEVEL", "WARNING").upper()
+    logging.basicConfig(
+        level=log_level,
+        format='[%(levelname)s] %(message)s'
+    )
 
     if args.workflow_id and args.outputs_file:
         raise Exception("must specify only one of --workflow-id and --outputs-file")
