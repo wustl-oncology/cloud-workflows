@@ -27,6 +27,11 @@ def file_extensions(path):
     return ".".join(path.split("/")[-1].split(".")[1:])
 
 
+def filename(path):
+    """ Return just the name of the file, not including parent directories."""
+    return path.split("/")[-1]
+
+
 # --- Google Cloud Storage
 
 def download_from_gcs(src, dest):
@@ -55,21 +60,15 @@ def request_outputs(workflow_id, cromwell_url):
 
 # --- Non-general stuff.
 
-
-def download_array(outputs_dir, arr):
-    for loc in arr:
-        if not loc.startswith("gs://"):
-            logging.info(f"Output {output_name} likely not a File output. had a non-GCS path value of {gcs_loc}")
-            break
-        filename = loc.split("/")[-1]
-        download_from_gcs(loc, Path(f"{outputs_dir}/{filename}"))
-
-
 def download(path, value):
     if isinstance(value, list):
-        download_array(path, value)
-    else:
-        download_from_gcs(path, Path(f"{path}.{file_extensions(value)}"))
+        for loc in value:
+            download(path, loc)
+    elif isinstance(value, str):
+        if not loc.startswith("gs://"):
+            logging.info(f"Output {output_name} likely not a File output. had a non-GCS path value of {gcs_loc}")
+        else:
+            download_from_gcs(path, Path(f"{path}/{filename(value)}"))
 
 def download_outputs(response, outputs_dir):
     "Download outputs, using their output_name and file extension, not path structure."
