@@ -158,10 +158,12 @@ def persist_vm_logs(gcs_dir):
     We want this to troubleshoot issues since the VM dies.
     This won't help when there are issues with uploading to bucket, though..
     """
+    logging.debug("Persisting logs...")
     os.system('journalctl -u google-startup-scripts > vm.log')
     os.system('journalctl -u cromwell > cromwell.log')
     os.system(f"gsutil cp vm.log {gcs_dir}/vm.log")
     os.system(f"gsutil cp cromwell.log {gcs_dir}/cromwell.log")
+    logging.debug("Persisting logs...DONE")
 
 
 def persist_url_response(url, gcs_dir, filename):
@@ -184,6 +186,7 @@ def self_destruct_vm():
     Deletes the hosting instance.
     Instances are created automatically and need to be deleted on completion.
     """
+    logging.debug("Destroying VM")
     zone = _fetch_instance_metadata('zone').split('/')[-1]
     hostname = socket.gethostname()
     os.system(f"gcloud compute instances delete {hostname} --zone={zone} -q")
@@ -191,7 +194,7 @@ def self_destruct_vm():
 
 if __name__ == '__main__':
     logging.basicConfig(
-        level=logging.INFO,
+        level=logging.DEBUG,
         format='python[%(levelname)s] %(message)s'
     )
 
@@ -238,6 +241,7 @@ if __name__ == '__main__':
                    'workflowDependencies': open(DEPS_ZIP, 'rb'),
                    'workflowOptions':      open(OPTIONS_JSON, 'rb')}
         )
+        logging.debug(f"Received response {response}")
         response.raise_for_status()
         workflow_id = response.json()['id']
         logging.info(f"Began workflow {workflow_id}")
@@ -262,8 +266,10 @@ if __name__ == '__main__':
 
         # Shut down
         logging.info("Startup script...DONE")
-
+    except Exception as e:
+        logging.error(e)
     finally:
+        logging.debug("Wrapping up")
         # VM logs persisted to GCS to enable troubleshooting when
         # instance self-destructs or in case where SSH is disabled.
         # Will NOT be persisted if there is an issue with the
