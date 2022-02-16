@@ -6,10 +6,6 @@ resource google_sql_database_instance "master" {
     tier = var.instance_type
     activation_policy = "ALWAYS"
     disk_autoresize = true
-    backup_configuration {
-      enabled = true
-      binary_log_enabled = true
-    }
     ip_configuration {
       ipv4_enabled = true
       dynamic authorized_networks {
