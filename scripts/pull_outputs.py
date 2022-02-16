@@ -53,22 +53,29 @@ def request_outputs(workflow_id, cromwell_url):
     return response.json()
 
 
-def flat_download(response, outputs_dir):
-    "Download outputs, using their output_name and file extension, not path structure."
-    def download_array(arr, output_name):
-        for loc in arr:
-            if not loc.startswith("gs://"):
-                logging.info(f"Output {output_name} likely not a File output. had a non-GCS path value of {gcs_loc}")
-                break
-            filename = loc.split("/")[-1]
-            download_from_gcs(loc, Path(f"{outputs_dir}/{output_name}/{filename}"))
+# --- Non-general stuff.
 
-    for k, gcs_loc in response['outputs'].items():
+
+def download_array(outputs_dir, arr):
+    for loc in arr:
+        if not loc.startswith("gs://"):
+            logging.info(f"Output {output_name} likely not a File output. had a non-GCS path value of {gcs_loc}")
+            break
+        filename = loc.split("/")[-1]
+        download_from_gcs(loc, Path(f"{outputs_dir}/{filename}"))
+
+
+def download(path, value):
+    if isinstance(value, list):
+        download_array(path, value)
+    else:
+        download_from_gcs(path, Path(f"{path}.{file_extensions(value)}"))
+
+def download_outputs(response, outputs_dir):
+    "Download outputs, using their output_name and file extension, not path structure."
+    for k, v in response['outputs'].items():
         output_name = k.split(".")[-1]
-        if isinstance(gcs_loc, list):
-            download_array(gcs_loc, output_name)
-        else:
-            download_from_gcs(gcs_loc, Path(f"{outputs_dir}/{output_name}.{file_extensions(gcs_loc)}"))
+        download(f"{outputs_dir}/{output_name}", v)
 
 
 def read_json(filename):
@@ -119,4 +126,4 @@ if __name__ == "__main__":
     else:  # not (workflow_id or outputs_file):
         raise Exception("must specify either --workflow-id or --outputs-file")
 
-    flat_download(outputs, outputs_dir)
+    download_outputs(outputs, outputs_dir)
