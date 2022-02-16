@@ -64,11 +64,16 @@ def download(path, value):
     if isinstance(value, list):
         for loc in value:
             download(path, loc)
+    elif isinstance(value, dict):
+        for k, v in value.items():
+            download(f"{path}/{k}", v)
     elif isinstance(value, str):
-        if not loc.startswith("gs://"):
-            logging.info(f"Output {output_name} likely not a File output. had a non-GCS path value of {gcs_loc}")
+        if not value.startswith("gs://"):
+            logging.warning(f"Likely not a File output. had a non-GCS path value of {value}")
         else:
             download_from_gcs(path, Path(f"{path}/{filename(value)}"))
+    else:
+        logging.error(f"Don't know how to download type {type(value)}. Full object: {value}")
 
 def download_outputs(response, outputs_dir):
     "Download outputs, using their output_name and file extension, not path structure."
