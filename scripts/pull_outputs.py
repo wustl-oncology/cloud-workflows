@@ -14,6 +14,8 @@ DEFAULT_OUTPUTS_DIR = './outputs'
 DEFAULT_DIR_STRUCTURE = 'FLAT'
 DEFAULT_DRYRUN = False
 
+DRYRUN = DEFAULT_DRYRUN
+
 # --- File system
 
 def ensure_parent_dir_exists(filename):
@@ -27,11 +29,11 @@ def file_extensions(path):
 
 # --- Google Cloud Storage
 
-def download_from_gcs(src, dest, dryrun=DEFAULT_DRYRUN):
+def download_from_gcs(src, dest):
     ensure_parent_dir_exists(dest)
     if not Path(dest).is_file():
         logging.info(f"Downloading {src} to {dest}")
-        if not dryrun:
+        if not DRYRUN:
             os.system(f"gsutil -q cp -n {src} {dest}")
     else:
         logging.info(f"File already exists, skipping download {src} to {dest}")
@@ -51,7 +53,7 @@ def request_outputs(workflow_id, cromwell_url):
     return response.json()
 
 
-def flat_download(response, outputs_dir, dryrun=DEFAULT_DRYRUN):
+def flat_download(response, outputs_dir):
     "Download outputs, using their output_name and file extension, not path structure."
     def download_array(arr, output_name):
         for loc in arr:
@@ -59,14 +61,14 @@ def flat_download(response, outputs_dir, dryrun=DEFAULT_DRYRUN):
                 logging.info(f"Output {output_name} likely not a File output. had a non-GCS path value of {gcs_loc}")
                 break
             filename = loc.split("/")[-1]
-            download_from_gcs(loc, Path(f"{outputs_dir}/{output_name}/{filename}"), dryrun=dryrun)
+            download_from_gcs(loc, Path(f"{outputs_dir}/{output_name}/{filename}"))
 
     for k, gcs_loc in response['outputs'].items():
         output_name = k.split(".")[-1]
         if isinstance(gcs_loc, list):
             download_array(gcs_loc, output_name)
         else:
-            download_from_gcs(gcs_loc, Path(f"{outputs_dir}/{output_name}.{file_extensions(gcs_loc)}"), dryrun=dryrun)
+            download_from_gcs(gcs_loc, Path(f"{outputs_dir}/{output_name}.{file_extensions(gcs_loc)}"))
 
 
 def read_json(filename):
@@ -96,7 +98,7 @@ if __name__ == "__main__":
                         help=f"If this arg is set to True, skips the actual download and just prints progress info. Useful for troubleshooting the script. Defaults to {DEFAULT_DRYRUN}")
     args = parser.parse_args()
 
-    dryrun = args.dryrun or DEFAULT_DRYRUN
+    DRYRUN = args.dryrun or DEFAULT_DRYRUN
 
     outputs_dir = args.outputs_dir or DEFAULT_OUTPUTS_DIR
     cromwell_url = args.cromwell_url or os.environ.get('CROMWELL_URL', DEFAULT_CROMWELL_URL)
@@ -117,4 +119,4 @@ if __name__ == "__main__":
     else:  # not (workflow_id or outputs_file):
         raise Exception("must specify either --workflow-id or --outputs-file")
 
-    flat_download(outputs, outputs_dir, dryrun=dryrun)
+    flat_download(outputs, outputs_dir)
