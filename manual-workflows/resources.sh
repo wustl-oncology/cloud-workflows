@@ -85,7 +85,7 @@ EOF
     "default_runtime_attributes": {
         "preemptible": 1,
         "maxRetries": 2
-    }
+    },
     "final_workflow_log_dir": "gs://$BUCKET/final-logs"
 }
 EOF
