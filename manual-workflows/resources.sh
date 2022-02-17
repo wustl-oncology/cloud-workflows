@@ -80,10 +80,11 @@ backend.providers.default.config {
     filesystems.gcs.project = "$PROJECT"
 }
 EOF
-    cat <<EOF > workflow_options.json
+    cat <<EOF > $SRC_DIR/workflow_options.json
 {
     "default_runtime_attributes": {
-        "preemptible": 1
+        "preemptible": 1,
+        "maxRetries": 2
     }
     "final_workflow_log_dir": "gs://$BUCKET/final-logs"
 }
