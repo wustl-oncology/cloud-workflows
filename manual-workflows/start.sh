@@ -1,3 +1,5 @@
+#!/usr/bin/bash
+
 SRC_DIR="$(dirname "${BASH_SOURCE[0]}")"
 
 show_help () {
@@ -109,7 +111,7 @@ gcloud compute instances create $INSTANCE_NAME \
        --service-account=$SERVER_ACCOUNT --scopes=cloud-platform \
        --network=default --subnet=default \
        --metadata=cromwell-version=71 \
-       --metadata-from-file=startup-script=$SRC_DIR/server_startup.py,cromwell-conf=$CROMWELL_CONF,helpers-sh=$SRC_DIR/helpers.sh,cromwell-service=$SRC_DIR/cromwell.service,workflow-options=$WORKFLOW_OPTIONS \
+       --metadata-from-file=startup-script=$SRC_DIR/server_startup.py,cromwell-conf=$CROMWELL_CONF,helpers-sh=$SRC_DIR/helpers.sh,cromwell-service=$SRC_DIR/cromwell.service,workflow-options=$WORKFLOW_OPTIONS,persist-artifacts=$SRC_DIR/../scripts/persist_artifacts.py \
        $@
 
 cat <<EOF
