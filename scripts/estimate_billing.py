@@ -2,12 +2,11 @@ import json
 import logging
 import os
 import requests
+import subprocess
 
 from argparse import ArgumentParser
 from datetime import datetime
 from pathlib import Path
-
-from google.cloud import storage
 
 
 # Improvements:
@@ -42,19 +41,17 @@ DISK_PRICE = { "SSD": 0.170, "HDD": 0.040 }
 # requests.get(GOOGLE_URL, headers={'Metadata-Flavor': 'Google'})
 
 
-GCS = storage.Client()
-def gcs_blob(filename):
-    bucket, *path = filename.split("/")[2:]
-    return GCS.get_bucket(bucket).get_blob("/".join(path))
-
-
 def read_json(filename):
     """
     read+parse a JSON file into memory. Works for local and gs:// files
     """
     logging.debug(f"Reading JSON {filename}")
     if filename.startswith("gs://"):
-        return json.loads(gcs_blob(filename).download_as_text())
+        tmpdir = os.environ.get("TMPDIR", "/tmp")
+        tmpfile = f"{Path(tmpdir)}/{Path(filename).name}"
+        subprocess.call(['gsutil', '-q', 'cp', '-n', filename, tmpfile])
+        with open(tmpfile) as f:
+            return json.load(f)
     else:
         with open(filename) as f:
             return json.load(f)
