@@ -5,3 +5,5 @@ miniwdl == 1.2.1
 ruamel.yaml >= 0.15.0
 
 pathlib == 1.0.1
+
+google-cloud-storage

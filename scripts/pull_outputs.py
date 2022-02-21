@@ -6,11 +6,14 @@ from argparse import ArgumentParser
 from pathlib import Path
 from subprocess import Popen, PIPE
 
+from google.cloud import storage
+
 
 DEFAULT_OUTPUTS_DIR = './outputs'
 DEFAULT_DRYRUN = False
 
 DRYRUN = DEFAULT_DRYRUN
+
 
 def download_from_gcs(src, dest):
     "Copy a GCS file at path `src` to local path `dest`, creating that path if needed."
@@ -47,6 +50,18 @@ def download_outputs(response, outputs_dir):
         download(f"{outputs_dir}/{output_name}", v)
 
 
+def read_json(filename):
+    """
+    read+parse a JSON file into memory. Works for local and gs:// files
+    """
+    logging.debug(f"Reading JSON {filename}")
+    if filename.startswith("gs://"):
+        return json.loads(gcs_blob(filename).download_as_text())
+    else:
+        with open(filename) as f:
+            return json.load(f)
+
+
 if __name__ == "__main__":
     parser = ArgumentParser(description="Download Cromwell outputs for a given workflow.")
     parser.add_argument("--outputs-file",
@@ -63,15 +78,10 @@ if __name__ == "__main__":
     DRYRUN = args.dryrun
     outputs_dir = args.outputs_dir
 
-    log_level = os.environ.get("LOGLEVEL", "WARNING").upper()
+    log_level = os.environ.get("LOGLEVEL", "INFO").upper()
     logging.basicConfig(
         level=log_level,
         format='[%(levelname)s] %(message)s'
     )
 
-    if not args.outputs_file:
-        raise Exception("must specify either --workflow-id or --outputs-file")
-
-    with open(args.outputs_file) as f:
-        outputs = json.load(f)
-    download_outputs(outputs, outputs_dir)
+    download_outputs(read_json(args.outputs_file), outputs_dir)
