@@ -2,9 +2,9 @@
 import json
 import logging
 import os
+import subprocess
 from argparse import ArgumentParser
 from pathlib import Path
-from subprocess import Popen, PIPE
 
 
 DEFAULT_OUTPUTS_DIR = './outputs'
@@ -12,14 +12,14 @@ DEFAULT_DRYRUN = False
 
 DRYRUN = DEFAULT_DRYRUN
 
+
 def download_from_gcs(src, dest):
     "Copy a GCS file at path `src` to local path `dest`, creating that path if needed."
     os.makedirs(Path(dest).parent, exist_ok=True)
-    ensure_parent_dir_exists(dest)
     if not Path(dest).is_file():
         logging.info(f"Downloading {src} to {dest}")
         if not DRYRUN:
-            os.system(f"gsutil -q cp -n {src} {dest}")
+            subprocess.call(['gsutil', '-q', 'cp', '-n', src, dest])
     else:
         logging.info(f"File already exists, skipping download {src} to {dest}")
 
@@ -35,7 +35,7 @@ def download(path, value):
         if not value.startswith("gs://"):
             logging.warning(f"Likely not a File output. had a non-GCS path value of {value}")
         else:
-            download_from_gcs(path, Path(f"{path}/{Path(value).name}"))
+            download_from_gcs(value, Path(f"{path}/{Path(value).name}"))
     else:
         logging.error(f"Don't know how to download type {type(value)}. Full object: {value}")
 
@@ -45,6 +45,22 @@ def download_outputs(response, outputs_dir):
     for k, v in response['outputs'].items():
         output_name = k.split(".")[-1]
         download(f"{outputs_dir}/{output_name}", v)
+
+
+def read_json(filename):
+    """
+    read+parse a JSON file into memory. Works for local and gs:// files
+    """
+    logging.debug(f"Reading JSON {filename}")
+    if filename.startswith("gs://"):
+        tmpdir = os.environ.get("TMPDIR", "/tmp")
+        tmpfile = f"{Path(tmpdir)}/{Path(filename).name}"
+        download_from_gcs(filename, tmpfile)
+        with open(tmpfile) as f:
+            return json.load(f)
+    else:
+        with open(filename) as f:
+            return json.load(f)
 
 
 if __name__ == "__main__":
@@ -63,15 +79,10 @@ if __name__ == "__main__":
     DRYRUN = args.dryrun
     outputs_dir = args.outputs_dir
 
-    log_level = os.environ.get("LOGLEVEL", "WARNING").upper()
+    log_level = os.environ.get("LOGLEVEL", "INFO").upper()
     logging.basicConfig(
         level=log_level,
         format='[%(levelname)s] %(message)s'
     )
 
-    if not args.outputs_file:
-        raise Exception("must specify either --workflow-id or --outputs-file")
-
-    with open(args.outputs_file) as f:
-        outputs = json.load(f)
-    download_outputs(outputs, outputs_dir)
+    download_outputs(read_json(args.outputs_file), outputs_dir)

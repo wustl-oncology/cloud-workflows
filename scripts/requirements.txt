@@ -5,3 +5,7 @@ miniwdl == 1.2.1
 ruamel.yaml >= 0.15.0
 
 pathlib == 1.0.1
+
+
+# do not use google-cloud-storage
+# it requires a service-account setup instead of personal creds
