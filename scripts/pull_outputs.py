@@ -18,7 +18,6 @@ DRYRUN = DEFAULT_DRYRUN
 def download_from_gcs(src, dest):
     "Copy a GCS file at path `src` to local path `dest`, creating that path if needed."
     os.makedirs(Path(dest).parent, exist_ok=True)
-    ensure_parent_dir_exists(dest)
     if not Path(dest).is_file():
         logging.info(f"Downloading {src} to {dest}")
         if not DRYRUN:
