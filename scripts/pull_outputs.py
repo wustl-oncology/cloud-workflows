@@ -2,11 +2,9 @@
 import json
 import logging
 import os
+import subprocess
 from argparse import ArgumentParser
 from pathlib import Path
-from subprocess import Popen, PIPE
-
-from google.cloud import storage
 
 
 DEFAULT_OUTPUTS_DIR = './outputs'
@@ -21,7 +19,7 @@ def download_from_gcs(src, dest):
     if not Path(dest).is_file():
         logging.info(f"Downloading {src} to {dest}")
         if not DRYRUN:
-            os.system(f"gsutil -q cp -n {src} {dest}")
+            subprocess.call(['gsutil', '-q', 'cp', '-n', src, dest])
     else:
         logging.info(f"File already exists, skipping download {src} to {dest}")
 
@@ -37,7 +35,7 @@ def download(path, value):
         if not value.startswith("gs://"):
             logging.warning(f"Likely not a File output. had a non-GCS path value of {value}")
         else:
-            download_from_gcs(path, Path(f"{path}/{Path(value).name}"))
+            download_from_gcs(value, Path(f"{path}/{Path(value).name}"))
     else:
         logging.error(f"Don't know how to download type {type(value)}. Full object: {value}")
 
@@ -49,16 +47,17 @@ def download_outputs(response, outputs_dir):
         download(f"{outputs_dir}/{output_name}", v)
 
 
-GCS = storage.Client()
 def read_json(filename):
     """
     read+parse a JSON file into memory. Works for local and gs:// files
     """
     logging.debug(f"Reading JSON {filename}")
     if filename.startswith("gs://"):
-        bucket, *path = filename.split("/")[2:]
-        blob = GCS.get_bucket(bucket).get_blob("/".join(path))
-        return json.loads(blob.download_as_text())
+        tmpdir = os.environ.get("TMPDIR", "/tmp")
+        tmpfile = f"{Path(tmpdir)}/{Path(filename).name}"
+        download_from_gcs(filename, tmpfile)
+        with open(tmpfile) as f:
+            return json.load(f)
     else:
         with open(filename) as f:
             return json.load(f)

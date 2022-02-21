@@ -6,4 +6,6 @@ ruamel.yaml >= 0.15.0
 
 pathlib == 1.0.1
 
-google-cloud-storage
+
+# do not use google-cloud-storage
+# it requires a service-account setup instead of personal creds
