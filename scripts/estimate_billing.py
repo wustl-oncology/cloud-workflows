@@ -77,7 +77,9 @@ def cost_machine_type(machine_type, duration_seconds, preemptible = False):
     """
     Calculate the per-minute cost of a machine type.
 
-    Pricing is explained in detail at this page: https://cloud.google.com/compute/vm-instance-pricing
+    Pricing is explained in detail at this page:
+    https://cloud.google.com/compute/vm-instance-pricing
+
     Cromwell (at least in Feb2022) defaults to N1 instances for all tasks.
     """
     if machine_type.startswith("custom-"):
