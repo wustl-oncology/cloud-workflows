@@ -11,11 +11,10 @@ CROMWELL_API = "http://localhost:8000/api"
 
 def _save_locally(contents, filename):
     with open(filename, "w") as f:
-        json.dump(contents, f)
+        f.write(contents)
 
 
 def _save_gcs(src, dest):
-    logging.info(f"Saving {src} to {dest}")
     os.system(f"gsutil -q cp {src} {dest}")
 
 
@@ -33,17 +32,22 @@ def _persist_endpoint(endpoint, gcs_dir, filename):
 
 
 def save_timing(workflow_id, gcs_dir):
+    logging.info(f"Saving timing.html for workflow {workflow_id}")
     _persist_endpoint(f"{workflow_id}/timing", gcs_dir, "timing.html")
 
 
 def save_outputs(workflow_id, gcs_dir):
+    logging.info(f"Saving outputs.json for workflow {workflow_id}")
     _persist_endpoint(f"{workflow_id}/outputs", gcs_dir, "outputs.html")
 
+
+# TODO(john): save info about current VM
 
 def save_metadata(workflow_id, gcs_dir):
     """
     Save `metadata` for workflow_id and its subworkflows to `gcs_dir`
     """
+    logging.info(f"Saving metadata.json for workflow {workflow_id}")
     response = _request_workflow(f"{workflow_id}/metadata")
     if response.ok:
         _save_locally(response.text, f"{workflow_id}.json")
@@ -52,6 +56,7 @@ def save_metadata(workflow_id, gcs_dir):
         for k, calls in metadata.get("calls", {}).items():
             for call in calls:
                 if "subWorkflowId" in call:
+                    logging.debug(f"Call {k} is a subworkflow with id {call['subWorkflowId']}, save it.")
                     save_metadata(call["subWorkflowId"], gcs_dir)
     else:
         logging.error(f"{workflow_id}/metadata endpoint returned non-OK response {response}")
@@ -59,11 +64,11 @@ def save_metadata(workflow_id, gcs_dir):
 
 if __name__ == "__main__":
     parser = ArgumentParser(description="Upload Cromwell endpoint responses for a given workflow. Uploads timing, outputs, and metadata (including subworkflow metadata).")
-    parser.add_argument("gcs_dir", required=True)
-    parser.add_argument("workflow_id", required=True)
+    parser.add_argument("gcs_dir")
+    parser.add_argument("workflow_id")
     args = parser.parse_args()
 
-    log_level = os.environ.get("LOGLEVEL", "WARNING").upper()
+    log_level = os.environ.get("LOGLEVEL", "INFO").upper()
     logging.basicConfig(
         level=log_level,
         format='[%(levelname)s] %(message)s'
