@@ -49,13 +49,16 @@ def download_outputs(response, outputs_dir):
         download(f"{outputs_dir}/{output_name}", v)
 
 
+GCS = storage.Client()
 def read_json(filename):
     """
     read+parse a JSON file into memory. Works for local and gs:// files
     """
     logging.debug(f"Reading JSON {filename}")
     if filename.startswith("gs://"):
-        return json.loads(gcs_blob(filename).download_as_text())
+        bucket, *path = filename.split("/")[2:]
+        blob = GCS.get_bucket(bucket).get_blob("/".join(path))
+        return json.loads(blob.download_as_text())
     else:
         with open(filename) as f:
             return json.load(f)
