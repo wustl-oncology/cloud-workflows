@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import re
 import requests
 import subprocess
 
@@ -63,10 +64,6 @@ def is_subworkflow(call):
 
 def is_run_task(call):
     return TASK_KEY in call
-
-
-def is_cached_task(call):
-    return ("callCaching" in call and call["callCaching"]["hit"])
 
 
 def from_iso(datetime_str):
@@ -145,6 +142,23 @@ def cost_task(task):
     }
 
 
+def cached_id(call):
+    # example: "Cache Hit: 7f84432e-c1e2-42d6-b3ba-c48521c2db47:immuno.extractAlleles:-1"
+    # "Cache Hit: (uuid):(workflowName):(shardIndex)"
+    result = call["callCaching"]["result"]
+    match = re.match(
+        "Cache Hit: ([-0-9a-f]+):(.+):(-1|[0-9]+)",
+        result
+    )
+    # These don't do anything to handle the error -- just let the script fail naturally
+    if not match:
+        logging.error(f"No matches to parse a subworkflow ID out of result {result}")
+    if not len(match.groups()) == 3:
+        logging.error(f"Match did not result in three groups as expected: len({match.groups()}) == {len(match.groups())}")
+    cached_call, _workflow_name, _shard_index = match.groups()
+    return cached_call
+
+
 def cost_workflow(location, workflow_id):
     """
     Determine the totalcost of a workflow.
@@ -159,11 +173,10 @@ def cost_workflow(location, workflow_id):
             if is_run_task(call):
                 cost = cost_task(call)
                 call_costs_by_name[call_key] = cost
-            elif is_cached_task(call):
-                logging.info(f"Skipping CACHED {call_name}")
+            elif "callCaching" in call:
+                call_costs_by_name[call_key] = cost_workflow(location, cached_id(call))
             elif is_subworkflow(call):
-                cost = cost_workflow(location, call["subWorkflowId"])
-                call_costs_by_name[call_key] = cost
+                call_costs_by_name[call_key] = cost_workflow(location, call["subWorkflowId"])
             else:
                 logging.warning(f"Not a vm, cacheHit, or subworkflow. Failed before VM start? {call_name} {idx}")
     duration = from_iso(metadata["end"]) - from_iso(metadata["start"])

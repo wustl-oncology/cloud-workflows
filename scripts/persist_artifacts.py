@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import re
 import requests
 
 from argparse import ArgumentParser
@@ -15,7 +16,7 @@ def _save_locally(contents, filename):
 
 
 def _save_gcs(src, dest):
-    os.system(f"gsutil -q cp {src} {dest}")
+    os.system(f"gsutil -q cp -n {src} {dest}")
 
 
 def _request_workflow(endpoint):
@@ -43,11 +44,38 @@ def save_outputs(workflow_id, gcs_dir):
 
 # TODO(john): save info about current VM
 
+
+def is_cache_hit(call):
+    if ("callCaching" in call) and not ("hit" in call["callCaching"]):
+        logging.debug(f"callCaching entry with no hit key: {call}")
+        return False
+    else:
+        return ("callCaching" in call) \
+            and ("hit" in call["callCaching"]) \
+            and call["callCaching"]["hit"]
+
+
+def cached_id(call):
+    """ Extract the ID of the cached version of `call` from `call[callCaching][result]`. """
+    # example: "Cache Hit: 7f84432e-c1e2-42d6-b3ba-c48521c2db47:immuno.extractAlleles:-1"
+    # "Cache Hit: (uuid):(workflowName):(shardIndex)"
+    result = call["callCaching"]["result"]
+    match = re.match(
+        "Cache Hit: ([-0-9a-f]+):(.+):(-1|[0-9]+)",
+        result
+    )
+    # These don't do anything to handle the error -- just let the script fail naturally
+    if not match:
+        logging.error(f"No matches to parse a subworkflow ID out of result {result}")
+    if not len(match.groups()) == 3:
+        logging.error(f"Match did not result in three groups as expected: len({match.groups()}) == {len(match.groups())}")
+    cached_call, _workflow_name, _shard_index = match.groups()
+    return cached_call
+
+
 def save_metadata(workflow_id, gcs_dir):
-    """
-    Save `metadata` for workflow_id and its subworkflows to `gcs_dir`
-    """
-    logging.info(f"Saving metadata.json for workflow {workflow_id}")
+    """ Save `metadata` for workflow_id and its subworkflows to `gcs_dir`. """
+    logging.info(f"Saving metadata json for workflow {workflow_id}")
     response = _request_workflow(f"{workflow_id}/metadata")
     if response.ok:
         _save_locally(response.text, f"{workflow_id}.json")
@@ -58,6 +86,10 @@ def save_metadata(workflow_id, gcs_dir):
                 if "subWorkflowId" in call:
                     logging.debug(f"Call {k} is a subworkflow with id {call['subWorkflowId']}, save it.")
                     save_metadata(call["subWorkflowId"], gcs_dir)
+                elif is_cache_hit(call):
+                    cached_call = cached_id(call)
+                    logging.debug(f"Call {k} is a cached task with id {cached_call}, save it.")
+                    save_metadata(cached_call, gcs_dir)
     else:
         logging.error(f"{workflow_id}/metadata endpoint returned non-OK response {response}")
 
