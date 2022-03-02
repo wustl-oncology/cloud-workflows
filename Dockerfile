@@ -12,7 +12,7 @@ ADD scripts/workflow_options_griffith.json /opt/scripts/workflow_options_griffit
 ADD scripts/submit_workflow.sh /opt/scripts/submit_workflow.sh
 
 # Multi-approach help
-ADD scripts/create_service_accounts.sh /opt/scripts/create_service_accounts.sh
+ADD scripts/create_resources.sh /opt/scripts/create_resources.sh
 ADD scripts/enable_api.sh /opt/scripts/enable_api.sh
 # GMS setup/run
 ADD gms/resources.sh /opt/gms/resources.sh

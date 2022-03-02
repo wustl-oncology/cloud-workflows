@@ -73,7 +73,7 @@ WASHU1="128.252.0.0/16"
 WASHU2="65.254.96.0/19"
 
 sh $SRC_DIR/../scripts/enable_api.sh
-sh $SRC_DIR/../scripts/create_service_accounts.sh $PROJECT $SERVER_NAME $COMPUTE_NAME
+sh $SRC_DIR/../scripts/create_resources.sh $PROJECT $SERVER_NAME $COMPUTE_NAME
 
 
 # Create bucket

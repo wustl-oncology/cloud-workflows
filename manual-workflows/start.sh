@@ -1,5 +1,8 @@
 SRC_DIR="$(dirname "${BASH_SOURCE[0]}")"
 
+NETWORK=workflows
+SUBNET=$NETWORK-cromwell
+
 show_help () {
     cat <<EOF
 $0 - Start a new Cromwell VM instance
@@ -107,7 +110,7 @@ gcloud compute instances create $INSTANCE_NAME \
        --zone us-central1-c \
        --machine-type=$MACHINE_TYPE \
        --service-account=$SERVER_ACCOUNT --scopes=cloud-platform \
-       --network=default --subnet=default \
+       --network=$NETWORK --subnet=$SUBNET \
        --metadata=cromwell-version=71 \
        --metadata-from-file=startup-script=$SRC_DIR/server_startup.py,cromwell-conf=$CROMWELL_CONF,helpers-sh=$SRC_DIR/helpers.sh,cromwell-service=$SRC_DIR/cromwell.service,workflow-options=$WORKFLOW_OPTIONS \
        $@
