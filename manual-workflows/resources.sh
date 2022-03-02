@@ -91,7 +91,9 @@ EOF
         "preemptible": 1,
         "maxRetries": 2
     },
-    "final_workflow_log_dir": "gs://$BUCKET/final-logs"
+    "final_workflow_log_dir": "gs://$BUCKET/final-logs",
+    "final_call_logs": "gs://$BUCKET/call-logs",
+    "enable_ssh_access": true
 }
 EOF
 }
