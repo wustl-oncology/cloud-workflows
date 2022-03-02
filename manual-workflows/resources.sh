@@ -16,10 +16,8 @@ function show_help {
     echo "    -h, --help     print this block"
     echo "    --bucket       name for the GCS bucket used by Cromwell"
     echo "    --project      name of your GCP project"
-    exit 0
+    echo ""
 }
-
-COMMAND=$1; shift
 
 # die and opts based on this example
 # http://mywiki.wooledge.org/BashFAQ/035
@@ -28,6 +26,13 @@ COMMAND=$1; shift
 function die {
     printf '%s\n' "$1" >&2 && exit 1
 }
+
+COMMAND=$1; shift
+if [[ ($COMMAND -ne "init-project") && ($COMMAND -ne "generate-config")]]; then
+    show_help
+    die "ERROR: invalid command - $COMMAND"
+fi
+
 
 while test $# -gt 0; do
     case $1 in
