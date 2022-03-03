@@ -29,18 +29,6 @@ function save_artifacts () {
     elif [[ $(systemctl is-active --quiet cromwell) -ne 0 ]]; then
         echo "Make sure Cromwell service is active before saving.\n\n    sudo systemctl start cromwell\n"
     else
-        echo "Cromwell server completed startup"
-        mkdir -p $WORKFLOW_ID
-        curl --fail http://localhost:8000/api/workflows/v1/$WORKFLOW_ID/timing \
-             > ${WORKFLOW_ID}/timing.html
-        if [ $? -ne 0 ]; then
-            echo "Request for timing diagram on workflow $WORKFLOW_ID failed."
-        fi
-        curl --fail http://localhost:8000/api/workflows/v1/$WORKFLOW_ID/outputs \
-             > ${WORKFLOW_ID}/outputs.json
-        if [ $? -ne 0 ]; then
-            echo "Request for outputs on workflow $WORKFLOW_ID failed."
-        fi
-        gsutil cp -r ${WORKFLOW_ID} $GCS_PATH/${WORKFLOW_ID}
+        python3 /shared/persist_artifacts.py $GCS_PATH $WORKFLOW_ID
     fi
 }

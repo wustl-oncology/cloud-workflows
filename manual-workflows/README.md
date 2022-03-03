@@ -165,7 +165,7 @@ Example call for Somatic Exome pipeline with example data
     submit_workflow /shared/analysis-wdls/definitions/somatic_exome.wdl /shared/analysis-wdls/example-data/somatic_exome.yaml
 
 
-## Save Timing Diagram and Outputs List
+## Save Timing Diagram, Outputs, Metadata
 
 After a workflow is run, before exiting and deleting your VM, make
 sure that the timing diagram and the list of outputs are available so
@@ -179,6 +179,8 @@ be used after the VM is deleted. They can be found at paths
 
     gs://BUCKET/desired/path/WORKFLOW_ID/timing.html
     gs://BUCKET/desired/path/WORKFLOW_ID/outputs.json
+    gs://BUCKET/desired/path/metadata/WORKFLOW_ID.json
+    gs://BUCKET/desired/path/metadata/<subworkflow_ids*>.json
 
 The file `outputs.json` will simply be a map of output names to their
 GCS locations. The `pull_outputs.py` script can be used to retrieve

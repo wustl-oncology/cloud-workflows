@@ -106,6 +106,7 @@ def startup_script():
     download_from_metadata('helpers-sh', os.path.join(SHARED_DIR, 'helpers.sh'))
     download_from_metadata('cromwell-conf', os.path.join(SHARED_DIR, 'cromwell', 'cromwell.conf'))
     download_from_metadata('workflow-options', os.path.join(SHARED_DIR, 'cromwell', 'workflow_options.json'))
+    download_from_metadata('persist-artifacts', os.path.join(SHARED_DIR, 'persist_artifacts.py'))
     start_cromwell_service()
     clone_analysis_wdls()
 
