@@ -64,17 +64,12 @@ done
 
 COMPUTE_NAME="cromwell-compute"
 SERVER_NAME="cromwell-server"
-NETWORK_NAME="cromwell-network"
-SUBNET_NAME="cromwell-subnet"
 COMPUTE_ACCOUNT="$COMPUTE_NAME@$PROJECT.iam.gserviceaccount.com"
 SERVER_ACCOUNT="$SERVER_NAME@$PROJECT.iam.gserviceaccount.com"
 BUCKET_MAX_AGE_DAYS=30
-WASHU1="128.252.0.0/16"
-WASHU2="65.254.96.0/19"
 
 sh $SRC_DIR/../scripts/enable_api.sh
 sh $SRC_DIR/../scripts/create_resources.sh $PROJECT $SERVER_NAME $COMPUTE_NAME
-
 
 # Create bucket
 gsutil mb -b on gs://$BUCKET
@@ -93,23 +88,6 @@ gsutil iam ch serviceAccount:$COMPUTE_ACCOUNT:objectAdmin gs://$BUCKET
 gsutil iam ch serviceAccount:$SERVER_ACCOUNT:objectAdmin gs://$BUCKET
 
 
-# Create new network
-gcloud compute networks create $NETWORK_NAME \
-       --subnet-mode=custom
-# Create firewall rules for network
-gcloud compute firewall-rules create cromwell-allow-ssh \
-       --network $NETWORK_NAME \
-       --source-ranges="${WASHU1},${WASHU2}" \
-       --action allow --rules tcp:22
-# TODO(john): enable http? https? icmp? cromwell port?
-
-# Create new subnetwork
-gcloud compute networks subnets create $SUBNET_NAME \
-       --network=$NETWORK_NAME \
-       --region=us-central1 \
-       --range=10.10.0.0/16
-
-
 cat <<EOF
 Check above outputs to make sure nothing unexpected
 happened.  If all is well, you can add these values to your
@@ -119,6 +97,5 @@ environment configuration and run workflows via GMS as normal
     cromwell_gcp_service_account: $SERVER_ACCOUNT
     cromwell_gcp_bucket: $BUCKET
     cromwell_gcp_project: $PROJECT
-    cromwell_gcp_subnetwork: $SUBNET_NAME
 
 EOF

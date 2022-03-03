@@ -1,7 +1,7 @@
 SRC_DIR="$(dirname "${BASH_SOURCE[0]}")"
 
-NETWORK=workflows
-SUBNET=$NETWORK-cromwell
+NETWORK=cloud-workflows
+SUBNET=cloud-workflows-default
 
 show_help () {
     cat <<EOF
@@ -19,7 +19,7 @@ Additional arguments are passed directly to gsutil compute instances
 create command. For more information on those arguments, check that commands
 help page with
 
-    gsutil compute instances create --help
+    gcloud compute instances create --help
 
 EOF
 }

@@ -4,13 +4,14 @@ PROJECT=$1
 SERVER_NAME=$2
 COMPUTE_NAME=$3
 
+NETWORK=cloud-workflows
+SUBNET=cloud-workflows-default
+
 COMPUTE_ACCOUNT="$COMPUTE_NAME@$PROJECT.iam.gserviceaccount.com"
 SERVER_ACCOUNT="$SERVER_NAME@$PROJECT.iam.gserviceaccount.com"
 
 WASHU_CIDR="128.252.0.0/16"
 WASHU2_CIDR="65.254.96.0/19"
-NETWORK="workflows"
-SUBNET="$NETWORK-cromwell"
 
 # Cromwell server VM service account
 gcloud iam service-accounts create $SERVER_NAME \
