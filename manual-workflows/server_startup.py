@@ -21,25 +21,37 @@ PACKAGES = [
 ]
 
 
+# Using a decorator to reduce logging annoyances
+# Referenced this guide for construction:
+# https://www.thecodeship.com/patterns/guide-to-python-function-decorators/
+def bookends(func):
+    """
+    Print the `func`'s name and args at start and completion of function.
+    """
+    def wrapper(*args, **kwargs):
+        print(f"{func.__name__}...")
+        result = func(*args, **kwargs)
+        print(f"{func.__name__}...DONE")
+        return result
+    return wrapper
+
+
+@bookends
 def create_directories():
-    print("Create directories...")
     os.system(f'mkdir -p {SHARED_DIR}/cromwell')
     os.system(f'chmod -R 777 {SHARED_DIR}')
-    print("Create directories... DONE")
 
 
+@bookends
 def install_packages():
-    print("Install packages...")
     os.system('apt-get update')
     os.system('apt-get install -y ' + ' '.join(PACKAGES))
     # Python deps
     os.system('python3 -m pip install requests>=2.20.0')
 
-    print("Install packages... DONE")
 
-
+@bookends
 def install_cromwell():
-    print("Install cromwell...")
     import requests
     jar_path = os.path.join(SHARED_DIR, "cromwell", "cromwell.jar")
     if os.path.exists(jar_path):
@@ -53,9 +65,6 @@ def install_cromwell():
             raise Exception("GET failed for {}".format(url))
         with open(jar_path, "wb") as f:
             f.write(response.content)
-        print(f"Installed cromwell version {version} at {jar_path}")
-
-    print("Install cromwell...DONE")
 
 
 def start_cromwell_service():
@@ -64,22 +73,20 @@ def start_cromwell_service():
     os.system('systemctl start cromwell')
 
 
+@bookends
 def download_from_metadata(tag, dest_path):
-    print(f"Download {tag}...")
     with open(dest_path, 'w') as f:
         f.write(_fetch_instance_info(tag))
-    print(f"Download {tag}...DONE")
 
 
+@bookends
 def clone_analysis_wdls():
-    print(f"Clone griffithlab/analysis-wdls to {SHARED_DIR} ...")
     old_dir = os.getcwd()
     os.chdir(SHARED_DIR)
     status_code = os.system('git clone https://github.com/griffithlab/analysis-wdls.git')
     os.chdir(old_dir)
     if status_code != 0:
         raise Exception("Clone failed for griffithlab/analysis-wdls")
-    print(f"Clone griffithlab/analysis-wdls to {SHARED_DIR} ...DONE")
 
 
 def _fetch_instance_info(name):
@@ -91,7 +98,8 @@ def _fetch_instance_info(name):
     return response.text
 
 
-if __name__ == '__main__':
+@bookends
+def startup_script():
     create_directories()
     install_packages()
     install_cromwell()
@@ -100,4 +108,7 @@ if __name__ == '__main__':
     download_from_metadata('workflow-options', os.path.join(SHARED_DIR, 'cromwell', 'workflow_options.json'))
     start_cromwell_service()
     clone_analysis_wdls()
-    print("Startup script...DONE")
+
+
+if __name__ == '__main__':
+    startup_script()

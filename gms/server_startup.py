@@ -30,11 +30,28 @@ OPTIONS_JSON  = os.path.join(CROMWELL_DIR, 'options.json')
 WORKFLOW_WDL  = os.path.join(CROMWELL_DIR, 'workflow.wdl')
 
 
+# Using a decorator to reduce logging annoyances
+# Referenced this guide for construction:
+# https://www.thecodeship.com/patterns/guide-to-python-function-decorators/
+def bookends(print_func):
+    """
+    Print using `print_func` the `body_func`'s name and args at start and completion of function.
+    """
+    def decorator(body_func):
+        def wrapper(*args, **kwargs):
+            print_func(f"{body_func.__name__} {*args} {**kwargs}...")
+            result = func(*args, **kwargs)
+            print_func(f"{body_func.__name__} {*args} {**kwargs}...DONE")
+            return result
+        return wrapper
+    return decorator
+
+
+@bookends(logging.info)
 def install_packages():
     """
     Install required system packages and required python packages.
     """
-    logging.info("Install packages...")
     os.system('apt-get update')
     os.system('apt-get install -y ' + ' '.join([
         'curl',
@@ -42,14 +59,13 @@ def install_packages():
         'python3-pip'
     ]))
     os.system('python3 -m pip install requests>=2.20.0')
-    logging.info("Install packages... DONE")
 
 
+@bookends(logging.info)
 def install_cromwell(version):
     """
     Fetches Cromwell jar for `version` and writes it locally to `CROMWELL_JAR`.
     """
-    logging.info(f"Installing cromwell version {version} at {CROMWELL_JAR}...")
     import requests
     url = f"https://github.com/broadinstitute/cromwell/releases/download/{version}/cromwell-{version}.jar"
     response = requests.get(url)
@@ -57,26 +73,23 @@ def install_cromwell(version):
         raise Exception("GET failed for {}".format(url))
     with open(CROMWELL_JAR, "wb") as f:
         f.write(response.content)
-    logging.info(f"Installing cromwell version {version} at {CROMWELL_JAR}...DONE")
 
 
+@bookends(logging.debug)
 def write_from_metadata(tag, dest_path):
     """
     Writes contents of `tag` to `dest_path`.
     """
-    logging.debug(f"Write {tag}...")
     with open(dest_path, 'w') as f:
         f.write(_fetch_instance_attribute(tag))
-    logging.debug(f"Write {tag}...DONE")
 
 
+@bookends(logging.debug)
 def download_from_metadata(tag, dest_path):
     """
     Download gs:// path from `tag` to `dest_path`. `tag` value expected to be a GCS path.
     """
-    logging.debug(f"Download {tag}...")
     os.system(f"gsutil cp {_fetch_instance_attribute(tag)} {dest_path}")
-    logging.debug(f"Download {tag}...DONE")
 
 
 def _fetch_instance_metadata(path):
@@ -95,17 +108,16 @@ def _fetch_instance_attribute(name):
     return _fetch_instance_metadata(f"attributes/{name}")
 
 
+@bookends(logging.info)
 def start_cromwell_service():
     """
     Starts Cromwell as a systemd service.
 
     Blocks until service has completed startup. Throws on failure to start.
     """
-    logging.info("Start cromwell service...")
     os.system('systemctl daemon-reload')
     os.system('systemctl start cromwell.service')
     assert wait_until_cromwell_start()
-    logging.info("Start cromwell service...DONE")
 
 
 def wait_until_cromwell_start():
@@ -151,6 +163,7 @@ def wait_for_workflow_to_run(workflow_id):
     return status
 
 
+@bookends(logging.debug)
 def persist_vm_logs(gcs_dir):
     """
     Write startup script logs to GCS.
@@ -158,12 +171,10 @@ def persist_vm_logs(gcs_dir):
     We want this to troubleshoot issues since the VM dies.
     This won't help when there are issues with uploading to bucket, though..
     """
-    logging.debug("Persisting logs...")
     os.system('journalctl -u google-startup-scripts > vm.log')
     os.system('journalctl -u cromwell > cromwell.log')
     os.system(f"gsutil cp vm.log {gcs_dir}/vm.log")
     os.system(f"gsutil cp cromwell.log {gcs_dir}/cromwell.log")
-    logging.debug("Persisting logs...DONE")
 
 
 def persist_url_response(url, gcs_dir, filename):
