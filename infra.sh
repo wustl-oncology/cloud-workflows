@@ -34,15 +34,16 @@ case $1 in
         gcloud deployment-manager deployments create $DEPLOY_NAME --config $SRC_DIR/central-server/jinja/deployment.yaml
         ;;
     "build-and-tag")
+        VERSION=$(head -n "$SRC_DIR/VERSION")
         echo "Building container image tagged latest"
         docker build $SRC_DIR -t $DOCKER_IMAGE:latest
         # this one will be cached, basically just doing a tag without having to find image ID
-        echo "Building container image tagged $2"
-        docker build $SRC_DIR -t $DOCKER_IMAGE:$2
+        echo "Building container image tagged $VERSION"
+        docker build $SRC_DIR -t $DOCKER_IMAGE:$VERSION
 
         echo "Pushing container image tagged latest"
         docker push $DOCKER_IMAGE:latest
-        echo "Pushing container image tagged $2"
-        docker push $DOCKER_IMAGE:$2
+        echo "Pushing container image tagged $VERSION"
+        docker push $DOCKER_IMAGE:$VERSION
         ;;
 esac
