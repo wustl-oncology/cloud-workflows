@@ -3,6 +3,7 @@ import WDL as wdl  # https://miniwdl.readthedocs.io/en/latest/WDL.html#
 from ruamel.yaml import YAML
 # built-in, hooray
 import json
+import logging
 import os
 from argparse import ArgumentParser
 from copy import deepcopy
@@ -26,9 +27,9 @@ def upload_to_gcs(bucket, src, dest, dryrun=False):
     """Upload a local file to GCS bucket. src is a filepath and dest is target GCS name."""
     gcs_uri = f"gs://{bucket}/{dest}"
     if os.path.isdir(src):
-        print(f"Source file {src} is a directory. Skipping.")
+        logging.info(f"Source file {src} is a directory. Skipping.")
     elif not os.path.isfile(src):
-        print(f"WARN: could not find source file, potentially just a basepath: {src}")
+        logging.warning(f"could not find source file, potentially just a basepath: {src}")
     elif dryrun:
         pass
     else:
@@ -38,8 +39,9 @@ def upload_to_gcs(bucket, src, dest, dryrun=False):
 # ---- Generic functions -----------------------------------------------
 
 def walk_object(obj, node_fn, path=[]):
-    """Walk an objects structure, applying node_fn to each node, both
-    branch and leaf nodes.
+    """Walk an objects structure, applying node_fn to each node.
+
+    Applied to both branch and leaf nodes.
     node_fn must accept both the node and a kwarg for path.
     """
     if (isinstance(obj, dict)):
@@ -126,10 +128,19 @@ def input_name(node_path):
 
 def is_file_input(node, node_parent, input_file_path):
     """Check if a node is a file input, either object class File or existing filepath string."""
-    explicitly_defined = isinstance(node, dict) and node.get('class') == 'File'
-    matches_filename = isinstance(node, str) and node_parent != 'path' \
-        and os.path.exists(expand_relative(Path(node), input_file_path))
-    return (explicitly_defined or matches_filename)
+    # Explicitly defined File, by class
+    if isinstance(node, dict) and node.get('class') == 'File':
+        return True
+    # Any string, check if it's a file on the system.
+    elif isinstance(node, str) and node_parent != 'path':
+        matches_filename = os.path.exists(expand_relative(Path(node), input_file_path))
+        if not matches_filename:
+            logging.debug(f"is_file_input string `{node}` showed no local files." \
+                          + "Ignore this message if not expecting a local file path." \
+                          + "gs:// paths will trigger this message.")
+        return matches_filename
+    else:
+        return False
 
 
 def get_path(node):
@@ -266,7 +277,7 @@ def write_new_inputs(new_input_obj, output_path):
             json.dump(new_input_obj, f)
     else:
         yaml.dump(new_input_obj, output_path)
-    print(f"Inputs dumped to {output_path}")
+    logging.info(f"Inputs dumped to {output_path}")
 
 
 def upload_all(file_inputs, bucket, dryrun):
@@ -286,7 +297,7 @@ def cloudize(bucket, wf_path, inputs_path, output_path, dryrun=False):
     cloudized_inputs = cloudize_file_paths(workflow.inputs, bucket, file_inputs)
     write_new_inputs(cloudized_inputs, output_path)
     upload_all(file_inputs, bucket, dryrun)
-    print("Completed file upload process.")
+    logging.info("Completed file upload process.")
 
 
 # ---- CLI pieces ------------------------------------------------------
@@ -313,6 +324,12 @@ If this value ends with .json, JSON format used instead of YAML.""")
 
     parser.add_argument("--dryrun", help="prevent actual upload to GCS.")
     args = parser.parse_args()
+
+    log_level = os.environ.get("LOGLEVEL", "INFO").upper()
+    logging.basicConfig(
+        level=log_level,
+        format='[%(levelname)s] %(message)s'
+    )
 
     cloudize(
         args.bucket,
