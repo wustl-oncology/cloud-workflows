@@ -39,7 +39,7 @@ def save_timing(workflow_id, gcs_dir):
 
 def save_outputs(workflow_id, gcs_dir):
     logging.info(f"Saving outputs.json for workflow {workflow_id}")
-    _persist_endpoint(f"{workflow_id}/outputs", gcs_dir, "outputs.html")
+    _persist_endpoint(f"{workflow_id}/outputs", gcs_dir, "outputs.json")
 
 
 # TODO(john): save info about current VM
