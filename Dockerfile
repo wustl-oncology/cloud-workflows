@@ -15,8 +15,8 @@ ADD scripts/submit_workflow.sh /opt/scripts/submit_workflow.sh
 # Multi-approach help
 ADD scripts/create_resources.sh /opt/scripts/create_resources.sh
 ADD scripts/enable_api.sh /opt/scripts/enable_api.sh
-ADD scripts/estimate_billing.py
-ADD scripts/pull_artifacts.py
+ADD scripts/estimate_billing.py /opt/scripts/estimate_billing.py
+ADD scripts/persist_artifacts.py /opt/scripts/persist_artifacts.py
 
 # GMS setup/run
 ADD gms/resources.sh /opt/gms/resources.sh
