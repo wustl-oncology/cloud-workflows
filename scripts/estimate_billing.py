@@ -4,6 +4,7 @@ import os
 import re
 import requests
 import subprocess
+import sys
 
 from argparse import ArgumentParser
 from datetime import datetime
@@ -123,7 +124,7 @@ def cost_task(task):
     total_seconds = duration.total_seconds()
 
     machine_type = task["jes"]["machineType"]
-    preemptible = task["runtimeAttributes"]["preemptible"]
+    preemptible = task["preemptible"]
     disks_used = task["runtimeAttributes"]["disks"]
 
     machine_cost = cost_machine_type(machine_type, total_seconds, preemptible=preemptible)
@@ -140,16 +141,19 @@ def cost_task(task):
         "cpuCost": machine_cost["cpu"],
         "diskCost": disk_cost,
         "disks": disks_used,
-        "totalCost": total_cost
+        "totalCost": total_cost,
+        "attempt": task["attempt"],
+        "preemptible": preemptible,
+        "executionStatus": task["backendStatus"]
     }
 
 
-def cached_id(call):
+def parse_cache_result(call):
     # example: "Cache Hit: 7f84432e-c1e2-42d6-b3ba-c48521c2db47:immuno.extractAlleles:-1"
-    # "Cache Hit: (uuid):(workflowName):(shardIndex)"
+    # "Cache Hit: (uuid):(callName):(shardIndex)"
     result = call["callCaching"]["result"]
     match = re.match(
-        "Cache Hit: ([-0-9a-f]+):(.+):(-1|[0-9]+)",
+        "^Cache Hit: ([-0-9a-f]+):(.+):(-1|[0-9]+)$",
         result
     )
     # These don't do anything to handle the error -- just let the script fail naturally
@@ -157,8 +161,25 @@ def cached_id(call):
         logging.error(f"No matches to parse a subworkflow ID out of result {result}")
     if not len(match.groups()) == 3:
         logging.error(f"Match did not result in three groups as expected: len({match.groups()}) == {len(match.groups())}")
-    cached_call, _workflow_name, _shard_index = match.groups()
-    return cached_call
+    cached_call, call_name, shard_index = match.groups()
+
+    return cached_call, call_name, int(shard_index)
+
+
+def cost_cached_call(location, call, metadata):
+    cached_call, call_name, shard_index = parse_cache_result(call)
+    metadata = read_json(f"{location}/{cached_call}.json")
+    call_data = next(x for x in metadata["calls"][call_name] if x["shardIndex"] == shard_index)
+    return cost_task(call_data)
+
+
+def call_key(call_name, call):
+    ck = call_name
+    if call["shardIndex"] != -1:
+        ck += "_shard-" + str(call["shardIndex"])
+    if call["attempt"] > 1:
+        ck += "_retry" + str(call["attempt"] - 1)
+    return ck
 
 
 def cost_workflow(location, workflow_id):
@@ -171,16 +192,15 @@ def cost_workflow(location, workflow_id):
     call_costs_by_name = {}
     for call_name, calls in metadata["calls"].items():
         for idx, call in enumerate(calls):
-            call_key = call_name if call["shardIndex"] == -1 else f"{call_name}_shard-{idx}"
+            ck = call_key(call_name, call)
             if is_run_task(call):
-                cost = cost_task(call)
-                call_costs_by_name[call_key] = cost
+                call_costs_by_name[ck] = cost_task(call)
             elif "callCaching" in call:
-                call_costs_by_name[call_key] = cost_workflow(location, cached_id(call))
+                call_costs_by_name[ck] = cost_cached_call(location, call, metadata)
             elif is_subworkflow(call):
-                call_costs_by_name[call_key] = cost_workflow(location, call["subWorkflowId"])
+                call_costs_by_name[ck] = cost_workflow(location, call["subWorkflowId"])
             else:
-                logging.warning(f"Not a vm, cacheHit, or subworkflow. Failed before VM start? {call_name} {idx}")
+                logging.warning(f"Not a vm, cacheHit, or subworkflow. Failed before VM start? {ck}")
     duration = from_iso(metadata["end"]) - from_iso(metadata["start"])
     return {
         "callCosts": call_costs_by_name,
@@ -188,7 +208,8 @@ def cost_workflow(location, workflow_id):
         "startTime": metadata["start"],
         "endTime": metadata["end"],
         "duration": str(duration),
-        "durationSeconds": duration.total_seconds()
+        "durationSeconds": "%.3f" % duration.total_seconds(),
+        "workflowId": workflow_id
     }
 
 
@@ -208,6 +229,6 @@ if __name__ == "__main__":
 
     cost = cost_workflow(args.metadata_dir.rstrip('/'), args.workflow_id)
     if args.csv:
-        write_csv(sys.stdout, task_costs(wf_cost))
+        write_csv(sys.stdout, task_costs(cost))
     else:
         print(json.dumps(cost, indent=4))
