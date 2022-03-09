@@ -9,6 +9,8 @@ from argparse import ArgumentParser
 from datetime import datetime
 from pathlib import Path
 
+from costs_json_to_csv import task_costs, write_csv
+
 
 # Improvements:
 # - optionally determine cost of VM this script runs in. Used for GMS
@@ -194,6 +196,8 @@ if __name__ == "__main__":
     parser = ArgumentParser(description="Generate JSON of billing information for workflow, using local metadata files.")
     parser.add_argument("workflow_id")
     parser.add_argument("metadata_dir")
+    parser.add_argument("--csv", action="store_true", default=False)
+
     args = parser.parse_args()
 
     log_level = os.environ.get("LOGLEVEL", "INFO").upper()
@@ -203,4 +207,7 @@ if __name__ == "__main__":
     )
 
     cost = cost_workflow(args.metadata_dir.rstrip('/'), args.workflow_id)
-    print(json.dumps(cost, indent=4))
+    if args.csv:
+        write_csv(sys.stdout, task_costs(wf_cost))
+    else:
+        print(json.dumps(cost, indent=4))
