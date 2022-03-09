@@ -5,45 +5,35 @@ import re
 import requests
 
 from argparse import ArgumentParser
-
+from pathlib import Path
 
 CROMWELL_API = "http://localhost:8000/api"
-
-
-def _save_locally(contents, filename):
-    with open(filename, "w") as f:
-        f.write(contents)
-
-
-def _save_gcs(src, dest):
-    os.system(f"gsutil -q cp -n {src} {dest}")
+LOCAL_DIR=os.environ["HOME"] + "/artifacts"
 
 
 def _request_workflow(endpoint):
+    logging.debug(f"Requesting workflow endpoint {endpoint}")
     return requests.get(f"{CROMWELL_API}/workflows/v1/{endpoint}")
 
 
-def _persist_endpoint(endpoint, gcs_dir, filename):
-    response = _request_workflow(endpoint)
-    if response.ok:
-        _save_locally(response.text, filename)
-        _save_gcs(filename, f"{gcs_dir}/{filename}")
-    else:
-        logging.error(f"{endpoint} returned non-OK response {response}")
+def _save_locally(contents, filename):
+    target = f"{LOCAL_DIR}/{filename}"
+    logging.debug(f"Writing {target}")
+    os.makedirs(Path(target).parent, exist_ok=True)
+    with open(target, 'w') as f:
+        f.write(contents)
 
 
-def save_timing(workflow_id, gcs_dir):
-    logging.info(f"Saving timing.html for workflow {workflow_id}")
-    _persist_endpoint(f"{workflow_id}/timing", gcs_dir, "timing.html")
+def persist_artifacts_to_gcs(gcs_artifacts_dir):
+    logging.info(f"Copying {LOCAL_DIR} to {gcs_artifacts_dir}")
+    os.system(f"gsutil -q cp -r -n {LOCAL_DIR} {gcs_artifacts_dir}")
 
 
-def save_outputs(workflow_id, gcs_dir):
-    logging.info(f"Saving outputs.json for workflow {workflow_id}")
-    _persist_endpoint(f"{workflow_id}/outputs", gcs_dir, "outputs.json")
+def json_str(obj):
+    return json.dumps(obj, indent=4)
 
 
 # TODO(john): save info about current VM
-
 
 def is_cache_hit(call):
     if ("callCaching" in call) and not ("hit" in call["callCaching"]):
@@ -73,25 +63,58 @@ def cached_id(call):
     return cached_call
 
 
-def save_metadata(workflow_id, gcs_dir):
-    """ Save `metadata` for workflow_id and its subworkflows to `gcs_dir`. """
-    logging.info(f"Saving metadata json for workflow {workflow_id}")
-    response = _request_workflow(f"{workflow_id}/metadata")
-    if response.ok:
-        _save_locally(response.text, f"{workflow_id}.json")
-        _save_gcs(f"{workflow_id}.json", f"{gcs_dir}/{workflow_id}.json")
-        metadata = response.json()
-        for k, calls in metadata.get("calls", {}).items():
-            for call in calls:
-                if "subWorkflowId" in call:
-                    logging.debug(f"Call {k} is a subworkflow with id {call['subWorkflowId']}, save it.")
-                    save_metadata(call["subWorkflowId"], gcs_dir)
-                elif is_cache_hit(call):
-                    cached_call = cached_id(call)
-                    logging.debug(f"Call {k} is a cached task with id {cached_call}, save it.")
-                    save_metadata(cached_call, gcs_dir)
-    else:
-        logging.error(f"{workflow_id}/metadata endpoint returned non-OK response {response}")
+def all_calls(metadata):
+    """All of a workflow's direct calls, flattened out of the nested structure."""
+    for call_name, calls in metadata.get("calls", {}).items():
+        for idx, call in enumerate(calls):
+            yield call, call_name, idx
+
+
+def fetch_metadata(workflow_id):
+    """Fetch metadata for workflow_id and all its subworkflows.
+
+    Cromwell API allows doing this in the metadata endoint BUT it
+    times out on larger workflows like Immuno, which renders it
+    basically useless to us. Crawl it ourselves. This puts everything
+    into memory. If that becomes an issue (which would be very
+    surprising to me) then it should be modified to a generator of
+    key-value pairs.
+    """
+    metadata_by_workflow_id = {}
+    workflow_ids_frontier = [(workflow_id, "root")]
+    while workflow_ids_frontier:
+        workflow_id, workflow_name = workflow_ids_frontier.pop()
+        logging.info(f"Fetching metadata for workflow {workflow_name} {workflow_id}")
+        response = _request_workflow(f"{workflow_id}/metadata")
+        if response.ok:
+            metadata = response.json()
+            metadata_by_workflow_id[workflow_id] = metadata
+            # Follow subworkflows
+            subworkflows = [(call["subWorkflowId"], name)
+                            for call, name, _ in all_calls(metadata)
+                            if "subWorkflowId" in call]
+            workflow_ids_frontier.extend(subworkflows)
+            # Follow cached calls
+            cached_calls = [(cached_id(call), name)
+                            for call, name, _ in all_calls(metadata)
+                            if is_cache_hit(call)]
+            workflow_ids_frontier.extend(cached_calls)
+        else:
+            logging.error(f"{workflow_id}/metadata endpoint returned non-OK response {response}")
+    return metadata_by_workflow_id
+
+
+def fetch_all_timing(metadata_by_workflow_id):
+    """ Fetch timing contents for every workflow, storing in memory. """
+    timing_by_workflow_id = {}
+    for workflow_id, metadata in metadata_by_workflow_id.items():
+        logging.info(f"Fetching timing for workflow {workflow_id}")
+        response = _request_workflow(f"{workflow_id}/timing")
+        if response.ok:
+            timing_by_workflow_id[workflow_id] = response.text
+        else:
+            logging.error(f"{workflow_id}/timing returned non-OK response {response}")
+    return timing_by_workflow_id
 
 
 if __name__ == "__main__":
@@ -106,6 +129,29 @@ if __name__ == "__main__":
         format='[%(levelname)s] %(message)s'
     )
 
-    save_timing(args.workflow_id, args.gcs_dir)
-    save_outputs(args.workflow_id, args.gcs_dir)
-    save_metadata(args.workflow_id, f"{args.gcs_dir}/metadata")
+    metadata_by_workflow_id = fetch_metadata(args.workflow_id)
+    timing_by_workflow_id = fetch_all_timing(metadata_by_workflow_id)
+
+    # Save root with special names for easy access
+    root_metadata = metadata_by_workflow_id[args.workflow_id]
+    _save_locally(json_str(root_metadata), 'metadata.json')
+
+    root_timing   = timing_by_workflow_id[args.workflow_id]
+    _save_locally(root_timing,   'timing.html')
+
+    root_outputs  = {"outputs": root_metadata["outputs"]}
+    _save_locally(json_str(root_outputs),  'outputs.json')
+
+    # Save everything else in dirs. We also save the root workflow
+    # info here, duplicating it, just for ease of crawling back to
+    # root. If we want to remove that, simply uncomment the following
+    # line:
+    #
+    # del metadata_by_workflow_id[args.workflow_id]
+    #
+    for workflow_id, metadata in metadata_by_workflow_id.items():
+        _save_locally(json_str(metadata), f"metadata/{workflow_id}.json")
+    for workflow_id, timing in timing_by_workflow_id.items():
+        _save_locally(timing, f"timing/{workflow_id}.html")
+
+    persist_artifacts_to_gcs(args.gcs_dir)
