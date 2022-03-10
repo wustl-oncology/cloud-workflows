@@ -23,7 +23,7 @@ def task_costs(workflow_cost):
 
 def write_csv(fp, results_dict):
     if results_dict:
-        writer = csv.DictWriter(fp, fieldnames=results_dict[0].keys())
+        writer = csv.DictWriter(fp, fieldnames=results_dict[0].keys(), lineterminator='\n')
         writer.writeheader()
         writer.writerows(results_dict)
 
