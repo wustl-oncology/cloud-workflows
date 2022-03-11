@@ -1,5 +1,14 @@
 #!/bin/bash
 
+function workflow_status() {
+    WORKFLOW_ID=$1
+    if [[ -z $WORKFLOW_ID ]]; then
+        echo "Usage: workflow_status WORKFLOW_ID"
+    else
+        curl localhost:8000/api/workflows/v1/$WORKFLOW_ID/status
+    fi
+}
+
 function submit_workflow () {
     WORKFLOW_DEFINITION=$1
     WORKFLOW_INPUTS=$2
