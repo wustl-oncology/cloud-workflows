@@ -18,6 +18,7 @@ from costs_json_to_csv import task_costs, write_csv
 # - costs from a google-provided csv
 
 TASK_KEY = "jes"
+CACHED_KEY = "callCaching"
 SUBWORKFLOW_KEY = "subWorkflowId"
 
 SECONDS_PER_HOUR = 60 * 60
@@ -36,6 +37,7 @@ N1_MACHINE_PRICE = {
 }
 
 # Disks are priced per month used, in granularity of seconds
+#    https://cloud.google.com/compute/disks-image-pricing
 # Values taken February 21, 2022. Values change constantly.
 # TODO(john) pull price values from a real data source
 DISK_PRICE = { "SSD": 0.170, "HDD": 0.040 }
@@ -67,6 +69,10 @@ def is_subworkflow(call):
 
 def is_run_task(call):
     return TASK_KEY in call
+
+
+def is_cached_task(call):
+    return CACHED_KEY in call
 
 
 def from_iso(datetime_str):
@@ -206,7 +212,7 @@ def call_key(call_name, call):
 
 def cost_workflow(location, workflow_id):
     """
-    Determine the totalcost of a workflow.
+    Determine the total cost of a workflow.
 
     Returns total cost, call costs, and start/end time.
     """
@@ -217,16 +223,21 @@ def cost_workflow(location, workflow_id):
             ck = call_key(call_name, call)
             if is_run_task(call):
                 call_costs_by_name[ck] = cost_task(call)
-            elif "callCaching" in call:
+            elif is_cached_task(call):
                 call_costs_by_name[ck] = cost_cached_call(location, call, metadata)
             elif is_subworkflow(call):
                 call_costs_by_name[ck] = cost_workflow(location, call["subWorkflowId"])
             else:
                 logging.warning(f"Not a vm, cacheHit, or subworkflow. Failed before VM start? {ck}")
     duration = from_iso(metadata["end"]) - from_iso(metadata["start"])
+    def total(key):
+        return sum(call[key] for call in call_costs_by_name.values())
     return {
         "callCosts": call_costs_by_name,
-        "totalCost": sum(call["totalCost"] for call in call_costs_by_name.values()),
+        "totalCost": total("totalCost"),
+        "diskCost": total("diskCost"),
+        "cpuCost": total("cpuCost"),
+        "memoryCost": total("memoryCost"),
         "startTime": metadata["start"],
         "endTime": metadata["end"],
         "duration": str(duration),
