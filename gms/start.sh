@@ -3,8 +3,6 @@
 SRC_DIR=$(dirname "$0")
 
 CROMWELL_VERSION=71
-NETWORK=cloud-workflows
-SUBNET=cloud-workflows-default
 
 show_help () {
     cat <<EOF
@@ -134,6 +132,14 @@ while test $# -gt 0; do
                 die 'ERROR: "--tmp-dir" requires an existing file argument.'
             fi
             ;;
+        --subnet*)
+            if [ ! "$2" ]; then
+                die 'ERROR: "--subnet" requires an existing file argument.'
+            else
+                SUBNET=$2
+                shift
+            fi
+            ;;
         *)
             break
             ;;
@@ -152,6 +158,7 @@ done
 [ -z $WORKFLOW_INPUTS     ] && die "Missing argument --workflow-inputs"
 [ -z $WORKFLOW_OPTIONS    ] && die "Missing argument --workflow-options"
 # Optional args
+SUBNET=${SUBNET:-"cloud-workflows-default"}
 MEMORY_GB=${MEMORY_GB:-"2"}
 TMP_DIR=${TMP_DIR:-$(cwd)}
 # Derived values
@@ -184,7 +191,7 @@ gcloud compute instances create "build-$BUILD" \
        --image-family debian-11 \
        --image-project debian-cloud \
        --zone us-central1-c \
-       --network=$NETWORK --subnet=$SUBNET \
+       --subnet=$SUBNET \
        --scopes=cloud-platform \
        --service-account=$SERVICE_ACCOUNT \
        --metadata=cromwell-version=$CROMWELL_VERSION,deps-zip=$DEPS_ZIP,bucket=$BUCKET,build-id=$BUILD,auto-shutdown=1 \

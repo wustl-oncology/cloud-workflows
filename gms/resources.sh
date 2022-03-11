@@ -64,6 +64,7 @@ done
 
 COMPUTE_NAME="cromwell-compute"
 SERVER_NAME="cromwell-server"
+SUBNET_NAME="cloud-workflows-default"
 COMPUTE_ACCOUNT="$COMPUTE_NAME@$PROJECT.iam.gserviceaccount.com"
 SERVER_ACCOUNT="$SERVER_NAME@$PROJECT.iam.gserviceaccount.com"
 BUCKET_MAX_AGE_DAYS=30
@@ -97,5 +98,6 @@ environment configuration and run workflows via GMS as normal
     cromwell_gcp_service_account: $SERVER_ACCOUNT
     cromwell_gcp_bucket: $BUCKET
     cromwell_gcp_project: $PROJECT
+    cromwell_gcp_subnet: $SUBNET_NAME
 
 EOF
