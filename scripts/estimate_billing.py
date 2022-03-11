@@ -110,6 +110,27 @@ def cost_disks(disks, duration_seconds):
         return duration_seconds * int(total_gb) * DISK_PRICE[disk_type] / SECONDS_PER_MONTH
 
 
+def machine_duration(task):
+    events = task["executionEvents"]
+    status = task["backendStatus"]
+    def find_description(desc):
+        return next(event for event in events if event["description"] == desc)
+
+    if status == "Success":
+        def is_start(desc):
+            return desc.startswith("Worker ") and desc.endswith("machine")
+        start_event = next(event for event in events if is_start(event["description"]))
+        end_event = find_description("Worker released")
+    else:
+        start_event = find_description("RunningJob")
+        end_event = find_description("UpdatingJobStore")
+
+    if not (start_event and end_event):
+        raise NotImplementedError(f"machine duration couldn't be determined for task. Had backendStatus {status} and events {events}")
+
+    return start_event["startTime"], end_event["endTime"]
+
+
 def cost_task(task):
     """
     Calculate the total cost to run this task.
@@ -117,8 +138,7 @@ def cost_task(task):
     Returns that total and the values used to calculate it.
     """
     assert is_run_task(task)
-    # TODO(john): calculate based on events for more accuracy. We're overestimating right now.
-    start_time, end_time = task["start"], task["end"]
+    start_time, end_time = machine_duration(task)
 
     duration = from_iso(end_time) - from_iso(start_time)
     total_seconds = duration.total_seconds()
@@ -134,8 +154,10 @@ def cost_task(task):
     return {
         "durationSeconds": total_seconds,
         "duration": str(duration),
-        "startTime": start_time,
-        "endTime": end_time,
+        "startTime": task["start"],
+        "endTime": task["end"],
+        "machineStartTime": start_time,
+        "machineEndTime": end_time,
         "machineType": machine_type,
         "memoryCost": machine_cost["memory"],
         "cpuCost": machine_cost["cpu"],
@@ -144,7 +166,7 @@ def cost_task(task):
         "totalCost": total_cost,
         "attempt": task["attempt"],
         "preemptible": preemptible,
-        "executionStatus": task["backendStatus"]
+        "backendStatus": task["backendStatus"]
     }
 
 
