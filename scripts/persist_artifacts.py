@@ -81,7 +81,7 @@ def fetch_resource(resource_type, workflow_id, extension):
         return None
 
 
-def _fetch_metadata(workflow_id):
+def fetch_metadata(workflow_id):
     """Retrieve metadata object for workflow_id, either local file or as request. """
     result = fetch_resource("metadata", workflow_id, "json")
     if result:
@@ -92,18 +92,8 @@ def fetch_timing(workflow_id):
     return fetch_resource("timing", workflow_id, "html")
 
 
-def fetch_metadata(workflow_id):
-    """Fetch metadata for workflow_id and all its subworkflows.
-
-    Uses local files for any available.
-
-    Cromwell API allows doing this in the metadata endoint BUT it
-    times out on larger workflows like Immuno, which renders it
-    basically useless to us. Crawl it ourselves. This puts everything
-    into memory. If that becomes an issue (which would be very
-    surprising to me) then it should be modified to a generator of
-    key-value pairs.
-    """
+def persist_workflows(workflow_id):
+    """Locally write resources associated with workflow_id."""
     metadata_by_workflow_id = {}
     workflow_ids_frontier = [(workflow_id, "root")]
     while workflow_ids_frontier:
@@ -112,7 +102,11 @@ def fetch_metadata(workflow_id):
         if workflow_id in metadata_by_workflow_id:
             continue
 
-        metadata = _fetch_metadata(workflow_id)
+        timing = fetch_timing(workflow_id)
+        if timing:
+            _save_locally(timing, f"timing/{workflow_id}.html")
+
+        metadata = fetch_metadata(workflow_id)
         if not metadata:
             continue
 
@@ -129,18 +123,7 @@ def fetch_metadata(workflow_id):
                         for call, name, _ in all_calls(metadata)
                         if is_cache_hit(call)]
         workflow_ids_frontier.extend(cached_calls)
-
     return metadata_by_workflow_id
-
-
-def fetch_all_timing(metadata_by_workflow_id):
-    """ Fetch timing contents for every workflow, storing in memory.
-
-    Skips any which already exist as local files."""
-    for workflow_id, metadata in metadata_by_workflow_id.items():
-        timing = fetch_timing(workflow_id)
-        if timing:
-            _save_locally(timing, f"timing/{workflow_id}.html")
 
 
 if __name__ == "__main__":
@@ -155,7 +138,9 @@ if __name__ == "__main__":
         format='[%(levelname)s] %(message)s'
     )
 
-    root_outputs  = {"outputs": fetch_metadata(args.workflow_id)[args.workflow_id]["outputs"]}
+    persist_workflows(args.workflow_id)
+
+    root_outputs  = {"outputs": fetch_metadata(args.workflow_id)["outputs"]}
     _save_locally(json_str(root_outputs), 'outputs.json')
 
     os.system(f"cp {LOCAL_DIR}/metadata/{args.workflow_id}.json {LOCAL_DIR}/metadata.json")
