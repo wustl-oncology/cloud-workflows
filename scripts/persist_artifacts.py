@@ -117,6 +117,8 @@ def fetch_metadata(workflow_id):
             continue
 
         metadata_by_workflow_id[workflow_id] = metadata
+        _save_locally(json_str(metadata), f"metadata/{workflow_id}.json")
+
         # Follow subworkflows
         subworkflows = [(call["subWorkflowId"], name)
                         for call, name, _ in all_calls(metadata)
@@ -135,12 +137,10 @@ def fetch_all_timing(metadata_by_workflow_id):
     """ Fetch timing contents for every workflow, storing in memory.
 
     Skips any which already exist as local files."""
-    timing_by_workflow_id = {}
     for workflow_id, metadata in metadata_by_workflow_id.items():
         timing = fetch_timing(workflow_id)
         if timing:
-            timing_by_workflow_id[workflow_id] = timing
-    return timing_by_workflow_id
+            _save_locally(timing, f"timing/{workflow_id}.html")
 
 
 if __name__ == "__main__":
@@ -155,24 +155,8 @@ if __name__ == "__main__":
         format='[%(levelname)s] %(message)s'
     )
 
-    metadata_by_workflow_id = fetch_metadata(args.workflow_id)
-    timing_by_workflow_id = fetch_all_timing(metadata_by_workflow_id)
-
-    root_metadata = metadata_by_workflow_id[args.workflow_id]
-    root_outputs  = {"outputs": root_metadata["outputs"]}
+    root_outputs  = {"outputs": fetch_metadata(args.workflow_id)[args.workflow_id]["outputs"]}
     _save_locally(json_str(root_outputs), 'outputs.json')
-
-    # Save everything else in dirs. We also save the root workflow
-    # info here, duplicating it, just for ease of crawling back to
-    # root. If we want to remove that, simply uncomment the following
-    # line:
-    #
-    # del metadata_by_workflow_id[args.workflow_id]
-    #
-    for workflow_id, metadata in metadata_by_workflow_id.items():
-        _save_locally(json_str(metadata), f"metadata/{workflow_id}.json")
-    for workflow_id, timing in timing_by_workflow_id.items():
-        _save_locally(timing, f"timing/{workflow_id}.html")
 
     os.system(f"cp {LOCAL_DIR}/metadata/{args.workflow_id}.json {LOCAL_DIR}/metadata.json")
     os.system(f"cp {LOCAL_DIR}/timing/{args.workflow_id}.html {LOCAL_DIR}/timing.html")
