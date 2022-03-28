@@ -72,8 +72,9 @@ def all_calls(metadata):
 
 def _fetch_metadata(workflow_id):
     """Retrieve metadata object for workflow_id, either local file or as request. """
-    if Path(f"{LOCAL_DIR}/metadata/{workflow_id}.json").is_file():
-        return json.load(f"{LOCAL_DIR}/metadata/{workflow_id}.json")
+    local_path = Path(f"{LOCAL_DIR}/metadata/{workflow_id}.json")
+    if local_path.is_file():
+        return json.loads(local_path.read_text())
     else:
         logging.info(f"Fetching metadata for workflow {workflow_name} {workflow_id}")
         response = _request_workflow(f"{workflow_id}/metadata")
@@ -86,6 +87,8 @@ def _fetch_metadata(workflow_id):
 
 def fetch_metadata(workflow_id):
     """Fetch metadata for workflow_id and all its subworkflows.
+
+    Uses local files for any available.
 
     Cromwell API allows doing this in the metadata endoint BUT it
     times out on larger workflows like Immuno, which renders it
