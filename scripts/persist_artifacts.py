@@ -63,23 +63,33 @@ def cached_id(call):
 def all_calls(metadata):
     """All of a workflow's direct calls, flattened out of the nested structure."""
     for call_name, calls in metadata.get("calls", {}).items():
-        for idx, call in enumerate(calls):
-            yield call, call_name, idx
+        for call in calls:
+            yield call, call_name
+
+
+def fetch_resource(resource_type, workflow_id, extension):
+    local_path = Path(f"{LOCAL_DIR}/{resource_type}/{workflow_id}.{extension}")
+    if local_path.is_file():
+        return local_path.read_text()
+
+    logging.debug(f"Fetching {resource_type} for workflow {workflow_id}")
+    response = _request_workflow(f"{workflow_id}/{resource_type}")
+    if response.ok:
+        return response.text
+    else:
+        logging.error(f"{workflow_id}/{resource_type} returned non-OK response {response}")
+        return None
 
 
 def _fetch_metadata(workflow_id):
     """Retrieve metadata object for workflow_id, either local file or as request. """
-    local_path = Path(f"{LOCAL_DIR}/metadata/{workflow_id}.json")
-    if local_path.is_file():
-        return json.loads(local_path.read_text())
-    else:
-        logging.info(f"Fetching metadata for workflow {workflow_name} {workflow_id}")
-        response = _request_workflow(f"{workflow_id}/metadata")
-        if response.ok:
-            return response.json()
-        else:
-            logging.error(f"{workflow_id}/metadata endpoint returned non-OK response {response}")
-            return None
+    result = fetch_resource("metadata", workflow_id, "json")
+    if result:
+        return json.loads(result)
+
+
+def fetch_timing(workflow_id):
+    return fetch_resource("timing", workflow_id, "html")
 
 
 def fetch_metadata(workflow_id):
@@ -127,15 +137,9 @@ def fetch_all_timing(metadata_by_workflow_id):
     Skips any which already exist as local files."""
     timing_by_workflow_id = {}
     for workflow_id, metadata in metadata_by_workflow_id.items():
-        if Path(f"{LOCAL_DIR}/timing/{workflow_id}.html").is_file():
-            logging.debug(f"Skipping timing for workflow {workflow_id}. Local file already exists.")
-            continue
-        logging.info(f"Fetching timing for workflow {workflow_id}")
-        response = _request_workflow(f"{workflow_id}/timing")
-        if response.ok:
-            timing_by_workflow_id[workflow_id] = response.text
-        else:
-            logging.error(f"{workflow_id}/timing returned non-OK response {response}")
+        timing = fetch_timing(workflow_id)
+        if timing:
+            timing_by_workflow_id[workflow_id] = timing
     return timing_by_workflow_id
 
 
