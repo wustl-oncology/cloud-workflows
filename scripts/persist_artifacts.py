@@ -73,7 +73,6 @@ def all_calls(metadata):
 def _fetch_metadata(workflow_id):
     """Retrieve metadata object for workflow_id, either local file or as request. """
     if Path(f"{LOCAL_DIR}/metadata/{workflow_id}.json").is_file():
-        response = {}; response.ok = True
         return json.load(f"{LOCAL_DIR}/metadata/{workflow_id}.json")
     else:
         logging.info(f"Fetching metadata for workflow {workflow_name} {workflow_id}")
