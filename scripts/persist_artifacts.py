@@ -158,14 +158,7 @@ if __name__ == "__main__":
     metadata_by_workflow_id = fetch_metadata(args.workflow_id)
     timing_by_workflow_id = fetch_all_timing(metadata_by_workflow_id)
 
-    # Save root with special names for easy access
     root_metadata = metadata_by_workflow_id[args.workflow_id]
-    _save_locally(json_str(root_metadata), 'metadata.json')
-
-    root_timing = timing_by_workflow_id.get(args.workflow_id, None)
-    if root_timing:
-        _save_locally(root_timing, 'timing.html')
-
     root_outputs  = {"outputs": root_metadata["outputs"]}
     _save_locally(json_str(root_outputs), 'outputs.json')
 
@@ -180,5 +173,8 @@ if __name__ == "__main__":
         _save_locally(json_str(metadata), f"metadata/{workflow_id}.json")
     for workflow_id, timing in timing_by_workflow_id.items():
         _save_locally(timing, f"timing/{workflow_id}.html")
+
+    os.system(f"cp {LOCAL_DIR}/metadata/{args.workflow_id}.json {LOCAL_DIR}/metadata.json")
+    os.system(f"cp {LOCAL_DIR}/timing/{args.workflow_id}.html {LOCAL_DIR}/timing.html")
 
     persist_artifacts_to_gcs(args.gcs_dir)
