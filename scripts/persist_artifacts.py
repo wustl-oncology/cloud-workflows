@@ -92,37 +92,37 @@ def fetch_timing(workflow_id):
     return fetch_resource("timing", workflow_id, "html")
 
 
-def persist_workflows(workflow_id):
-    """Locally write resources associated with workflow_id."""
+def explore(frontier, func):
     explored = []
-    workflow_ids_frontier = [(workflow_id, "root")]
-    while workflow_ids_frontier:
-        node = workflow_ids_frontier.pop()
-        workflow_id, workflow_name = node
-
+    while frontier:
+        node = frontier.pop()
         if node in explored:
             continue
         explored.append(node)
+        discovered = func(node)
+        frontier.extend(discovered)
 
-        timing = fetch_timing(workflow_id)
-        if timing:
-            _save_locally(timing, f"timing/{workflow_id}.html")
 
-        metadata = fetch_metadata(workflow_id)
-        if not metadata:
-            continue
-        _save_locally(json_str(metadata), f"metadata/{workflow_id}.json")
+def persist_workflow(call):
+    """Locally write all artifacts of a workflow, returning a list of its subworkflows and cached calls."""
+    workflow_id, workflow_name = call
 
-        # Follow subworkflows
-        subworkflows = [(call["subWorkflowId"], name)
-                        for call, name, _ in all_calls(metadata)
-                        if "subWorkflowId" in call]
-        workflow_ids_frontier.extend(subworkflows)
-        # Follow cached calls
-        cached_calls = [(cached_id(call), name)
-                        for call, name, _ in all_calls(metadata)
-                        if is_cache_hit(call)]
-        workflow_ids_frontier.extend(cached_calls)
+    timing = fetch_timing(workflow_id)
+    if timing:
+        _save_locally(timing, f"timing/{workflow_id}.html")
+
+    metadata = fetch_metadata(workflow_id)
+    if not metadata:
+        return []
+    _save_locally(json_str(metadata), f"metadata/{workflow_id}.json")
+
+    subworkflows = [(call["subWorkflowId"], name)
+                    for call, name, _ in all_calls(metadata)
+                    if "subWorkflowId" in call]
+    cached_calls = [(cached_id(call), name)
+                    for call, name, _ in all_calls(metadata)
+                    if is_cache_hit(call)]
+    return subworkflows + cached_calls
 
 
 if __name__ == "__main__":
@@ -137,7 +137,7 @@ if __name__ == "__main__":
         format='[%(levelname)s] %(message)s'
     )
 
-    persist_workflows(args.workflow_id)
+    explore([(args.workflow_id, "root")], persist_workflow)
 
     root_outputs  = {"outputs": fetch_metadata(args.workflow_id)["outputs"]}
     _save_locally(json_str(root_outputs), 'outputs.json')
