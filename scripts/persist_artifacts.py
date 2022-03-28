@@ -39,13 +39,7 @@ def json_str(obj):
 # TODO(john): save info about current VM
 
 def is_cache_hit(call):
-    if ("callCaching" in call) and not ("hit" in call["callCaching"]):
-        logging.debug(f"callCaching entry with no hit key: {call}")
-        return False
-    else:
-        return ("callCaching" in call) \
-            and ("hit" in call["callCaching"]) \
-            and call["callCaching"]["hit"]
+    return call.get("callCaching", {}).get("hit", False)
 
 
 def cached_id(call):
