@@ -70,6 +70,16 @@ def all_calls(metadata):
             yield call, call_name, idx
 
 
+def _fetch_metadata(workflow_id):
+    logging.info(f"Fetching metadata for workflow {workflow_name} {workflow_id}")
+    response = _request_workflow(f"{workflow_id}/metadata")
+    if response.ok:
+        return response.json()
+    else:
+        logging.error(f"{workflow_id}/metadata endpoint returned non-OK response {response}")
+        return None
+
+
 def fetch_metadata(workflow_id):
     """Fetch metadata for workflow_id and all its subworkflows.
 
@@ -84,13 +94,11 @@ def fetch_metadata(workflow_id):
     workflow_ids_frontier = [(workflow_id, "root")]
     while workflow_ids_frontier:
         workflow_id, workflow_name = workflow_ids_frontier.pop()
-        logging.info(f"Fetching metadata for workflow {workflow_name} {workflow_id}")
-        response = _request_workflow(f"{workflow_id}/metadata")
-        if not response.ok:
-            logging.error(f"{workflow_id}/metadata endpoint returned non-OK response {response}")
+
+        metadata = _fetch_metadata(workflow_id)
+        if not metadata:
             continue
 
-        metadata = response.json()
         metadata_by_workflow_id[workflow_id] = metadata
         # Follow subworkflows
         subworkflows = [(call["subWorkflowId"], name)
