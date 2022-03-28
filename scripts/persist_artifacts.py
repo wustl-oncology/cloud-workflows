@@ -94,13 +94,15 @@ def fetch_timing(workflow_id):
 
 def persist_workflows(workflow_id):
     """Locally write resources associated with workflow_id."""
-    metadata_by_workflow_id = {}
+    explored = []
     workflow_ids_frontier = [(workflow_id, "root")]
     while workflow_ids_frontier:
-        workflow_id, workflow_name = workflow_ids_frontier.pop()
+        node = workflow_ids_frontier.pop()
+        workflow_id, workflow_name = node
 
-        if workflow_id in metadata_by_workflow_id:
+        if node in explored:
             continue
+        explored.append(node)
 
         timing = fetch_timing(workflow_id)
         if timing:
@@ -109,8 +111,6 @@ def persist_workflows(workflow_id):
         metadata = fetch_metadata(workflow_id)
         if not metadata:
             continue
-
-        metadata_by_workflow_id[workflow_id] = metadata
         _save_locally(json_str(metadata), f"metadata/{workflow_id}.json")
 
         # Follow subworkflows
@@ -123,7 +123,6 @@ def persist_workflows(workflow_id):
                         for call, name, _ in all_calls(metadata)
                         if is_cache_hit(call)]
         workflow_ids_frontier.extend(cached_calls)
-    return metadata_by_workflow_id
 
 
 if __name__ == "__main__":
