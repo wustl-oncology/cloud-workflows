@@ -67,6 +67,14 @@ def all_calls(metadata):
             yield call, call_name
 
 
+def cached_calls(metadata):
+    return [(cached_id(call), call_name) for call, call_name in all_calls(metadata) if is_cache_hit(call)]
+
+
+def subworkflows(metadata):
+    return [(call["subWorkflowId"], call_name) for call, call_name in all_calls(metadata) if "subWorkflowId" in call]
+
+
 def fetch_resource(resource_type, workflow_id, extension):
     local_path = Path(f"{LOCAL_DIR}/{resource_type}/{workflow_id}.{extension}")
     if local_path.is_file():
@@ -106,6 +114,7 @@ def explore(frontier, func):
 def persist_workflow(call):
     """Locally write all artifacts of a workflow, returning a list of its subworkflows and cached calls."""
     workflow_id, workflow_name = call
+    logging.info(f"Persisting {workflow_id} {call_name}")
 
     timing = fetch_timing(workflow_id)
     if timing:
@@ -116,13 +125,7 @@ def persist_workflow(call):
         return []
     _save_locally(json_str(metadata), f"metadata/{workflow_id}.json")
 
-    subworkflows = [(call["subWorkflowId"], name)
-                    for call, name, _ in all_calls(metadata)
-                    if "subWorkflowId" in call]
-    cached_calls = [(cached_id(call), name)
-                    for call, name, _ in all_calls(metadata)
-                    if is_cache_hit(call)]
-    return subworkflows + cached_calls
+    return subworkflows(metadata) + cached_calls(metadata)
 
 
 if __name__ == "__main__":
