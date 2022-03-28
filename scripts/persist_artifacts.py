@@ -26,7 +26,7 @@ def _save_locally(contents, filename):
 
 def persist_artifacts_to_gcs(gcs_artifacts_dir):
     logging.info(f"Copying {LOCAL_DIR} to {gcs_artifacts_dir}")
-    os.system(f"gsutil -q cp -r -n {LOCAL_DIR} {gcs_artifacts_dir}")
+    os.system(f"gsutil cp -r -n {LOCAL_DIR} {gcs_artifacts_dir}")
 
 
 def json_str(obj):
@@ -86,21 +86,23 @@ def fetch_metadata(workflow_id):
         workflow_id, workflow_name = workflow_ids_frontier.pop()
         logging.info(f"Fetching metadata for workflow {workflow_name} {workflow_id}")
         response = _request_workflow(f"{workflow_id}/metadata")
-        if response.ok:
-            metadata = response.json()
-            metadata_by_workflow_id[workflow_id] = metadata
-            # Follow subworkflows
-            subworkflows = [(call["subWorkflowId"], name)
-                            for call, name, _ in all_calls(metadata)
-                            if "subWorkflowId" in call]
-            workflow_ids_frontier.extend(subworkflows)
-            # Follow cached calls
-            cached_calls = [(cached_id(call), name)
-                            for call, name, _ in all_calls(metadata)
-                            if is_cache_hit(call)]
-            workflow_ids_frontier.extend(cached_calls)
-        else:
+        if not response.ok:
             logging.error(f"{workflow_id}/metadata endpoint returned non-OK response {response}")
+            continue
+
+        metadata = response.json()
+        metadata_by_workflow_id[workflow_id] = metadata
+        # Follow subworkflows
+        subworkflows = [(call["subWorkflowId"], name)
+                        for call, name, _ in all_calls(metadata)
+                        if "subWorkflowId" in call]
+        workflow_ids_frontier.extend(subworkflows)
+        # Follow cached calls
+        cached_calls = [(cached_id(call), name)
+                        for call, name, _ in all_calls(metadata)
+                        if is_cache_hit(call)]
+        workflow_ids_frontier.extend(cached_calls)
+
     return metadata_by_workflow_id
 
 
