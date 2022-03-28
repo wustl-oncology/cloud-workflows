@@ -100,6 +100,9 @@ def fetch_metadata(workflow_id):
     while workflow_ids_frontier:
         workflow_id, workflow_name = workflow_ids_frontier.pop()
 
+        if workflow_id in metadata_by_workflow_id:
+            continue
+
         metadata = _fetch_metadata(workflow_id)
         if not metadata:
             continue
