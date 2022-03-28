@@ -26,7 +26,10 @@ def _save_locally(contents, filename):
 
 def persist_artifacts_to_gcs(gcs_artifacts_dir):
     logging.info(f"Copying {LOCAL_DIR} to {gcs_artifacts_dir}")
-    os.system(f"gsutil cp -r -n {LOCAL_DIR} {gcs_artifacts_dir}")
+    if logging.root.isEnabledFor(logging.DEBUG):
+        os.system(f"gsutil -m cp -r -n {LOCAL_DIR} {gcs_artifacts_dir}")
+    else:
+        os.system(f"gsutil -q -m cp -r -n {LOCAL_DIR} {gcs_artifacts_dir}")
 
 
 def json_str(obj):
