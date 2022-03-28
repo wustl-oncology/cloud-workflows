@@ -125,9 +125,14 @@ def fetch_metadata(workflow_id):
 
 
 def fetch_all_timing(metadata_by_workflow_id):
-    """ Fetch timing contents for every workflow, storing in memory. """
+    """ Fetch timing contents for every workflow, storing in memory.
+
+    Skips any which already exist as local files."""
     timing_by_workflow_id = {}
     for workflow_id, metadata in metadata_by_workflow_id.items():
+        if Path(f"{LOCAL_DIR}/timing/{workflow_id}.html").is_file():
+            logging.debug(f"Skipping timing for workflow {workflow_id}. Local file already exists.")
+            continue
         logging.info(f"Fetching timing for workflow {workflow_id}")
         response = _request_workflow(f"{workflow_id}/timing")
         if response.ok:
@@ -156,11 +161,12 @@ if __name__ == "__main__":
     root_metadata = metadata_by_workflow_id[args.workflow_id]
     _save_locally(json_str(root_metadata), 'metadata.json')
 
-    root_timing   = timing_by_workflow_id[args.workflow_id]
-    _save_locally(root_timing,   'timing.html')
+    root_timing = timing_by_workflow_id.get(args.workflow_id, None)
+    if root_timing:
+        _save_locally(root_timing, 'timing.html')
 
     root_outputs  = {"outputs": root_metadata["outputs"]}
-    _save_locally(json_str(root_outputs),  'outputs.json')
+    _save_locally(json_str(root_outputs), 'outputs.json')
 
     # Save everything else in dirs. We also save the root workflow
     # info here, duplicating it, just for ease of crawling back to
