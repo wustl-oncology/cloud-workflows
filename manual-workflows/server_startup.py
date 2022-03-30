@@ -87,6 +87,7 @@ def clone_analysis_wdls():
     os.chdir(old_dir)
     if status_code != 0:
         raise Exception("Clone failed for griffithlab/analysis-wdls")
+    os.system(f"bash {SHARED_DIR}/analysis-wdls/zip_wdls.sh")
 
 
 def _fetch_instance_info(name):
