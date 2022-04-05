@@ -2,9 +2,9 @@ VM_NAME=cromwell
 
 DB_INSTANCE=cromwell1
 DEPLOY_NAME=cromwell
-DOCKER_IMAGE=jackmaruska/cloudize-workflow
+DOCKER_IMAGE=mgibio/cloudize-workflow
 
-SRC_DIR="$(dirname "${BASH_SOURCE[0]}")"
+SRC_DIR="$(dirname "$0")"
 
 case $1 in
     "start")
@@ -34,7 +34,7 @@ case $1 in
         gcloud deployment-manager deployments create $DEPLOY_NAME --config $SRC_DIR/central-server/jinja/deployment.yaml
         ;;
     "build-and-tag")
-        VERSION=$(head -n "$SRC_DIR/VERSION")
+        VERSION=$(head -n 1 "$SRC_DIR/VERSION")
         echo "Building container image tagged latest"
         docker build $SRC_DIR -t $DOCKER_IMAGE:latest
         # this one will be cached, basically just doing a tag without having to find image ID
