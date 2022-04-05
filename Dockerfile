@@ -8,8 +8,6 @@ ADD scripts/pull_outputs.py /opt/scripts/pull_outputs.py
 ADD scripts/requirements.txt /opt/scripts/requirements.txt
 
 # Submit workflows
-ADD scripts/workflow_options_bolton.json /opt/scripts/workflow_options_bolton.json
-ADD scripts/workflow_options_griffith.json /opt/scripts/workflow_options_griffith.json
 ADD scripts/submit_workflow.sh /opt/scripts/submit_workflow.sh
 
 # Multi-approach help

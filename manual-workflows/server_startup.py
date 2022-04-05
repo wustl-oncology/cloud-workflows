@@ -27,6 +27,11 @@ PACKAGES = [
 def bookends(func):
     """
     Print the `func`'s name and args at start and completion of function.
+    e.g. `def install_packages()` with `@bookends` decorator will output the following
+
+    install_packages...
+    <stdout+stderr of the os.system calls>
+    install_packages...DONE
     """
     def wrapper(*args, **kwargs):
         print(f"{func.__name__}...")

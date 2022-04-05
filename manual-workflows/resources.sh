@@ -28,7 +28,7 @@ function die {
 }
 
 COMMAND=$1; shift
-if [[ ($COMMAND -ne "init-project") && ($COMMAND -ne "generate-config")]]; then
+if [[ ($COMMAND != "init-project") && ($COMMAND != "generate-config")]]; then
     show_help
     die "ERROR: invalid command - $COMMAND"
 fi

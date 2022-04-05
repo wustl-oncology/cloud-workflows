@@ -23,3 +23,4 @@ outputs/*
 *~
 README.html
 *#*
+scripts/__pycache__/*
