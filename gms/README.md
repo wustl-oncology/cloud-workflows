@@ -17,7 +17,7 @@ bash resources.sh --project PROJECT --bucket BUCKET
 ```
 
 Alternatively, these files are available via the docker image
-`jackmaruska/cloudize-workflow:latest` in the directory `/opt/gms/`,
+`mgibio/cloudize-workflow:latest` in the directory `/opt/gms/`,
 so the above command would be
 ```
 bash /opt/gms/resources.sh --project PROJECT --bucket BUCKET

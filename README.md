@@ -68,7 +68,7 @@ helper scripts on their own, the best starting point is
 
 These scripts are contained within a Docker container image, to they
 can be used asynchronously with bsub. This container image can be
-found on dockerhub at `jackmaruska/cloudize-workflow`. Using latest is
+found on dockerhub at `mgibio/cloudize-workflow`. Using latest is
 always suggested but semantic versioning will be followed in case
 prior behavior is needed.
 

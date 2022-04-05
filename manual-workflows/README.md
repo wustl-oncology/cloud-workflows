@@ -53,7 +53,7 @@ cloud, use `../scripts/cloudize-workflow.py` to ease the process.
 
 Jump into a docker container with the script available
 ```sh
-bsub -Is -q general-interactive -G $GROUP -a "docker(jackmaruska/cloudize-workflow:latest)" /bin/bash
+bsub -Is -q general-interactive -G $GROUP -a "docker(mgibio/cloudize-workflow:latest)" /bin/bash
 ```
 
 Execute the script
@@ -235,7 +235,7 @@ cluster, leverage the `pull_outputs.py` script with the generated
 
 On compute1 cluster, jump into a docker container with the script available
 ```sh
-bsub -Is -q general-interactive -G $GROUP -a "docker(jackmaruska/cloudize-workflow:latest)" /bin/bash
+bsub -Is -q general-interactive -G $GROUP -a "docker(mgibio/cloudize-workflow:latest)" /bin/bash
 ```
 
 Execute the script
