@@ -181,6 +181,15 @@ the `./manual-workflows` approach. The files aren't deduplicated
 because it would complicate things, especially the `server_startup.py`
 which is just sent to the GCP instance as text via a metadata tag.
 
+An alternative approach to GMS that was considered -- make the GMS
+process run the Cromwell server with `cromwell run` and just run the
+instances on GCP. We chose not to do this because it leaves the
+instance vulnerable to compute1 failures. The Cromwell server
+shuffled off to GCP means that compute1 failures don't break the run,
+they just break the GMS build. We haven't implemented stronger
+recovery, but the requisite files are available and theoretically
+there could be a recovery process implemented.
+
 ## Scripts
 
 Any program or script used by multiple approaches, or by the user
@@ -208,3 +217,22 @@ We also have not bothered trying to drive adoption yet. As of this
 writing, we were just getting Malachi Griffith able to run a real
 Immuno workflow through, and Sridar able to run large somatic_wgs
 workflows.
+
+# Billing
+
+Initially we wanted to get "real billing numbers". What this meant for
+us initially was trying to pull billing data from BigQuery and
+filtering down based on tags for each workflow. Because of limitations
+within Google Cloud -- billing happens on a separate project entirely,
+only one for the organization, which users would need to be granted
+access to -- we weren't able to provide this in a simple way. Instead
+we chose to estimate the numbers, through the `estimate_billing.py`
+script. This leverages the Cromwell metadata, and values pulled from
+the GCP price pages. Something to improve would be automatically
+pulling values programmatically, instead of hard-coding.
+
+This estimate varies above or below the real value based on:
+- difference in cost at run-time (GCP costs vary per day)
+- error in event timestamps vs real runtime of the instance
+- CPU platform _may_ change though I think N1 is what happens?
+- floating point errors are unavoidable in python
