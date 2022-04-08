@@ -3,6 +3,7 @@
 PROJECT=$1
 SERVER_NAME=$2
 COMPUTE_NAME=$3
+BUCKET=$4
 
 NETWORK=cloud-workflows
 SUBNET=cloud-workflows-default
@@ -55,3 +56,10 @@ gcloud compute firewall-rules create $NETWORK-allow-ssh \
        --source-ranges $WASHU_CIDR,$WASHU2_CIDR \
        --network=$NETWORK \
        --allow tcp:22
+
+# Bucket
+gsutil mb -p $PROJECT -b on gs://$BUCKET
+gsutil iam ch serviceAccount:$COMPUTE_ACCOUNT:objectAdmin gs://$BUCKET
+gsutil iam ch serviceAccount:$COMPUTE_ACCOUNT:legacyBucketOwner gs://$BUCKET
+gsutil iam ch serviceAccount:$SERVER_ACCOUNT:objectAdmin gs://$BUCKET
+gsutil iam ch serviceAccount:$SERVER_ACCOUNT:legacyBucketOwner gs://$BUCKET

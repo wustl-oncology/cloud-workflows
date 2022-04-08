@@ -65,15 +65,12 @@ done
 COMPUTE_NAME="cromwell-compute"
 SERVER_NAME="cromwell-server"
 SUBNET_NAME="cloud-workflows-default"
-COMPUTE_ACCOUNT="$COMPUTE_NAME@$PROJECT.iam.gserviceaccount.com"
 SERVER_ACCOUNT="$SERVER_NAME@$PROJECT.iam.gserviceaccount.com"
 BUCKET_MAX_AGE_DAYS=30
 
 sh $SRC_DIR/../scripts/enable_api.sh
-sh $SRC_DIR/../scripts/create_resources.sh $PROJECT $SERVER_NAME $COMPUTE_NAME
+sh $SRC_DIR/../scripts/create_resources.sh $PROJECT $SERVER_NAME $COMPUTE_NAME $BUCKET
 
-# Create bucket
-gsutil mb -b on gs://$BUCKET
 # Lifecycle rules on the bucket
 cat <<EOF > lifecycle_rules.json
 {
@@ -84,9 +81,6 @@ cat <<EOF > lifecycle_rules.json
 EOF
 gsutil lifecycle set lifecycle_rules.json gs://$BUCKET
 rm lifecycle_rules.json
-# Service account can use bucket
-gsutil iam ch serviceAccount:$COMPUTE_ACCOUNT:objectAdmin gs://$BUCKET
-gsutil iam ch serviceAccount:$SERVER_ACCOUNT:objectAdmin gs://$BUCKET
 
 
 cat <<EOF
