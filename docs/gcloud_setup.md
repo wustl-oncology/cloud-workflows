@@ -36,3 +36,18 @@ ID values will not work here.
 
 This should only need to be done once per machine. If you change which
 client you use on compute1 then you may need to run these commands again.
+
+# Maintain these credentials in a Docker image
+
+The easiest way to stay logged in with Docker is to mount
+`~/.config/gcloud` to the container. In the case of this image, which
+defaults to the root user, this command should suffice
+
+```
+docker run [OPTS] -v ~/.config/gcloud:/root/.config/gcloud COMMAND
+```
+Optionally replacing [OPTS] and COMMAND with your specifics as needed,
+e.g. to jump in to an interactive session,
+```
+docker run -it -v ~/.config/gcloud:/root/.config/gcloud /bin/bash
+```
