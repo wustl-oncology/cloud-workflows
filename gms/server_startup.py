@@ -39,9 +39,9 @@ def bookends(print_func):
     """
     def decorator(body_func):
         def wrapper(*args, **kwargs):
-            print_func(f"{body_func.__name__} {*args} {**kwargs}...")
+            print_func(f"{body_func.__name__} {args} {kwargs} ...")
             result = func(*args, **kwargs)
-            print_func(f"{body_func.__name__} {*args} {**kwargs}...DONE")
+            print_func(f"{body_func.__name__} {args} {kwargs} ...DONE")
             return result
         return wrapper
     return decorator
