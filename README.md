@@ -44,7 +44,7 @@ For more information on GMS interaction, see
 ## Some Other Solution
 
 Every solution has things it's good at and things it's not. Again, the
-primary focus here in GMS integration. If you're in a situation that
+primary focus here is GMS integration. If you're in a situation that
 requires high scalability, mostly meaning highly parallelized
 workflows, and you don't have need for the benefits that GMS provides,
 what we have here is probably not your best option.
@@ -77,3 +77,17 @@ After modifying any scripts, build and tag the docker image
     sh infra.sh build-and-tag VERSION
 
 This command will create docker images with tags `VERSION` and `latest`
+
+# End to End Tutorials
+
+Several attempts to demonstrate running our WDL workflows on Google
+Cloud have been created. For example:
+
+- Running the Immunogenomics workflow (immuno.wdl) manually and 
+assuming that your input data is stored on the compute1/storage1 
+system at WASHU: [immuno-compute1](https://github.com/griffithlab/immuno_gcp_wdl_compute1)  
+- Running the Immunogenomics workflow (immuno.wdl) manually and
+assuming the your input data is on a local machine that is not 
+associated with WASHU in any way. For example, an external institution
+or on a personal laptop and Google Cloud account: [immuno-local](https://github.com/griffithlab/immuno_gcp_wdl_local) 
+
