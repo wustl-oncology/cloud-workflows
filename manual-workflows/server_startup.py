@@ -9,6 +9,7 @@ CROMWELL_DOWNLOAD = "https://github.com/broadinstitute/cromwell/releases/downloa
 PACKAGES = [
     # required to run
     'curl',
+    'screen',
     'default-jdk',
     'git',
     'python3-pip',
