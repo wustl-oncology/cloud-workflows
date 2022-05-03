@@ -92,8 +92,8 @@ def cost_machine_type(machine_type, duration_seconds, preemptible = False):
         vcpus, memory_mb = [int(x) for x in machine_type.split('-')[1:]]
         memory_gb = memory_mb / 2**10
         price = N1_PREEMPTIBLE_MACHINE_PRICE if preemptible else N1_MACHINE_PRICE
-        return {"cpu":    min(60, duration_seconds) * vcpus * price["cpu"] / SECONDS_PER_HOUR,
-                "memory": min(60, duration_seconds) * memory_gb * price["memory"] / SECONDS_PER_HOUR}
+        return {"cpu":    max(60, duration_seconds) * vcpus * price["cpu"] / SECONDS_PER_HOUR,
+                "memory": max(60, duration_seconds) * memory_gb * price["memory"] / SECONDS_PER_HOUR}
     else:
         raise NotImplementedError(f"Don't know how to handle machine type {machine_type}")
 
