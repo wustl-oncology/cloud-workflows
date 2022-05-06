@@ -82,7 +82,9 @@ def fetch_metadata(workflow_id):
     """
     metadata_by_workflow_id = {}
     workflow_ids_frontier = [(workflow_id, "root")]
+    workflow_ids_master = [(workflow_id, "root")]
     while workflow_ids_frontier:
+        workflow_id_count = len(workflow_ids_frontier)
         workflow_id, workflow_name = workflow_ids_frontier.pop()
         logging.info(f"Fetching metadata for workflow {workflow_name} {workflow_id}")
         response = _request_workflow(f"{workflow_id}/metadata")
@@ -93,12 +95,18 @@ def fetch_metadata(workflow_id):
             subworkflows = [(call["subWorkflowId"], name)
                             for call, name, _ in all_calls(metadata)
                             if "subWorkflowId" in call]
-            workflow_ids_frontier.extend(subworkflows)
+            # Only add new subworkflow IDs to be processed if we have not already processed them
+            new_subworkflow_ids = list(set(subworkflows) - set(workflow_ids_master))
+            workflow_ids_master.extend(new_subworkflow_ids)
+            workflow_ids_frontier.extend(new_subworkflow_ids)
             # Follow cached calls
             cached_calls = [(cached_id(call), name)
                             for call, name, _ in all_calls(metadata)
                             if is_cache_hit(call)]
-            workflow_ids_frontier.extend(cached_calls)
+            # Only add new cached ids to be processed if we have not already processed them
+            new_cached_ids = list(set(cached_calls) - set(workflow_ids_master))
+            workflow_ids_master.extend(new_cached_ids)
+            workflow_ids_frontier.extend(new_cached_ids)
         else:
             logging.error(f"{workflow_id}/metadata endpoint returned non-OK response {response}")
     return metadata_by_workflow_id
