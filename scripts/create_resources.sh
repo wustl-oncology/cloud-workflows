@@ -4,6 +4,8 @@ PROJECT=$1
 SERVER_NAME=$2
 COMPUTE_NAME=$3
 BUCKET=$4
+CIDR=$5
+GC_REGION=$6
 
 NETWORK=cloud-workflows
 SUBNET=cloud-workflows-default
@@ -47,13 +49,13 @@ gcloud compute networks create $NETWORK \
 gcloud compute networks subnets create $SUBNET \
        --project=$PROJECT \
        --range="10.10.0.0/16" \
-       --region="us-central1" \
+       --region=$GC_REGION \
        --network=$NETWORK
 
 # Firewall
 gcloud compute firewall-rules create $NETWORK-allow-ssh \
        --project=$PROJECT \
-       --source-ranges $WASHU_CIDR,$WASHU2_CIDR \
+       --source-ranges $WASHU_CIDR,$WASHU2_CIDR,$CIDR \
        --network=$NETWORK \
        --allow tcp:22
 

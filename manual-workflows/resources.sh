@@ -56,6 +56,28 @@ while test $# -gt 0; do
                 shift
             fi
             ;;
+	--CIDR*)
+	    if [ ! "$2" ]; then
+		# instead of dying:
+		# die 'ERROR: "--CIDR" requires a non-empty argument.'
+		# we could just leave it empty or if that proves to be problematic then we can default to one of WASHU's CIDRs
+		CIDR=""
+	    else
+		CIDR=$2
+		shift
+	    fi
+	    ;;
+	--GC_REGION*)
+	    if [ ! "$2" ]; then
+		# Again, instead of dying:
+		# die 'ERROR: "--GC_REGION" requires a non-empty argument.'
+		# we could default to us-central1
+		GC_REGION="us-central1"
+	    else
+		GC_REGION=$2
+		shift
+	    fi
+       	    ;;
         *)
             break
             ;;
@@ -68,6 +90,13 @@ if [ -z $PROJECT ]; then
 fi
 if [ -z $BUCKET ]; then
     die 'ERROR: "--bucket" must be set.'
+fi
+if [ -z $CIDR ]; then
+    # we probably do not have to die here anymore
+    die 'ERROR: "--CIDR" must be set.'
+fi
+if [ -z $GC_REGION ]; then
+    die 'ERROR: "--GC_REGION" must be set.'
 fi
 
 COMPUTE_NAME="cromwell-compute"
@@ -102,7 +131,7 @@ sh $SRC_DIR/../scripts/enable_api.sh
 case $COMMAND in
     "init-project")
         # Create service accounts
-        sh $SRC_DIR/../scripts/create_resources.sh $PROJECT $SERVER_NAME $COMPUTE_NAME $BUCKET
+        sh $SRC_DIR/../scripts/create_resources.sh $PROJECT $SERVER_NAME $COMPUTE_NAME $BUCKET $CIDR $GC_REGION
         # Create bucket if not exists
         # Generate cromwell.conf
         generate_config
