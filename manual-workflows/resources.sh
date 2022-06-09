@@ -17,7 +17,7 @@ function show_help {
     echo "    --bucket       name for the GCS bucket used by Cromwell"
     echo "    --project      name of your GCP project"
     echo "    --CIDR         block of acceptable IPs e.g. 172.16.0.0/24"
-    echo "    --GC_REGION    to pick an appropriate region, check https://cloud.google.com/compute/docs/regions-zones" 
+    echo "    --GC_REGION    default='us-central1'. For other regions check: https://cloud.google.com/compute/docs/regions-zones" 
     echo ""
 }
 
