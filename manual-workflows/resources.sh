@@ -5,7 +5,7 @@ SRC_DIR=$(dirname "$0")
 function show_help {
     echo "$0 - Create/Destroy resources for manual Cromwell workflow execution"
     echo ""
-    echo "usage: sh $0 COMMAND --project <PROJECT> --bucket <BUCKET>"
+    echo "usage: sh $0 COMMAND --project <PROJECT> --bucket <BUCKET> --CIDR <CIDR> --GC_REGION <REGION>"
     echo ""
     echo "commands:"
     echo "    init-project        Create required resources for the project. You'll almost always want this one."
@@ -16,6 +16,8 @@ function show_help {
     echo "    -h, --help     print this block"
     echo "    --bucket       name for the GCS bucket used by Cromwell"
     echo "    --project      name of your GCP project"
+    echo "    --CIDR         block of acceptable IPs e.g. 172.16.0.0/24"
+    echo "    --GC_REGION    to pick an appropriate region, check https://cloud.google.com/compute/docs/regions-zones" 
     echo ""
 }
 
