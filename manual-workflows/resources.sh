@@ -68,9 +68,6 @@ while test $# -gt 0; do
 	    ;;
 	--GC_REGION*)
 	    if [ ! "$2" ]; then
-		# Again, instead of dying:
-		# die 'ERROR: "--GC_REGION" requires a non-empty argument.'
-		# we could default to us-central1
 		GC_REGION="us-central1"
 	    else
 		GC_REGION=$2
@@ -91,7 +88,6 @@ if [ -z $BUCKET ]; then
     die 'ERROR: "--bucket" must be set.'
 fi
 if [ -z $CIDR ]; then
-    # we probably do not have to die here anymore
     die 'ERROR: "--CIDR" must be set.'
 fi
 if [ -z $GC_REGION ]; then
