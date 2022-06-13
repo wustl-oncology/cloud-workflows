@@ -94,6 +94,9 @@ if [ -z $CIDR ]; then
     # we probably do not have to die here anymore
     die 'ERROR: "--CIDR" must be set.'
 fi
+if [ -z $GC_REGION ]; then
+    $GC_REGION = "us-central1"
+fi
 
 COMPUTE_NAME="cromwell-compute"
 SERVER_NAME="cromwell-server"
