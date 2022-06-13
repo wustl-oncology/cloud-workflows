@@ -16,7 +16,7 @@ function show_help {
     echo "    -h, --help     print this block"
     echo "    --bucket       name for the GCS bucket used by Cromwell"
     echo "    --project      name of your GCP project"
-    echo "    --CIDR         block of acceptable IPs e.g. 172.16.0.0/24"
+    echo "    --CIDR         block/range of acceptable IPs e.g. 172.16.0.0/24 or a single IP address e.g. 172.16.5.9/32 or a comma-seperated list of IPs/CIDRs."
     echo "    --GC_REGION    default='us-central1'. For other regions check: https://cloud.google.com/compute/docs/regions-zones" 
     echo ""
 }
@@ -60,10 +60,7 @@ while test $# -gt 0; do
             ;;
 	--CIDR*)
 	    if [ ! "$2" ]; then
-		# instead of dying:
-		# die 'ERROR: "--CIDR" requires a non-empty argument.'
-		# we could just leave it empty or if that proves to be problematic then we can default to one of WASHU's CIDRs
-		CIDR=""
+		die 'ERROR: "--CIDR" requires a non-empty argument.'
 	    else
 		CIDR=$2
 		shift
@@ -96,9 +93,6 @@ fi
 if [ -z $CIDR ]; then
     # we probably do not have to die here anymore
     die 'ERROR: "--CIDR" must be set.'
-fi
-if [ -z $GC_REGION ]; then
-    die 'ERROR: "--GC_REGION" must be set.'
 fi
 
 COMPUTE_NAME="cromwell-compute"

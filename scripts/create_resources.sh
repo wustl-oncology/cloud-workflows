@@ -13,8 +13,8 @@ SUBNET=cloud-workflows-default
 COMPUTE_ACCOUNT="$COMPUTE_NAME@$PROJECT.iam.gserviceaccount.com"
 SERVER_ACCOUNT="$SERVER_NAME@$PROJECT.iam.gserviceaccount.com"
 
-WASHU_CIDR="128.252.0.0/16"
-WASHU2_CIDR="65.254.96.0/19"
+# WASHU_CIDR="128.252.0.0/16"
+# WASHU2_CIDR="65.254.96.0/19"
 
 # Cromwell server VM service account
 gcloud iam service-accounts create $SERVER_NAME \
@@ -55,7 +55,7 @@ gcloud compute networks subnets create $SUBNET \
 # Firewall
 gcloud compute firewall-rules create $NETWORK-allow-ssh \
        --project=$PROJECT \
-       --source-ranges $WASHU_CIDR,$WASHU2_CIDR,$CIDR \
+       --source-ranges $CIDR \
        --network=$NETWORK \
        --allow tcp:22
 
