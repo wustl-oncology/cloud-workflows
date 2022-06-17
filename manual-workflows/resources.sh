@@ -5,7 +5,7 @@ SRC_DIR=$(dirname "$0")
 function show_help {
     echo "$0 - Create/Destroy resources for manual Cromwell workflow execution"
     echo ""
-    echo "usage: sh $0 COMMAND --project <PROJECT> --bucket <BUCKET>"
+    echo "usage: sh $0 COMMAND --project <PROJECT> --bucket <BUCKET> --CIDR <CIDR> --GC_REGION <REGION>"
     echo ""
     echo "commands:"
     echo "    init-project        Create required resources for the project. You'll almost always want this one."
@@ -16,6 +16,8 @@ function show_help {
     echo "    -h, --help     print this block"
     echo "    --bucket       name for the GCS bucket used by Cromwell"
     echo "    --project      name of your GCP project"
+    echo "    --CIDR         block/range of acceptable IPs e.g. 172.16.0.0/24 or a single IP address e.g. 172.16.5.9/32 or a comma-seperated list of IPs/CIDRs."
+    echo "    --GC_REGION    default='us-central1'. For other regions check: https://cloud.google.com/compute/docs/regions-zones" 
     echo ""
 }
 
@@ -56,6 +58,22 @@ while test $# -gt 0; do
                 shift
             fi
             ;;
+	--CIDR*)
+	    if [ ! "$2" ]; then
+		die 'ERROR: "--CIDR" requires a non-empty argument.'
+	    else
+		CIDR=$2
+		shift
+	    fi
+	    ;;
+	--GC_REGION*)
+	    if [ ! "$2" ]; then
+		GC_REGION="us-central1"
+	    else
+		GC_REGION=$2
+		shift
+	    fi
+       	    ;;
         *)
             break
             ;;
@@ -68,6 +86,12 @@ if [ -z $PROJECT ]; then
 fi
 if [ -z $BUCKET ]; then
     die 'ERROR: "--bucket" must be set.'
+fi
+if [ -z $CIDR ]; then
+    die 'ERROR: "--CIDR" must be set.'
+fi
+if [ -z $GC_REGION ]; then
+    GC_REGION="us-central1"
 fi
 
 COMPUTE_NAME="cromwell-compute"
@@ -102,7 +126,7 @@ sh $SRC_DIR/../scripts/enable_api.sh
 case $COMMAND in
     "init-project")
         # Create service accounts
-        sh $SRC_DIR/../scripts/create_resources.sh $PROJECT $SERVER_NAME $COMPUTE_NAME $BUCKET
+        sh $SRC_DIR/../scripts/create_resources.sh $PROJECT $SERVER_NAME $COMPUTE_NAME $BUCKET $CIDR $GC_REGION
         # Create bucket if not exists
         # Generate cromwell.conf
         generate_config
