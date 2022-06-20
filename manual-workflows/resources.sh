@@ -5,7 +5,7 @@ SRC_DIR=$(dirname "$0")
 function show_help {
     echo "$0 - Create/Destroy resources for manual Cromwell workflow execution"
     echo ""
-    echo "usage: sh $0 COMMAND --project <PROJECT> --bucket <BUCKET> --CIDR <CIDR> --GC_REGION <REGION>"
+    echo "usage: sh $0 COMMAND --config-dir <DIR> --project <PROJECT> --bucket <BUCKET> --cidr <CIDR> --gc-region <REGION>"
     echo ""
     echo "commands:"
     echo "    init-project        Create required resources for the project. You'll almost always want this one."
@@ -14,10 +14,11 @@ function show_help {
     echo ""
     echo "arguments:"
     echo "    -h, --help     print this block"
+    echo "    --config-dir   a dir path that is writable, DEFAULT='\$SRC_DIR'"
     echo "    --bucket       name for the GCS bucket used by Cromwell"
     echo "    --project      name of your GCP project"
-    echo "    --CIDR         block/range of acceptable IPs e.g. 172.16.0.0/24 or a single IP address e.g. 172.16.5.9/32 or a comma-seperated list of IPs/CIDRs."
-    echo "    --GC_REGION    default='us-central1'. For other regions check: https://cloud.google.com/compute/docs/regions-zones" 
+    echo "    --cidr         block/range of acceptable IPs e.g. 172.16.0.0/24 or a single IP address e.g. 172.16.5.9/32 or a comma-seperated list of IPs/CIDRs."
+    echo "    --gc-region    DEFAULT='us-central1'. For other regions check: https://cloud.google.com/compute/docs/regions-zones" 
     echo ""
 }
 
@@ -42,6 +43,14 @@ while test $# -gt 0; do
             show_help
             exit
             ;;
+        --config-dir*)
+            if [ ! "$2" ]; then
+                CONFIG_DIR=$SRC_DIR
+            else
+                CONFIG_DIR=$2
+                shift
+            fi
+            ;;
         --bucket*)
             if [ ! "$2" ]; then
                 die 'ERROR: "--bucket" requires a non-empty argument.'
@@ -58,7 +67,7 @@ while test $# -gt 0; do
                 shift
             fi
             ;;
-	--CIDR*)
+	--cidr*)
 	    if [ ! "$2" ]; then
 		die 'ERROR: "--CIDR" requires a non-empty argument.'
 	    else
@@ -66,7 +75,7 @@ while test $# -gt 0; do
 		shift
 	    fi
 	    ;;
-	--GC_REGION*)
+	--gc-region*)
 	    if [ ! "$2" ]; then
 		GC_REGION="us-central1"
 	    else
@@ -81,6 +90,9 @@ while test $# -gt 0; do
     shift
 done
 
+if [ -z $CONFIG_DIR ]; then
+    CONFIG_DIR=$SRC_DIR
+fi
 if [ -z $PROJECT ]; then
     die 'ERROR: "--project" must be set.'
 fi
@@ -100,8 +112,8 @@ COMPUTE_ACCOUNT="$COMPUTE_NAME@$PROJECT.iam.gserviceaccount.com"
 SERVER_ACCOUNT="$SERVER_NAME@$PROJECT.iam.gserviceaccount.com"
 
 function generate_config {
-    cp $SRC_DIR/base_cromwell.conf $SRC_DIR/cromwell.conf
-    cat << EOF >> $SRC_DIR/cromwell.conf
+    cp $SRC_DIR/base_cromwell.conf $CONFIG_DIR/cromwell.conf
+    cat << EOF >> $/cromwell.conf
 backend.providers.default.config {
     project = "$PROJECT"
     root = "gs://$BUCKET/cromwell-executions"
@@ -109,7 +121,7 @@ backend.providers.default.config {
     filesystems.gcs.project = "$PROJECT"
 }
 EOF
-    cat <<EOF > $SRC_DIR/workflow_options.json
+    cat <<EOF > $CONFIG_DIR/workflow_options.json
 {
     "default_runtime_attributes": {
         "preemptible": 1,
