@@ -113,7 +113,7 @@ SERVER_ACCOUNT="$SERVER_NAME@$PROJECT.iam.gserviceaccount.com"
 
 function generate_config {
     cp $SRC_DIR/base_cromwell.conf $CONFIG_DIR/cromwell.conf
-    cat << EOF >> $/cromwell.conf
+    cat << EOF >> $CONFIG_DIR/cromwell.conf
 backend.providers.default.config {
     project = "$PROJECT"
     root = "gs://$BUCKET/cromwell-executions"
