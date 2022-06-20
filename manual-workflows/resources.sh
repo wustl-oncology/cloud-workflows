@@ -36,7 +36,6 @@ if [[ ($COMMAND != "init-project") && ($COMMAND != "generate-config")]]; then
     die "ERROR: invalid command - $COMMAND"
 fi
 
-
 while test $# -gt 0; do
     case $1 in
         -h|--help)

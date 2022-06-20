@@ -102,7 +102,6 @@ MACHINE_TYPE=${MACHINE_TYPE:-"e2-standard-2"}
 [ -z $CROMWELL_CONF    ] && CROMWELL_CONF="$src_dir/cromwell.conf"
 [ -z $WORKFLOW_OPTIONS ] && WORKFLOW_OPTIONS="$src_dir/workflow_options.json"
 
-
 if [[ ! -f $CROMWELL_CONF ]]; then
     cat <<EOF
 cromwell.conf does not exist. Check passed value or generate via
