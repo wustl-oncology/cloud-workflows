@@ -15,7 +15,7 @@ arguments:
 --project            GCP project name
 --server-account     Email identifier of service account used by main Cromwell instance
 --cromwell-conf      Local path to configuration file for Cromwell server. DEFAULT \$SRC_DIR/cromwell.conf
---workflow-options   Local path to `workflow_options.json`. DEFAULT \$SRC_DIR/workflow_options.json
+--workflow-options   Local path to workflow_options.json. DEFAULT \$SRC_DIR/workflow_options.json
 --machine-type       GCP machine type for the instance. DEFAULT e2-standard-2
 
 Additional arguments are passed directly to gsutil compute instances
