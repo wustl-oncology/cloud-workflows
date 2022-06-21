@@ -5,7 +5,7 @@ SRC_DIR=$(dirname "$0")
 function show_help {
     echo "$0 - Create/Destroy resources for manual Cromwell workflow execution"
     echo ""
-    echo "usage: sh $0 COMMAND --config-dir <DIR> --project <PROJECT> --bucket <BUCKET> --cidr <CIDR> --gc-region <REGION>"
+    echo "usage: sh $0 COMMAND --config-dir <DIR> --project <PROJECT> --bucket <BUCKET> --ip-range <RANGE> --gc-region <REGION>"
     echo ""
     echo "commands:"
     echo "    init-project        Create required resources for the project. You'll almost always want this one."
@@ -66,11 +66,11 @@ while test $# -gt 0; do
                 shift
             fi
             ;;
-	--cidr*)
+	--ip-range*)
 	    if [ ! "$2" ]; then
-		die 'ERROR: "--cidr" requires a non-empty argument.'
+		die 'ERROR: "--ip-range" requires a non-empty argument.'
 	    else
-		CIDR=$2
+		IP_RANGE=$2
 		shift
 	    fi
 	    ;;
@@ -98,8 +98,8 @@ fi
 if [ -z $BUCKET ]; then
     die 'ERROR: "--bucket" must be set.'
 fi
-if [ -z $CIDR ]; then
-    die 'ERROR: "--CIDR" must be set.'
+if [ -z $IP_RANGE ]; then
+    die 'ERROR: "--ip-range" must be set.'
 fi
 if [ -z $GC_REGION ]; then
     GC_REGION="us-central1"
@@ -137,7 +137,7 @@ sh $SRC_DIR/../scripts/enable_api.sh
 case $COMMAND in
     "init-project")
         # Create service accounts
-        sh $SRC_DIR/../scripts/create_resources.sh $PROJECT $SERVER_NAME $COMPUTE_NAME $BUCKET $CIDR $GC_REGION
+        sh $SRC_DIR/../scripts/create_resources.sh $PROJECT $SERVER_NAME $COMPUTE_NAME $BUCKET $IP_RANGE $GC_REGION
         # Create bucket if not exists
         # Generate cromwell.conf
         generate_config
