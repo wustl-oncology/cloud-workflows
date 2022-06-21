@@ -68,7 +68,7 @@ while test $# -gt 0; do
             ;;
 	--cidr*)
 	    if [ ! "$2" ]; then
-		die 'ERROR: "--CIDR" requires a non-empty argument.'
+		die 'ERROR: "--cidr" requires a non-empty argument.'
 	    else
 		CIDR=$2
 		shift

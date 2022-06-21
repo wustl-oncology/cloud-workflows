@@ -14,8 +14,8 @@ arguments:
 -h, --help           print this block and immediately exits
 --project            GCP project name
 --server-account     Email identifier of service account used by main Cromwell instance
---cromwell-conf      Local path to configuration file for Cromwell server. DEFAULT $SRC_DIR/cromwell.conf
---workflow-options   Local path to `workflow_options.json`. DEFAULT $SRC_DIR/workflow_options.json
+--cromwell-conf      Local path to configuration file for Cromwell server. DEFAULT \$SRC_DIR/cromwell.conf
+--workflow-options   Local path to `workflow_options.json`. DEFAULT \$SRC_DIR/workflow_options.json
 --machine-type       GCP machine type for the instance. DEFAULT e2-standard-2
 
 Additional arguments are passed directly to gsutil compute instances
@@ -99,8 +99,8 @@ MACHINE_TYPE=${MACHINE_TYPE:-"e2-standard-2"}
 
 [ -z $SERVER_ACCOUNT   ] && die "Missing argument --server-account"
 [ -z $PROJECT          ] && die "Missing argument --project"
-[ -z $CROMWELL_CONF    ] && CROMWELL_CONF="$src_dir/cromwell.conf"
-[ -z $WORKFLOW_OPTIONS ] && WORKFLOW_OPTIONS="$src_dir/workflow_options.json"
+[ -z $CROMWELL_CONF    ] && CROMWELL_CONF="$SRC_DIR/cromwell.conf"
+[ -z $WORKFLOW_OPTIONS ] && WORKFLOW_OPTIONS="$SRC_DIR/workflow_options.json"
 
 if [[ ! -f $CROMWELL_CONF ]]; then
     cat <<EOF
