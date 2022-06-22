@@ -293,6 +293,12 @@ def cloudize(bucket, wf_path, inputs_path, output_path, dryrun=False):
     and its workflow's CWL definition."""
     workflow = make_workflow(wf_path, inputs_path)
     file_inputs = workflow.find_file_inputs()
+
+    if (not bool(file_inputs)):
+        logging.error(f"file_inputs is empty {file_inputs}. "
+        "Check that your LSF_DOCKER_VOLUMES is set up correctly within your .bashrc")
+        exit()
+
     set_cloud_paths(file_inputs)
     cloudized_inputs = cloudize_file_paths(workflow.inputs, bucket, file_inputs)
     write_new_inputs(cloudized_inputs, output_path)
