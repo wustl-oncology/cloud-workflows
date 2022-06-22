@@ -17,7 +17,7 @@ arguments:
 --cromwell-conf      Local path to configuration file for Cromwell server. DEFAULT \$SRC_DIR/cromwell.conf
 --workflow-options   Local path to workflow_options.json. DEFAULT \$SRC_DIR/workflow_options.json
 --machine-type       GCP machine type for the instance. DEFAULT e2-standard-2
---zone		     DEFAULT us-central1-c. For options, visit: https://cloud.google.com/compute/docs/regions-zones 
+--zone               DEFAULT us-central1-c. For options, visit: https://cloud.google.com/compute/docs/regions-zones 
 
 Additional arguments are passed directly to gsutil compute instances
 create command. For more information on those arguments, check that commands
