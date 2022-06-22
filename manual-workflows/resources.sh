@@ -5,7 +5,7 @@ SRC_DIR=$(dirname "$0")
 function show_help {
     echo "$0 - Create/Destroy resources for manual Cromwell workflow execution"
     echo ""
-    echo "usage: sh $0 COMMAND --config-dir <DIR> --project <PROJECT> --bucket <BUCKET> --ip-range <RANGE> --gc-region <REGION>"
+    echo "usage: sh $0 COMMAND --project <PROJECT> --bucket <BUCKET> --ip-range <RANGE>"
     echo ""
     echo "commands:"
     echo "    init-project        Create required resources for the project. You'll almost always want this one."
@@ -17,7 +17,7 @@ function show_help {
     echo "    --config-dir   a dir path that is writable, DEFAULT='\$SRC_DIR'"
     echo "    --bucket       name for the GCS bucket used by Cromwell"
     echo "    --project      name of your GCP project"
-    echo "    --ip-range         block/range of acceptable IPs e.g. 172.16.0.0/24 or a single IP address e.g. 172.16.5.9/32 or a comma-seperated list of IPs/CIDRs."
+    echo "    --ip-range     block/range of acceptable IPs e.g. 172.16.0.0/24 or a single IP address e.g. 172.16.5.9/32 or a comma-seperated list of IPs/CIDRs."
     echo "    --gc-region    DEFAULT='us-central1'. For other regions check: https://cloud.google.com/compute/docs/regions-zones" 
     echo ""
 }
