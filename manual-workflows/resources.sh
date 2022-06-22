@@ -18,7 +18,8 @@ function show_help {
     echo "    --bucket       name for the GCS bucket used by Cromwell"
     echo "    --project      name of your GCP project"
     echo "    --ip-range     block/range of acceptable IPs e.g. 172.16.0.0/24 or a single IP address e.g. 172.16.5.9/32 or a comma-seperated list of IPs/CIDRs."
-    echo "    --gc-region    DEFAULT='us-central1'. For other regions check: https://cloud.google.com/compute/docs/regions-zones" 
+    echo "    --gc-region    DEFAULT='us-central1'. For other regions, check: https://cloud.google.com/compute/docs/regions-zones"
+    echo "    --retention    DEFAULT is 30d. For more option, check: https://cloud.google.com/storage/docs/gsutil/commands/mb#retention-policy"
     echo ""
 }
 
@@ -82,7 +83,15 @@ while test $# -gt 0; do
 		shift
 	    fi
        	    ;;
-        *)
+	--retention*)
+	    if [ ! "$2" ]; then
+		RETENTION="30d"
+	    else
+		RETENTION=$2
+		shift
+	    fi
+       	    ;;
+         *)
             break
             ;;
     esac
@@ -103,6 +112,9 @@ if [ -z $IP_RANGE ]; then
 fi
 if [ -z $GC_REGION ]; then
     GC_REGION="us-central1"
+fi
+if [ -z $RETENTION ]; then
+    RETENTION="30d"
 fi
 
 COMPUTE_NAME="cromwell-compute"
@@ -137,7 +149,7 @@ sh $SRC_DIR/../scripts/enable_api.sh
 case $COMMAND in
     "init-project")
         # Create service accounts
-        sh $SRC_DIR/../scripts/create_resources.sh $PROJECT $SERVER_NAME $COMPUTE_NAME $BUCKET $IP_RANGE $GC_REGION
+        sh $SRC_DIR/../scripts/create_resources.sh $PROJECT $SERVER_NAME $COMPUTE_NAME $BUCKET $IP_RANGE $GC_REGION $RETENTION
         # Create bucket if not exists
         # Generate cromwell.conf
         generate_config

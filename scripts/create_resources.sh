@@ -6,6 +6,7 @@ COMPUTE_NAME=$3
 BUCKET=$4
 IP_RANGE=$5
 GC_REGION=$6
+RETENTION=$7
 
 NETWORK=cloud-workflows
 SUBNET=cloud-workflows-default
@@ -60,7 +61,7 @@ gcloud compute firewall-rules create $NETWORK-allow-ssh \
        --allow tcp:22
 
 # Bucket
-gsutil mb --retention 30d gs://$BUCKET
+gsutil mb --retention $RETENTION gs://$BUCKET
 gsutil mb -p $PROJECT -b on gs://$BUCKET
 gsutil iam ch serviceAccount:$COMPUTE_ACCOUNT:objectAdmin gs://$BUCKET
 gsutil iam ch serviceAccount:$COMPUTE_ACCOUNT:legacyBucketOwner gs://$BUCKET
