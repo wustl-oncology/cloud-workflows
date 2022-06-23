@@ -19,7 +19,7 @@ function show_help {
     echo "    --project      name of your GCP project"
     echo "    --ip-range     block/range of acceptable IPs e.g. 172.16.0.0/24 or a single IP address e.g. 172.16.5.9/32 or a comma-seperated list of IPs/CIDRs."
     echo "    --gc-region    DEFAULT='us-central1'. For other regions, check: https://cloud.google.com/compute/docs/regions-zones"
-    echo "    --retention    DEFAULT is 30d. For more option, check: https://cloud.google.com/storage/docs/gsutil/commands/mb#retention-policy"
+    echo "    --retention    DEFAULT is none. For more option, check: https://cloud.google.com/storage/docs/gsutil/commands/mb#retention-policy"
     echo ""
 }
 
@@ -85,7 +85,7 @@ while test $# -gt 0; do
        	    ;;
 	--retention*)
 	    if [ ! "$2" ]; then
-		RETENTION="30d"
+		RETENTION=""
 	    else
 		RETENTION=$2
 		shift
@@ -114,7 +114,7 @@ if [ -z $GC_REGION ]; then
     GC_REGION="us-central1"
 fi
 if [ -z $RETENTION ]; then
-    RETENTION="30d"
+    RETENTION=""
 fi
 
 COMPUTE_NAME="cromwell-compute"

@@ -61,7 +61,7 @@ gcloud compute firewall-rules create $NETWORK-allow-ssh \
        --allow tcp:22
 
 # Bucket
-gsutil mb --retention $RETENTION gs://$BUCKET
+[ ! -z $RETENTION ] && gsutil mb --retention $RETENTION gs://$BUCKET
 gsutil mb -p $PROJECT -b on gs://$BUCKET
 gsutil iam ch serviceAccount:$COMPUTE_ACCOUNT:objectAdmin gs://$BUCKET
 gsutil iam ch serviceAccount:$COMPUTE_ACCOUNT:legacyBucketOwner gs://$BUCKET
