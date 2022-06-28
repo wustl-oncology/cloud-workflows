@@ -296,7 +296,7 @@ def cloudize(bucket, wf_path, inputs_path, output_path, dryrun=False):
 
     if (not bool(file_inputs)):
         logging.error(f"file_inputs is empty {file_inputs}. "
-        "Check that your LSF_DOCKER_VOLUMES is set up correctly within your .bashrc")
+        "Check that your input files are properly accessbile.")
         exit()
 
     set_cloud_paths(file_inputs)

@@ -11,7 +11,7 @@ $0 - Start a new Cromwell VM instance
 usage: $0 INSTANCE_NAME [--argument value]*
 
 arguments:
--h, --help           print this block and immediately exits
+-h, --help           prints this block and immediately exits
 --project            GCP project name
 --server-account     Email identifier of service account used by main Cromwell instance
 --cromwell-conf      Local path to configuration file for Cromwell server. DEFAULT \$SRC_DIR/cromwell.conf
