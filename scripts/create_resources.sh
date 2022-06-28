@@ -4,8 +4,9 @@ PROJECT=$1
 SERVER_NAME=$2
 COMPUTE_NAME=$3
 BUCKET=$4
-CIDR=$5
+IP_RANGE=$5
 GC_REGION=$6
+RETENTION=$7
 
 NETWORK=cloud-workflows
 SUBNET=cloud-workflows-default
@@ -55,11 +56,12 @@ gcloud compute networks subnets create $SUBNET \
 # Firewall
 gcloud compute firewall-rules create $NETWORK-allow-ssh \
        --project=$PROJECT \
-       --source-ranges $CIDR \
+       --source-ranges $IP_RANGE \
        --network=$NETWORK \
        --allow tcp:22
 
 # Bucket
+[ ! -z $RETENTION ] && gsutil mb --retention $RETENTION gs://$BUCKET
 gsutil mb -p $PROJECT -b on gs://$BUCKET
 gsutil iam ch serviceAccount:$COMPUTE_ACCOUNT:objectAdmin gs://$BUCKET
 gsutil iam ch serviceAccount:$COMPUTE_ACCOUNT:legacyBucketOwner gs://$BUCKET

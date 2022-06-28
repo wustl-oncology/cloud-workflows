@@ -5,7 +5,7 @@ SRC_DIR=$(dirname "$0")
 function show_help {
     echo "$0 - Create/Destroy resources for manual Cromwell workflow execution"
     echo ""
-    echo "usage: sh $0 COMMAND --project <PROJECT> --bucket <BUCKET> --CIDR <CIDR> --GC_REGION <REGION>"
+    echo "usage: sh $0 COMMAND --project <PROJECT> --bucket <BUCKET> --ip-range <RANGE>"
     echo ""
     echo "commands:"
     echo "    init-project        Create required resources for the project. You'll almost always want this one."
@@ -14,10 +14,12 @@ function show_help {
     echo ""
     echo "arguments:"
     echo "    -h, --help     print this block"
+    echo "    --config-dir   a dir path that is writable, DEFAULT='\$SRC_DIR'"
     echo "    --bucket       name for the GCS bucket used by Cromwell"
     echo "    --project      name of your GCP project"
-    echo "    --CIDR         block/range of acceptable IPs e.g. 172.16.0.0/24 or a single IP address e.g. 172.16.5.9/32 or a comma-seperated list of IPs/CIDRs."
-    echo "    --GC_REGION    default='us-central1'. For other regions check: https://cloud.google.com/compute/docs/regions-zones" 
+    echo "    --ip-range     block/range of acceptable IPs e.g. 172.16.0.0/24 or a single IP address e.g. 172.16.5.9/32 or a comma-seperated list of IPs/CIDRs."
+    echo "    --gc-region    DEFAULT='us-central1'. For other regions, check: https://cloud.google.com/compute/docs/regions-zones"
+    echo "    --retention    DEFAULT is none. For more option, check: https://cloud.google.com/storage/docs/gsutil/commands/mb#retention-policy"
     echo ""
 }
 
@@ -35,12 +37,19 @@ if [[ ($COMMAND != "init-project") && ($COMMAND != "generate-config")]]; then
     die "ERROR: invalid command - $COMMAND"
 fi
 
-
 while test $# -gt 0; do
     case $1 in
         -h|--help)
             show_help
             exit
+            ;;
+        --config-dir*)
+            if [ ! "$2" ]; then
+                CONFIG_DIR=$SRC_DIR
+            else
+                CONFIG_DIR=$2
+                shift
+            fi
             ;;
         --bucket*)
             if [ ! "$2" ]; then
@@ -58,15 +67,15 @@ while test $# -gt 0; do
                 shift
             fi
             ;;
-	--CIDR*)
+	--ip-range*)
 	    if [ ! "$2" ]; then
-		die 'ERROR: "--CIDR" requires a non-empty argument.'
+		die 'ERROR: "--ip-range" requires a non-empty argument.'
 	    else
-		CIDR=$2
+		IP_RANGE=$2
 		shift
 	    fi
 	    ;;
-	--GC_REGION*)
+	--gc-region*)
 	    if [ ! "$2" ]; then
 		GC_REGION="us-central1"
 	    else
@@ -74,24 +83,38 @@ while test $# -gt 0; do
 		shift
 	    fi
        	    ;;
-        *)
+	--retention*)
+	    if [ ! "$2" ]; then
+		RETENTION=""
+	    else
+		RETENTION=$2
+		shift
+	    fi
+       	    ;;
+         *)
             break
             ;;
     esac
     shift
 done
 
+if [ -z $CONFIG_DIR ]; then
+    CONFIG_DIR=$SRC_DIR
+fi
 if [ -z $PROJECT ]; then
     die 'ERROR: "--project" must be set.'
 fi
 if [ -z $BUCKET ]; then
     die 'ERROR: "--bucket" must be set.'
 fi
-if [ -z $CIDR ]; then
-    die 'ERROR: "--CIDR" must be set.'
+if [ -z $IP_RANGE ]; then
+    die 'ERROR: "--ip-range" must be set.'
 fi
 if [ -z $GC_REGION ]; then
     GC_REGION="us-central1"
+fi
+if [ -z $RETENTION ]; then
+    RETENTION=""
 fi
 
 COMPUTE_NAME="cromwell-compute"
@@ -100,8 +123,8 @@ COMPUTE_ACCOUNT="$COMPUTE_NAME@$PROJECT.iam.gserviceaccount.com"
 SERVER_ACCOUNT="$SERVER_NAME@$PROJECT.iam.gserviceaccount.com"
 
 function generate_config {
-    cp $SRC_DIR/base_cromwell.conf $SRC_DIR/cromwell.conf
-    cat << EOF >> $SRC_DIR/cromwell.conf
+    cp $SRC_DIR/base_cromwell.conf $CONFIG_DIR/cromwell.conf
+    cat << EOF >> $CONFIG_DIR/cromwell.conf
 backend.providers.default.config {
     project = "$PROJECT"
     root = "gs://$BUCKET/cromwell-executions"
@@ -109,7 +132,7 @@ backend.providers.default.config {
     filesystems.gcs.project = "$PROJECT"
 }
 EOF
-    cat <<EOF > $SRC_DIR/workflow_options.json
+    cat <<EOF > $CONFIG_DIR/workflow_options.json
 {
     "default_runtime_attributes": {
         "preemptible": 1,
@@ -126,7 +149,7 @@ sh $SRC_DIR/../scripts/enable_api.sh
 case $COMMAND in
     "init-project")
         # Create service accounts
-        sh $SRC_DIR/../scripts/create_resources.sh $PROJECT $SERVER_NAME $COMPUTE_NAME $BUCKET $CIDR $GC_REGION
+        sh $SRC_DIR/../scripts/create_resources.sh $PROJECT $SERVER_NAME $COMPUTE_NAME $BUCKET $IP_RANGE $GC_REGION $RETENTION
         # Create bucket if not exists
         # Generate cromwell.conf
         generate_config

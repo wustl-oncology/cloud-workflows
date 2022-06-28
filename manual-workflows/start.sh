@@ -11,11 +11,13 @@ $0 - Start a new Cromwell VM instance
 usage: $0 INSTANCE_NAME [--argument value]*
 
 arguments:
--h, --help         print this block and immediately exits
---project          GCP project name
---server-account   Email identifier of service account used by main Cromwell instance
---cromwell-conf    Local path to configuration file for Cromwell server. DEFAULT $SRC_DIR/cromwell.conf
---machine-type     GCP machine type for the instance. DEFAULT e2-standard-2
+-h, --help           prints this block and immediately exits
+--project            GCP project name
+--server-account     Email identifier of service account used by main Cromwell instance
+--cromwell-conf      Local path to configuration file for Cromwell server. DEFAULT \$SRC_DIR/cromwell.conf
+--workflow-options   Local path to workflow_options.json. DEFAULT \$SRC_DIR/workflow_options.json
+--machine-type       GCP machine type for the instance. DEFAULT e2-standard-2
+--zone               DEFAULT us-central1-c. For options, visit: https://cloud.google.com/compute/docs/regions-zones 
 
 Additional arguments are passed directly to gsutil compute instances
 create command. For more information on those arguments, check that commands
@@ -47,6 +49,22 @@ while test $# -gt 0; do
             show_help
             exit 0
             ;;
+        --cromwell-conf*)
+            if [ ! "$2" ]; then
+                CROMWELL_CONF="$SRC_DIR/cromwell.conf"
+            else
+                CROMWELL_CONF=$2
+                shift
+            fi
+            ;;
+	 --workflow-dir*)
+            if [ ! "$2" ]; then
+                WORKFLOW_OPTIONS="$SRC_DIR/workflow_options.json"
+            else
+                WORKFLOW_OPTIONS=$2
+                shift
+            fi
+            ;; 
         --project*)
             if [ ! "$2" ]; then
                 die 'Error: "--project" requires a string argument for the GCP project name used'
@@ -71,6 +89,14 @@ while test $# -gt 0; do
                 shift
             fi
             ;;
+        --zone*)
+            if [ ! "$2" ]; then
+		ZONE="us-central1-c"
+            else
+                ZONE=$2
+                shift
+            fi
+            ;;
         *)
             break
             ;;
@@ -80,10 +106,12 @@ done
 
 MACHINE_TYPE=${MACHINE_TYPE:-"e2-standard-2"}
 
-[ -z $SERVER_ACCOUNT ] && die "Missing argument --server-account"
-[ -z $PROJECT        ] && die "Missing argument --project"
+[ -z $SERVER_ACCOUNT   ] && die "Missing argument --server-account"
+[ -z $PROJECT          ] && die "Missing argument --project"
+[ -z $CROMWELL_CONF    ] && CROMWELL_CONF="$SRC_DIR/cromwell.conf"
+[ -z $WORKFLOW_OPTIONS ] && WORKFLOW_OPTIONS="$SRC_DIR/workflow_options.json"
+[ -z $ZONE             ] && ZONE="us-central1-c"
 
-CROMWELL_CONF="$SRC_DIR/cromwell.conf"
 if [[ ! -f $CROMWELL_CONF ]]; then
     cat <<EOF
 cromwell.conf does not exist. Check passed value or generate via
@@ -94,7 +122,6 @@ EOF
     exit 1
 fi
 
-WORKFLOW_OPTIONS="$SRC_DIR/workflow_options.json"
 if [[ ! -f $WORKFLOW_OPTIONS ]]; then
     cat <<EOF
 workflow_options.json does not exist. Check passed value or generate via
@@ -105,11 +132,13 @@ EOF
     exit 1
 fi
 
+# $@ indicates the ability to add any of the other flags that come with gcloud compute instances creat
+# for a full account, visit https://cloud.google.com/sdk/gcloud/reference/compute/instances/create
 gcloud compute instances create $INSTANCE_NAME \
        --project $PROJECT \
        --image-family debian-11 \
        --image-project debian-cloud \
-       --zone us-central1-c \
+       --zone $ZONE \
        --machine-type=$MACHINE_TYPE \
        --service-account=$SERVER_ACCOUNT --scopes=cloud-platform \
        --network=$NETWORK --subnet=$SUBNET \
