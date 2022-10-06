@@ -1,7 +1,7 @@
 #! /bin/bash
 
 printf "Seconds\tMemory_Percent\tMemory_Percent_Peak\tMemory_GB\tMemory_GB_Peak\tDisk_Percent\tDisk_Percent_Peak\tDisk_GB\tDisk_GB_Peak\tCPU_Percent\tCPU_Percent_Peak\n"
-DELAY=5
+DELAY=60
 MEMORY_P_PEAK=0
 MEMORY_G_PEAK=0
 DISK_P_PEAK=0
