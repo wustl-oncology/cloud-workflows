@@ -18,7 +18,7 @@ do
 
   #Retrieve current disk usage as percent and GB (assumes disk used by cromwell is mounted as '/mnt/disks/local-disk')
   DISK_P=$(df -h | awk '$NF=="/"{printf "%s", $5}' | tr -d "%" | awk '{printf "%.2f", $1}')
-  DISK_G=$(df -h | awk '$NF=="/"{printf "%s", $4}' | tr -d "G")
+  DISK_G=$(df -h | awk '$NF=="/"{printf "%s", $4}' | tr -d "BKMGTP")
 
   #Check for and store peak disk usage
 
