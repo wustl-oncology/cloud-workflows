@@ -21,8 +21,8 @@ do
   MEMORY_G_PEAK=$(echo $MEMORY_G $MEMORY_G_PEAK | awk '{if ($1 > $2) print $1; else print $2}')
 
   #Retrieve current disk usage as percent and GB (assumes disk used by cromwell is mounted as '/mnt/disks/local-disk')
-  DISK_P=$(df -h | awk '$NF=="/"{printf "%s", $5}' | tr -d "%" | awk '{printf "%.2f", $1}')
-  DISK_G=$(df -B 1M | awk '$NF=="/"{printf "%.2f", $4/1024}')
+  DISK_P=$(df -h | awk '$NF=="/mnt/disks/local-disk"{printf "%s", $5}' | tr -d "%" | awk '{printf "%.2f", $1}')
+  DISK_G=$(df -B 1K | awk '$NF=="/mnt/disks/local-disk"{printf "%.2f", $4/1024/1024}')
 
   #Check for and store peak disk usage
   DISK_P_PEAK=$(echo $DISK_P $DISK_P_PEAK | awk '{if ($1 > $2) print $1; else print $2}')
