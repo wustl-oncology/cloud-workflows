@@ -110,6 +110,16 @@ This functionality is also wrapped into estimate\_billing.py under the
 I'd still run these separately just to have both, but if you're only
 after the CSV this may be more convenient.
 
+# cost\_script.py
+
+This is a script to be used on the costs tsv.
+
+It will summarize the outputs of the tsv, adding up the costs for the same step.
+And output a csv labeled costss_report_final.csv
+
+Use as follows-
+
+    python3 /opt/scripts/cost_script.py costs.tsv
 
 # Troubleshooting scripts
 
