@@ -19,19 +19,16 @@ with open(file) as f:
         L = line.split('\t') #split by tab
         table.append(L)
 
-#delete anything that resembles 'shard' followed by a number. If there's a 3-digit shard at some point, add a re.sub(\d\d\d) line before the re.sub(\d\d) line.
-#have to go in descending order of numerical digits because otherwise will delete shard# and be left with name-of-task# which won't get deleted.
+#delete anything that resembles 'shard' followed by a number.
 for i in table:
     if "shard" in i[0]:
         if "retry" in i[0]:
 #            print("retry",i[0])
-            i[0] = re.sub('_shard-\d\d','',i[0])
-            i[0] = re.sub('_shard-\d','',i[0])
+            i[0] = re.sub('_shard-\d+','',i[0])
 #            print(i[0])
         else:
 #            print("no retry",i[0])
-            i[0] = re.sub('_shard-\d\d','',i[0])
-            i[0] = re.sub('_shard-\d','',i[0])
+            i[0] = re.sub('_shard-\d+','',i[0])
 #            print(i[0])
 
 
