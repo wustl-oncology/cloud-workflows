@@ -112,10 +112,8 @@ after the CSV this may be more convenient.
 
 # cost\_script.py
 
-This is a script to be used on the costs tsv.
-
-It will summarize the outputs of the tsv, adding up the costs for the same step.
-And output a csv labeled costss_report_final.csv
+Takes the output of costs_json_to_csv.py and collapses tasks that have been split into shards, giving one cost for the entire task.
+It outputs a csv labeled costs_report_final.csv.
 
 Use as follows-
 
