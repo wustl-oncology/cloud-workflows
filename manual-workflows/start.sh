@@ -143,7 +143,7 @@ gcloud compute instances create $INSTANCE_NAME \
        --service-account=$SERVER_ACCOUNT --scopes=cloud-platform \
        --network=$NETWORK --subnet=$SUBNET \
        --metadata=cromwell-version=71 \
-       --metadata-from-file=startup-script=$SRC_DIR/server_startup.py,cromwell-conf=$CROMWELL_CONF,helpers-sh=$SRC_DIR/helpers.sh,cromwell-service=$SRC_DIR/cromwell.service,workflow-options=$WORKFLOW_OPTIONS,persist-artifacts=$SRC_DIR/../scripts/persist_artifacts.py \
+       --metadata-from-file=startup-script=$SRC_DIR/server_startup.py,cromwell-conf=$CROMWELL_CONF,helpers-sh=$SRC_DIR/helpers.sh,cromwell-service=$SRC_DIR/cromwell.service,workflow-options=$WORKFLOW_OPTIONS,persist-artifacts=$SRC_DIR/../scripts/persist_artifacts.py,monitor-sh=$SRC_DIR/../scripts/monitor.sh \
        $@
 
 cat <<EOF
