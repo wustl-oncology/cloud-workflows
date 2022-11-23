@@ -139,7 +139,8 @@ EOF
         "maxRetries": 2
     },
     "final_workflow_log_dir": "gs://$BUCKET/final-logs",
-    "final_call_logs": "gs://$BUCKET/call-logs"
+    "final_call_logs": "gs://$BUCKET/call-logs",
+    "monitoring_script": "gs://$BUCKET/scripts/monitor.sh"
 }
 EOF
 }
