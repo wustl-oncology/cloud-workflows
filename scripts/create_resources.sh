@@ -67,3 +67,4 @@ gsutil iam ch serviceAccount:$COMPUTE_ACCOUNT:objectAdmin gs://$BUCKET
 gsutil iam ch serviceAccount:$COMPUTE_ACCOUNT:legacyBucketOwner gs://$BUCKET
 gsutil iam ch serviceAccount:$SERVER_ACCOUNT:objectAdmin gs://$BUCKET
 gsutil iam ch serviceAccount:$SERVER_ACCOUNT:legacyBucketOwner gs://$BUCKET
+gsutil pap set enforced gs://$BUCKET
