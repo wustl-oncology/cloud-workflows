@@ -150,10 +150,10 @@ EOF
         "preemptible": 1,
         "maxRetries": 2
     },
-    "final_workflow_log_dir": "gs://$BUCKET/final-logs",
-    $(if [ "$MS_PATH" != "" ]; then 
+    $(if [ "$MS_PATH" != "" ]; then
         echo "\"monitoring_script\": \"gs://$BUCKET/$MS_PATH\","
-    fi)
+    fi) 
+    "final_workflow_log_dir": "gs://$BUCKET/final-logs",
     "final_call_logs": "gs://$BUCKET/call-logs"
 }
 EOF
