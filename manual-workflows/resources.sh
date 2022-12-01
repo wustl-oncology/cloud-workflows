@@ -153,8 +153,6 @@ EOF
     "final_workflow_log_dir": "gs://$BUCKET/final-logs",
     $(if [ "$MS_PATH" != "" ]; then 
         echo "\"monitoring_script\": \"gs://$BUCKET/$MS_PATH\","
-    else
-        echo "\"monitoring_script\": null,"
     fi)
     "final_call_logs": "gs://$BUCKET/call-logs"
 }
