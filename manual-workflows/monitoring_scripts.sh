@@ -81,7 +81,7 @@ mkdir $OUT_DIR
 gsutil -m cp -r "$GS_PATH/$WF_ID" .
 
 # iterate through workflow and output files
-python3 $PY_PATH $WF_ID $TARGET $OUT_DIR
+python3 $PY_PATH --search-dir $WF_ID --targer-name $TARGET --out-dir $OUT_DIR
 
 # delete local workflow folder
 rm -r $WF_ID
