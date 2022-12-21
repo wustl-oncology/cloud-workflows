@@ -25,7 +25,7 @@ while test $# -gt 0; do
             ;;
         --wf-id*)
             if [ ! "$2" ]; then
-                die "ERROR: '--wf-id requires a non-empty argument'"
+                die 'ERROR: "--wf-id" requires a non-empty argument'
             else
                  WF_ID=$2
                  shift
@@ -33,7 +33,7 @@ while test $# -gt 0; do
             ;;
         --gs-path*)
             if [ ! "$2" ]; then
-                die "ERROR: '--gs-path requires a non-empty argument'"
+                die 'ERROR: "--gs-path" requires a non-empty argument'
             else
                 GS_PATH=$2
                 shift
@@ -41,7 +41,7 @@ while test $# -gt 0; do
             ;;
         --out-dir*)
             if [ ! "$2" ]; then
-                OUT_DIR="."
+                OUT_DIR="./AllMonitoringFiles/"
             else
                 OUT_DIR=$2
                 shift
@@ -62,13 +62,15 @@ while test $# -gt 0; do
     shift
 done
 
-if [-z $WF_ID ]; then
+if [ -z $WF_ID ]; then
     die 'ERROR: "--wf-if" must be set'
+fi
 if [ -z $GS_PATH ]; then
     die 'ERROR: "--gs-path" must be set.'
-if [-z $OUT_DIR ]; then
+fi
+if [ -z $OUT_DIR ]; then
     OUT_DIR="./AllMonitoringFiles/" 
-
+fi
 
 TARGET="monitor.log"
 
@@ -76,12 +78,10 @@ TARGET="monitor.log"
 mkdir $OUT_DIR
 
 # download workflow locally
-gsutil -m cp -r \
-  "$GS_PATH/$WF_ID" \
-  .
+gsutil -m cp -r "$GS_PATH/$WF_ID" .
 
 # iterate through workflow and output files
 python3 $PY_PATH $WF_ID $TARGET $OUT_DIR
 
 # delete local workflow folder
-rm -r $WF_ID/        
+rm -r $WF_ID
