@@ -1,7 +1,7 @@
 import os
 import argparse
 
-# https://stackoverflow.com/questions/56932020/search-all-files-with-same-name-in-a-directory-python
+#ref: https://stackoverflow.com/questions/56932020/search-all-files-with-same-name-in-a-directory-python
 
 def getAlldirInDiGui(PATH, TARGET, resultList):
     filesList=os.listdir(PATH)
