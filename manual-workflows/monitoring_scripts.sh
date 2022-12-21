@@ -3,9 +3,9 @@
 SRC_DIR=$(dirname "$0")
 
 function show_help {
-    echo "usage: sh $0 --gs-path <GS_PATH> --out-dir <OUT_DIR>"
+    echo "usage: sh $0 --wf-id <WORKFLOW_ID> --gs-path <GS_PATH>"
     echo "arguments:"
-    echo "    --wf-id      worflow id"
+    echo "    --wf-id      worflow id. example 'b62f29-124d...'"
     echo "    --gs-path    path to dir that contains target folder. example: 'gs://\$BUCKET_NAME/...'"
     echo "    --out-dir    output dir. DEFAULT: './AllMonitoringFiles/'" 
     echo "    --py-path    path to gather_monitoring.py. DEFAULT: '/shared/gather_monitoring.py'"
@@ -63,7 +63,7 @@ while test $# -gt 0; do
 done
 
 if [ -z $WF_ID ]; then
-    die 'ERROR: "--wf-if" must be set'
+    die 'ERROR: "--wf-id" must be set'
 fi
 if [ -z $GS_PATH ]; then
     die 'ERROR: "--gs-path" must be set.'
