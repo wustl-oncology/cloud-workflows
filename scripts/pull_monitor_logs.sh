@@ -61,7 +61,7 @@ mkdir ./AllMonitoringLogs/full_path
 echo "Copying over files ... "
 
 while read line; do
-    name=$(cat $line | perl -F/ -wane 'print join("-", $F[-5],$F[-4],$F[-3],$F[-2],$F[-1])')
+    name=$(echo $line | perl -F/ -wane 'print join("-", $F[-5],$F[-4],$F[-3],$F[-2],$F[-1])')
     gsutil cp $line ./AllMonitoringLogs/$name
     echo $line >./AllMonitoringLogs/full_path/$name.full_path
 done <paths
