@@ -5,8 +5,10 @@ SRC_DIR=$(dirname "$0")
 function show_help {
     echo "usage: sh $0 --gs-path <GS_PATH> --wf-id <WORKFLOW_ID>"
     echo "arguments:"
-    echo "    --gs-path    path to dir that contains target folder. example: 'BUCKET_NAME/<folder_name>/...'"
-    echo "    --wf-id      worflow id. example 'b62f29-124d...'"
+    echo "    -h, --help     prints this block"
+    echo "    -a, --analyze  performs analysis of monitoring logs"
+    echo "    --gs-path      path to dir that contains target folder. example: 'BUCKET_NAME/<folder_name>/...'"
+    echo "    --wf-id        worflow id. example 'b62f29-124d...'"
     echo ""
 }
 
@@ -15,10 +17,18 @@ function die {
     printf '%s\n' "$1" >&2 && exit 1
 }
 
+function analysis {
+    # ...
+}
+
 while test $# -gt 0; do
     case $1 in
         -h|--help)
             show_help
+            exit
+            ;;
+        -a|--analyze)
+            PASSED=1
             exit
             ;;
         --wf-id*)
@@ -67,3 +77,5 @@ while read line; do
 done <paths
 
 rm paths
+
+# CALL ANALYSIS IF PASSSED == 1
