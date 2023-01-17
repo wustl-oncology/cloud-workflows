@@ -18,8 +18,9 @@ function die {
 }
 
 function analysis_summary {
-    head -1 $1 | awk -F "\t" '{print $1, $3, $5, $7, $9, $11, $13}' > ./summary/$1
-    tail -1 $1 | awk -F "\t" '{print $1, $3, $5, $7, $9, $11, $13}' >>./summary/$1
+    cp ./AllMonitoringLogs/$1 ./AllMonitoringLogs/summary/
+    head -1 ./AllMonitoringLogs/$1 | awk -F "\t" '{print $1, $3, $5, $7, $9, $11, $13}' > ./AllMonitoringLogs/summary/$1
+    tail -1 ./AllMonitoringLogs/$1 | awk -F "\t" '{print $1, $3, $5, $7, $9, $11, $13}' >>./AllMonitoringLogs/summary/$1
 }
 
 while test $# -gt 0; do
