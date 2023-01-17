@@ -1,4 +1,4 @@
-#i/bin/bash
+#!/bin/bash
 
 SRC_DIR=$(dirname "$0")
 
@@ -17,18 +17,15 @@ function die {
     printf '%s\n' "$1" >&2 && exit 1
 }
 
-function analysis {
-    # ...
+function analysis_summary {
+    head -1 $1 | awk -F "\t" '{print $1, $3, $5}' > ./summary/$1
+    tail -1 $1 | awk -F "\t" '{print $1, $3, $5}' >>./summary/$1
 }
 
 while test $# -gt 0; do
     case $1 in
         -h|--help)
             show_help
-            exit
-            ;;
-        -a|--analyze)
-            PASSED=1
             exit
             ;;
         --wf-id*)
@@ -67,6 +64,7 @@ gsutil ls gs://$GS_PATH/$WF_ID/**/monitoring.log >paths
 
 mkdir ./AllMonitoringLogs
 mkdir ./AllMonitoringLogs/full_path
+mkdir ./AllMonitoringLogs/summary
 
 echo "Copying over files ... "
 
@@ -74,8 +72,7 @@ while read line; do
     name=$(echo $line | perl -F/ -wane 'print join("-", $F[-5],$F[-4],$F[-3],$F[-2],$F[-1])')
     gsutil cp $line ./AllMonitoringLogs/$name
     echo $line >./AllMonitoringLogs/full_path/$name.full_path
-done <paths
+    analysis_summary $name
+done < paths
 
 rm paths
-
-# CALL ANALYSIS IF PASSSED == 1
