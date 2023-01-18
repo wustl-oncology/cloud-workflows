@@ -17,6 +17,7 @@ function die {
     printf '%s\n' "$1" >&2 && exit 1
 }
 
+# we only want peaks and they are recorded at everyother column
 function analysis_summary {
     cp ./AllMonitoringLogs/$1 ./AllMonitoringLogs/summary/
     head -1 ./AllMonitoringLogs/$1 | awk -F "\t" '{print $1, $3, $5, $7, $9, $11, $13}' > ./AllMonitoringLogs/summary/$1
@@ -70,6 +71,7 @@ mkdir ./AllMonitoringLogs/summary
 echo "Copying over files ... "
 
 while read line; do
+    # to achieve unique names for all logs, each log is given the names of the last 5 folders
     name=$(echo $line | perl -F/ -wane 'print join("-", $F[-5],$F[-4],$F[-3],$F[-2],$F[-1])')
     gsutil cp $line ./AllMonitoringLogs/$name
     echo $line >./AllMonitoringLogs/full_path/$name.full_path
