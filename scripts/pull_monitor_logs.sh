@@ -17,11 +17,10 @@ function die {
     printf '%s\n' "$1" >&2 && exit 1
 }
 
-# we only want peaks and they are recorded at everyother column
+# we only want peaks and they are recorded at every other column
 function analysis_summary {
-    cp ./AllMonitoringLogs/$1 ./AllMonitoringLogs/summary/
-    head -1 ./AllMonitoringLogs/$1 | awk -F "\t" '{print $1, $3, $5, $7, $9, $11, $13}' > ./AllMonitoringLogs/summary/$1
-    tail -1 ./AllMonitoringLogs/$1 | awk -F "\t" '{print $1, $3, $5, $7, $9, $11, $13}' >>./AllMonitoringLogs/summary/$1
+    [ ! -s summary.log ] && head -1 ./AllMonitoringLogs/$1 | awk -F "\t" '{print "task", $1, $3, $5, $7, $9, $11, $13}' > ./AllMonitoringLogs/summary.log
+    tail -1 ./AllMonitoringLogs/$1 | awk -F "\t" '{print '$1', $1, $3, $5, $7, $9, $11, $13}' >>./AllMonitoringLogs/summary.log
 }
 
 while test $# -gt 0; do
@@ -66,7 +65,8 @@ gsutil ls gs://$GS_PATH/$WF_ID/**/monitoring.log >paths
 
 mkdir ./AllMonitoringLogs
 mkdir ./AllMonitoringLogs/full_path
-mkdir ./AllMonitoringLogs/summary
+touch ./AllMonitoringLogs/summary.log
+
 
 echo "Copying over files ... "
 
