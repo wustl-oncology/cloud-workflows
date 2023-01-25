@@ -22,13 +22,14 @@ function analysis_summary {
 
     line_count=$(wc -l < ./AllMonitoringLogs/summary.log)
     
-    if [[ $line_count -eq "0" ]]; then
+    if [[ $line_count -eq 0 ]]; then
         head -1 ./AllMonitoringLogs/$1 | awk -F "\t" '{print "Task", $1, $3, $5, $7, $9, $11, $13}' > ./AllMonitoringLogs/summary.log
     fi
 
     line_count=$(wc -l < ./AllMonitoringLogs/$1)
 
-    if [[ $line_count -eq 1 ]]; then
+    # monitoring logs could have only the headers or nothing at all
+    if [[ $line_count -le 1 ]]; then
         echo -e "$1 0 0 0 0 0 0 0" >>./AllMonitoringLogs/summary.log
     else
         tail -1 ./AllMonitoringLogs/$1 | awk -v name=$1 -F "\t" '{print name, $1, $3, $5, $7, $9, $11, $13}' >>./AllMonitoringLogs/summary.log
@@ -80,7 +81,8 @@ mkdir ./AllMonitoringLogs/full_path
 touch ./AllMonitoringLogs/summary.log
 
 
-echo "Copying over files ... "
+echo "Copying over all monitoring logs and creating 'summary.log' ... "
+echo " ---  This will take about 20 min --- "
 
 while read line; do
     # to achieve unique names for all logs, each log is given the names of the last 5 folders
