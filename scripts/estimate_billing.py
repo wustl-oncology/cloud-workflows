@@ -118,11 +118,13 @@ def cost_disks(disks, duration_seconds):
 
 def machine_duration(task):
     events = task["executionEvents"]
-    status = task["backendStatus"]
+    bStatus = task["backendStatus"]
+    eStatus = task["executionStatus"]
+
     def find_description(desc):
         return next(event for event in events if event["description"] == desc)
 
-    if status == "Success":
+    if bStatus == "Success" and eStatus == "Done":
         def is_start(desc):
             return desc.startswith("Worker ") and desc.endswith("machine")
         start_event = next(event for event in events if is_start(event["description"]))
@@ -132,7 +134,7 @@ def machine_duration(task):
         end_event = find_description("UpdatingJobStore")
 
     if not (start_event and end_event):
-        raise NotImplementedError(f"machine duration couldn't be determined for task. Had backendStatus {status} and events {events}")
+        raise NotImplementedError(f"machine duration couldn't be determined for task. Had backendStatus {bStatus} executionStatus {eStatus} and events {events}")
 
     return start_event["startTime"], end_event["endTime"]
 
