@@ -1,62 +1,43 @@
-Resources are prepared to enable running workflows on the cloud either
-doing manual interaction with Cromwell, or leveraging GMS to automate
-interactions through its familiar interface.
+# Cloud Workflow Orchestration
+
+This repo contains resources designed to enable running genomic analysis workflows on the cloud. This includes documentation and tools for setting up Google Cloud appropriately, spinning up VMs to run the workflow, monitoring runs, and retrieving results.
+
+It is designed to be used in concert with the workflows in the [analysis-wdls repository](https://github.com/wustl-oncology/analysis-wdls), though other WDL workflows should certainly work as well.  
+
+## Quick Start
+There are two supported methods of launching workflows documented in the following pages:
+
+1. [manual submission to Cromwell](https://github.com/wustl-oncology/cloud-workflows/blob/main/manual-workflows/README.md), 
+2. leveraging WUSTL's [GMS to automate interactions](https://github.com/wustl-oncology/cloud-workflows/tree/main/gms).
+
+There are also several end-to-end demonstrations of running our WDL workflows on Google Cloud:
+
+- Running the Immunogenomics workflow (immuno.wdl) manually and 
+assuming that your input data is stored on the compute1/storage1 
+system at WASHU: [immuno-compute1](https://github.com/griffithlab/immuno_gcp_wdl_compute1)  
+
+- Running the Immunogenomics workflow (immuno.wdl) manually and
+assuming the your input data is on a local machine that is not 
+associated with WASHU in any way. For example, an external institution
+or on a personal laptop and Google Cloud account: [immuno-local](https://github.com/griffithlab/immuno_gcp_wdl_local) 
 
 
-# Motivation
+## More Information
 
-Switching workflow runs to the cloud are primarily motivated by issues
-of reliability with the local cluster. Secondary motivations are
-numerous, ranging from scalability to data-sharing.
+### Motivation
 
+Using the cloud to run workflows has many advantages, including avoiding reliability or access issues with local clusters, enabling scalability, and easing data-sharing.  
 
-# When to Use
+### Limitations
 
-We're starting with a few known use cases that we believe would
-benefit from switching to the cloud.
+Cromwell does a solid job of orchestrating workflows such as the ones provided in our analysis-wdls repository, and scales well to dozens of samples running dozens of steps at a time. If you're in a situation that requires even higher scalability, to thousands of samples or uses massively parallelized workflows, this backend may not be your best option, and investigating Terra or DNAnexus might be worthwhile. 
 
-The two use cases we're aiming at first are
-1) ad-hoc workflow kickoff through manual intervention
-2) workflows kicked off through the GMS
+### Costs
+
+Costs of running workflows can vary wildly depending on the resources that are consumed and the size of the input data. In addition, the cost of cloud resources changes frequently.  As one point of reference, at the time of this writing an end-to-end immunogenomics workflow with exome, rnaseq, and neoantigen predictions costs in the neighborhood of 20 dollars when using preemptible nodes.
 
 
-## Manual Kickoff
-
-For people who want to fiddle with workflows, or otherwise dive into
-the gears of Cromwell without the burden of the extra GMS
-abstractions, this is the approach.
-
-For more information on manual interactions, see
-[manual-workflows/README.md](manual-workflows/README.md)
-
-
-## GMS Kickoff
-
-Our primary focus is GMS integration. The goal is to abstract away as
-much of the cloud as we can, and besides the first-time setup
-(enabling APIs, creating static resources), ideally make all
-interactions done identically to current GMS usage.
-
-For more information on GMS interaction, see
-[gms/README.md](gms/README.md)
-
-
-## Some Other Solution
-
-Every solution has things it's good at and things it's not. Again, the
-primary focus here is GMS integration. If you're in a situation that
-requires high scalability, mostly meaning highly parallelized
-workflows, and you don't have need for the benefits that GMS provides,
-what we have here is probably not your best option.
-
-The Bolton Lab was in a similar situation and this solution
-consistently ran into reliability issues due to the highly
-parallelized nature of the workflow. They ended up using Terra
-with more success, so if you're in that situation I would recommend
-following their lead.
-
-
-# Shared Helper Scripts
+### Shared Helper Scripts
 
 The README for each section includes instructions that go over
 relevant helper scripts for that section. If you'd like to inspect the
@@ -64,7 +45,7 @@ helper scripts on their own, the best starting point is
 [scripts/README.md](scripts/README.md)
 
 
-# Docker Image
+### Docker Image
 
 These scripts are contained within a Docker container image, to they
 can be used asynchronously with bsub. This container image can be
@@ -78,16 +59,5 @@ After modifying any scripts, build and tag the docker image
 
 This command will create docker images with tags `VERSION` and `latest`
 
-# End to End Tutorials
 
-Several attempts to demonstrate running our WDL workflows on Google
-Cloud have been created. For example:
-
-- Running the Immunogenomics workflow (immuno.wdl) manually and 
-assuming that your input data is stored on the compute1/storage1 
-system at WASHU: [immuno-compute1](https://github.com/griffithlab/immuno_gcp_wdl_compute1)  
-- Running the Immunogenomics workflow (immuno.wdl) manually and
-assuming the your input data is on a local machine that is not 
-associated with WASHU in any way. For example, an external institution
-or on a personal laptop and Google Cloud account: [immuno-local](https://github.com/griffithlab/immuno_gcp_wdl_local) 
 
