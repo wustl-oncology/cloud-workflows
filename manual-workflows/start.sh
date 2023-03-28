@@ -16,7 +16,9 @@ arguments:
 --server-account     Email identifier of service account used by main Cromwell instance
 --cromwell-conf      Local path to configuration file for Cromwell server. DEFAULT \$SRC_DIR/cromwell.conf
 --workflow-options   Local path to workflow_options.json. DEFAULT \$SRC_DIR/workflow_options.json
---machine-type       GCP machine type for the instance. DEFAULT e2-standard-2
+--machine-type       GCP machine type for the instance. DEFAULT e2-standard-2.
+                     This flag is overridden if --custom-cpu and --custom-memory are specified.
+                     Check gcloud documentations for further details.
 --zone               DEFAULT us-central1-c. For options, visit: https://cloud.google.com/compute/docs/regions-zones 
 
 Additional arguments are passed directly to gsutil compute instances
@@ -97,14 +99,28 @@ while test $# -gt 0; do
                 shift
             fi
             ;;
+        --custom-cpu*)
+            if [ ! "$2" ]; then
+                die 'ERROR: "--custom-cpu" requires an argument'
+            else
+                CPU=$2
+                shift
+            fi
+            ;;
+        --custom-memory*)
+            if [ ! "$2" ]; then
+                die 'ERROR: "--custom-memory" requires an argument'
+            else
+                MEM=$2
+                shift
+            fi
+            ;;
         *)
             break
             ;;
     esac
     shift
 done
-
-MACHINE_TYPE=${MACHINE_TYPE:-"e2-standard-2"}
 
 [ -z $SERVER_ACCOUNT   ] && die "Missing argument --server-account"
 [ -z $PROJECT          ] && die "Missing argument --project"
@@ -132,18 +148,33 @@ EOF
     exit 1
 fi
 
+MACHINE_TYPE=${MACHINE_TYPE:-"e2-standard-2"}
+
+param=(
+  --project $PROJECT
+  --image-family debian-11
+  --image-project debian-cloud
+  --zone $ZONE
+  --service-account=$SERVER_ACCOUNT
+  --scopes=cloud-platform
+  --network=$NETWORK
+  --subnet=$SUBNET
+  --metadata=cromwell-version=71
+  --metadata-from-file=startup-script=$SRC_DIR/server_startup.py,cromwell-conf=$CROMWELL_CONF,helpers-sh=$SRC_DIR/helpers.sh,cromwell-service=$SRC_DIR/cromwell.service,workflow-options=$WORKFLOW_OPTIONS,persist-artifacts=$SRC_DIR/../scripts/persist_artifacts.py
+)
+
+# add machine type unless --custom-memory and --custom-cpu are specified
+if [ -z "$MEM" ] || [ -z "$CPU" ]; then
+  param+=(--machine-type=$MACHINE_TYPE)
+else
+  param+=(--custom-memory $MEM)
+  param+=(--custom-cpu $CPU)
+fi
+
 # $@ indicates the ability to add any of the other flags that come with gcloud compute instances creat
 # for a full account, visit https://cloud.google.com/sdk/gcloud/reference/compute/instances/create
 gcloud compute instances create $INSTANCE_NAME \
-       --project $PROJECT \
-       --image-family debian-11 \
-       --image-project debian-cloud \
-       --zone $ZONE \
-       --machine-type=$MACHINE_TYPE \
-       --service-account=$SERVER_ACCOUNT --scopes=cloud-platform \
-       --network=$NETWORK --subnet=$SUBNET \
-       --metadata=cromwell-version=71 \
-       --metadata-from-file=startup-script=$SRC_DIR/server_startup.py,cromwell-conf=$CROMWELL_CONF,helpers-sh=$SRC_DIR/helpers.sh,cromwell-service=$SRC_DIR/cromwell.service,workflow-options=$WORKFLOW_OPTIONS,persist-artifacts=$SRC_DIR/../scripts/persist_artifacts.py \
+       ${param[@]} \
        $@
 
 cat <<EOF
