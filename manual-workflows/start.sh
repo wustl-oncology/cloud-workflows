@@ -109,7 +109,7 @@ while test $# -gt 0; do
             ;;
         --custom-memory*)
             if [ ! "$2" ]; then
-                die 'ERROR: "--custome-memory" requires an argument'
+                die 'ERROR: "--custom-memory" requires an argument'
             else
                 MEM=$2
                 shift
@@ -163,10 +163,8 @@ param=(
   --metadata-from-file=startup-script=$SRC_DIR/server_startup.py,cromwell-conf=$CROMWELL_CONF,helpers-sh=$SRC_DIR/helpers.sh,cromwell-service=$SRC_DIR/cromwell.service,workflow-options=$WORKFLOW_OPTIONS,persist-artifacts=$SRC_DIR/../scripts/persist_artifacts.py
 )
 
-# optionally add either machine type when neither --custom-memory
-# nor --custom-cpu are specified
+# add machine type unless --custom-memory and --custom-cpu are specified
 if [ -z "$MEM" ] || [ -z "$CPU" ]; then
-  echo "$MEM BLAAAAH $CPU"
   param+=(--machine-type=$MACHINE_TYPE)
 else
   param+=(--custom-memory $MEM)
