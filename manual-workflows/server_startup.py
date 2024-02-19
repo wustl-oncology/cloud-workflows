@@ -89,7 +89,10 @@ def download_from_metadata(tag, dest_path):
 def clone_analysis_wdls():
     old_dir = os.getcwd()
     os.chdir(SHARED_DIR)
-    status_code = os.system('git clone https://github.com/griffithlab/analysis-wdls.git')
+    release = _fetch_instance_info('analysis-release')
+    print(f"git clone https://github.com/wustl-oncology/analysis-wdls.git --branch v{release}")
+
+    status_code = os.system(f"git clone https://github.com/wustl-oncology/analysis-wdls.git --branch v{release}")
     os.chdir(old_dir)
     if status_code != 0:
         raise Exception("Clone failed for griffithlab/analysis-wdls")
