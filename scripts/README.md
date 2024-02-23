@@ -110,6 +110,14 @@ This functionality is also wrapped into estimate\_billing.py under the
 I'd still run these separately just to have both, but if you're only
 after the CSV this may be more convenient.
 
+# cost\_script.py
+
+Takes the output of costs_json_to_csv.py and collapses tasks that have been split into shards, giving one cost for the entire task.
+It outputs a csv labeled costs_report_final.csv.
+
+Use as follows-
+
+    python3 /opt/scripts/cost_script.py costs.tsv
 
 # Troubleshooting scripts
 
