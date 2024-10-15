@@ -42,6 +42,8 @@ def download(path, value, subdir = None):
             logging.warning(f"Likely not a File output. had a non-GCS path value of {value}")
         else:
             download_from_gcs(value, Path(f"{path}/{Path(value).name}"))
+    elif value is None:
+        logging.info(f"Skipping optional output that wasn't defined{': ' + subdir if subdir else ''}")
     else:
         logging.error(f"Don't know how to download type {type(value)}. Full object: {value}")
 
