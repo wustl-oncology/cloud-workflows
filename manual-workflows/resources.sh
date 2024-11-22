@@ -20,6 +20,7 @@ function show_help {
     echo "    --ip-range     block/range of acceptable IPs e.g. 172.16.0.0/24 or a single IP address e.g. 172.16.5.9/32 or a comma-seperated list of IPs/CIDRs."
     echo "    --gc-region    DEFAULT='us-central1'. For other regions, check: https://cloud.google.com/compute/docs/regions-zones"
     echo "    --retention    DEFAULT is none. For more option, check: https://cloud.google.com/storage/docs/gsutil/commands/mb#retention-policy"
+    echo "    --ms-path      DEFAULT=\"\". Monitoring script path is relative to \$BUCKET. If none provided then no monitoring log."
     echo ""
 }
 
@@ -91,6 +92,14 @@ while test $# -gt 0; do
 		shift
 	    fi
        	    ;;
+        --ms-path*)
+            if [ ! "$2" ]; then
+                MS_PATH=""
+            else
+                MS_PATH=$2
+                shift
+            fi
+            ;;
          *)
             break
             ;;
@@ -116,6 +125,9 @@ fi
 if [ -z $RETENTION ]; then
     RETENTION=""
 fi
+if [ -z $MS_PATH ]; then
+    MS_PATH=""
+fi
 
 COMPUTE_NAME="cromwell-compute"
 SERVER_NAME="cromwell-server"
@@ -138,6 +150,9 @@ EOF
         "preemptible": 1,
         "maxRetries": 2
     },
+    $(if [ "$MS_PATH" != "" ]; then
+        echo "\"monitoring_script\": \"gs://$BUCKET/$MS_PATH\","
+    fi) 
     "final_workflow_log_dir": "gs://$BUCKET/final-logs",
     "final_call_logs": "gs://$BUCKET/call-logs"
 }
