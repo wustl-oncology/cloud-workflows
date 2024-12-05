@@ -31,4 +31,4 @@ ADD manual-workflows/server_startup.py /opt/manual-workflows/server_startup.py
 ADD manual-workflows/start.sh /opt/manual-workflows/start.sh
 ADD manual-workflows/cromwell.service /opt/manual-workflows/cromwell.service
 
-RUN pip3 install -r /opt/scripts/requirements.txt
+RUN pip3 install --no-build-isolation --break-system-packages -r /opt/scripts/requirements.txt
