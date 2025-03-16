@@ -128,7 +128,7 @@ function generate_config {
 backend.providers.default.config {
     project = "$PROJECT"
     root = "gs://$BUCKET/cromwell-executions"
-    genomics.compute-service-account = "$COMPUTE_ACCOUNT"
+    batch.compute-service-account = "$COMPUTE_ACCOUNT"
     filesystems.gcs.project = "$PROJECT"
 }
 EOF
