@@ -58,7 +58,7 @@ def install_packages():
         'default-jdk',
         'python3-pip'
     ]))
-    os.system('python3 -m pip install requests>=2.20.0')
+    os.system('python3 -m pip install "requests>=2.20.0"')
 
 
 @bookends(logging.info)
