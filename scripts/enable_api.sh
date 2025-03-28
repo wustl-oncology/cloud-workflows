@@ -7,3 +7,5 @@ gcloud services enable storage.googleapis.com
 gcloud services enable lifesciences.googleapis.com
 gcloud services enable iam.googleapis.com
 gcloud services enable compute.googleapis.com
+gcloud services enable batch.googleapis.com
+

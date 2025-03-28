@@ -26,10 +26,19 @@ gcloud projects add-iam-policy-binding $PROJECT \
        --role='roles/lifesciences.workflowsRunner' > /dev/null
 gcloud projects add-iam-policy-binding $PROJECT \
        --member="serviceAccount:$SERVER_ACCOUNT" \
+       --role='roles/batch.jobsEditor' > /dev/null
+gcloud projects add-iam-policy-binding $PROJECT \
+       --member="serviceAccount:$SERVER_ACCOUNT" \
+       --role='roles/batch.agentReporter' > /dev/null
+gcloud projects add-iam-policy-binding $PROJECT \
+       --member="serviceAccount:$SERVER_ACCOUNT" \
        --role='roles/compute.instanceAdmin' > /dev/null
 gcloud projects add-iam-policy-binding $PROJECT \
        --member="serviceAccount:$SERVER_ACCOUNT" \
        --role='roles/iam.serviceAccountUser' > /dev/null
+gcloud projects add-iam-policy-binding $PROJECT \
+       --member="serviceAccount:$SERVER_ACCOUNT" \
+       --role='roles/logging.logWriter' > /dev/null
 
 # Task compute VM service account
 gcloud iam service-accounts create $COMPUTE_NAME \
@@ -40,6 +49,15 @@ gcloud iam service-accounts add-iam-policy-binding $COMPUTE_ACCOUNT \
        --project=$PROJECT \
        --role='roles/iam.serviceAccountUser' > /dev/null
 
+gcloud projects add-iam-policy-binding $PROJECT \
+       --member="serviceAccount:$COMPUTE_ACCOUNT" \
+       --role='roles/batch.jobsEditor' > /dev/null
+gcloud projects add-iam-policy-binding $PROJECT \
+       --member="serviceAccount:$COMPUTE_ACCOUNT" \
+       --role='roles/batch.agentReporter' > /dev/null
+gcloud projects add-iam-policy-binding $PROJECT \
+       --member="serviceAccount:$COMPUTE_ACCOUNT" \
+       --role='roles/compute.instanceAdmin' > /dev/null
 
 # Network
 gcloud compute networks create $NETWORK \
