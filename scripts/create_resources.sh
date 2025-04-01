@@ -23,9 +23,6 @@ gcloud iam service-accounts create $SERVER_NAME \
        --project=$PROJECT
 gcloud projects add-iam-policy-binding $PROJECT \
        --member="serviceAccount:$SERVER_ACCOUNT" \
-       --role='roles/lifesciences.workflowsRunner' > /dev/null
-gcloud projects add-iam-policy-binding $PROJECT \
-       --member="serviceAccount:$SERVER_ACCOUNT" \
        --role='roles/batch.jobsEditor' > /dev/null
 gcloud projects add-iam-policy-binding $PROJECT \
        --member="serviceAccount:$SERVER_ACCOUNT" \
