@@ -10,7 +10,7 @@ PACKAGES = [
     # required to run
     'curl',
     'screen',
-    'default-jdk',
+    'openjdk-17-jdk',
     'git',
     'python3-pip',
     # just useful
@@ -53,7 +53,7 @@ def install_packages():
     os.system('apt-get update')
     os.system('apt-get install -y ' + ' '.join(PACKAGES))
     # Python deps
-    os.system('python3 -m pip install requests>=2.20.0')
+    os.system('python3 -m pip install "requests>=2.20.0"')
 
 
 @bookends
