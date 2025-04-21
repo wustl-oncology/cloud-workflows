@@ -69,9 +69,7 @@ def get_calls(metadata):
 
 
 def is_cached_task(call):
-    if CACHED_KEY in call:
-        return call[CACHED_KEY]["hit"] == True
-    return False
+    return call.get(CACHED_KEY, {}).get("hit") is True
 
 
 def is_subworkflow(call):
@@ -79,7 +77,7 @@ def is_subworkflow(call):
 
 
 def is_task_completed(call):
-    return call[COMPLETED_TASK_KEY] == "Done"
+    return call[COMPLETED_TASK_KEY] == "Done" or call["backendStatus"] == "Preempted"
 
 
 def convert_from_iso(datetime_str):
