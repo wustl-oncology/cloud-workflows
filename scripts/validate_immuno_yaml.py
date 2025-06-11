@@ -95,6 +95,48 @@ def is_proper_fastq_pair(fq1, fq2):
         return True
     return False
 
+def check_commented_blocks(yaml_text):
+    results = []
+    checks = {
+        'problematic_amino_acids': {
+            'keyword': 'immuno.problematic_amino_acids:',
+            'no_text_message': "No problematic amino acids in this run",
+            'has_text_message': "Problematic amino acids selected:"
+        },
+        'clinical_mhc_classI_alleles': {
+            'keyword': 'immuno.clinical_mhc_classI_alleles:',
+            'no_text_message': "Class I HLA alleles commented out",
+            'has_text_message': "Class I HLA alleles selected:"
+        },
+        'clinical_mhc_classII_alleles': {
+            'keyword': 'immuno.clinical_mhc_classII_alleles:',
+            'no_text_message': "Class II HLA alleles commented out",
+            'has_text_message': "Class II HLA alleles selected:"
+        }
+    }
+    lines = yaml_text.splitlines()
+    for check_name, check_info in checks.items():
+        found = False
+        for idx, line in enumerate(lines):
+            if check_info['keyword'] in line:
+                found = True
+                if line.strip().startswith('#'):
+                    results.append(check_info['no_text_message'])
+                else:
+                    results.append(check_info['has_text_message'])
+                    j = idx + 1
+                    while j < len(lines):
+                        next_line = lines[j].strip()
+                        if next_line.startswith('#') or next_line.startswith('immuno.'):
+                            break
+                        if next_line:
+                            results.append(f"  {next_line}")
+                        j += 1
+                break
+        if not found:
+            results.append(f"{check_name} not found in YAML")
+    return results
+
 def validate_yaml(yaml_file):
     print(f"Validating: {yaml_file}\n")
 
@@ -106,71 +148,77 @@ def validate_yaml(yaml_file):
         print(f"Failed to read or parse YAML: {e}")
         return
 
-    immuno = {k[len("immuno.") :]: v for k, v in data.items() if k.startswith("immuno.")}
+    immuno = {k[len("immuno.") :]: v for k, v in data.items() if k.startswith("immuno.")} 
     if not immuno:
-        print("Error: No keys starting with 'immuno.' were found.")
+        print("Error: No keys starting with 'immuno.' were found.") 
         return
 
     print("Checking file paths...")
-    paths = flatten_file_paths(immuno)
-    missing = [p for p in paths if not file_exists(p)]
+    paths = flatten_file_paths(immuno) 
+    missing = [p for p in paths if not file_exists(p)] 
     if missing:
-        print("Missing file paths:")
+        print("Missing file paths:") 
         for p in missing:
-            print(f" - {p}")
+            print(f" - {p}") 
     else:
-        print("All file paths exist.")
+        print("All file paths exist.") 
 
     print("\nChecking for duplicate file paths...")
-    duplicates = set([p for p in paths if paths.count(p) > 1])
+    duplicates = set([p for p in paths if paths.count(p) > 1]) 
     if duplicates:
-        print("Duplicate file paths:")
+        print("Duplicate file paths:") 
         for p in duplicates:
-            print(f" - {p}")
+            print(f" - {p}") 
     else:
-        print("No duplicate file paths found.")
+        print("No duplicate file paths found.") 
 
     print("\nChecking FASTQ pairings...")
-    for group in ['tumor_sequence', 'normal_sequence', 'rna_sequence']:
-        sequences = immuno.get(group, [])
+    for group in ['tumor_sequence', 'normal_sequence', 'rna_sequence']: 
+        sequences = immuno.get(group, []) 
         for i, seq in enumerate(sequences):
-            s = seq["sequence"]
-            fq1, fq2 = s["fastq1"], s["fastq2"]
-            if not is_proper_fastq_pair(fq1, fq2):
-                print(f"Pairing mismatch in {group} entry {i+1}:")
-                print(f"   fastq1: {fq1}")
-                print(f"   fastq2: {fq2}")
+            s = seq["sequence"] 
+            fq1, fq2 = s["fastq1"], s["fastq2"] 
+            if not is_proper_fastq_pair(fq1, fq2): 
+                print(f"Pairing mismatch in {group} entry {i+1}:") 
+                print(f"   fastq1: {fq1}") 
+                print(f"   fastq2: {fq2}") 
 
-    print("\n👤 Checking readgroup SM fields...")
-    expected_sms = {
-        "tumor_sequence": immuno.get("tumor_sample_name"),
-        "normal_sequence": immuno.get("normal_sample_name"),
-        "rna_sequence": immuno.get("sample_name"),
+    print("\n Checking readgroup SM fields...")
+    expected_sms = { #
+        "tumor_sequence": immuno.get("tumor_sample_name"), 
+        "normal_sequence": immuno.get("normal_sample_name"), 
+        "rna_sequence": immuno.get("sample_name"), 
     }
-    for group, expected_sm in expected_sms.items():
-        sequences = immuno.get(group, [])
-        for i, seq in enumerate(sequences):
-            rg = seq["readgroup"]
-            actual_sm = extract_rg_field(rg, "SM")
-            if actual_sm != expected_sm:
-                print(f"SM mismatch in {group} entry {i+1}: expected '{expected_sm}', found '{actual_sm}'")
+    for group, expected_sm in expected_sms.items(): 
+        sequences = immuno.get(group, []) 
+        for i, seq in enumerate(sequences): 
+            rg = seq["readgroup"] 
+            actual_sm = extract_rg_field(rg, "SM") 
+            if actual_sm != expected_sm: 
+                print(f"SM mismatch in {group} entry {i+1}: expected '{expected_sm}', found '{actual_sm}'") 
 
-    print("\nRNA CN fields:")
-    for seq in immuno.get("rna_sequence", []):
-        rg = seq["readgroup"]
-        cn = extract_rg_field(rg, "CN")
-        print(f" - CN: {cn}")
-    print(f"Strand: {immuno.get('strand')}")
+    print("\nRNA CN fields:") 
+    for seq in immuno.get("rna_sequence", []): 
+        rg = seq["readgroup"] 
+        cn = extract_rg_field(rg, "CN") 
+        print(f" - CN: {cn}") 
+    print(f"Strand: {immuno.get('strand')}") 
 
-    print("\nChecking for improperly commented list items...")
-    check_commenting_issues(yaml_text)
-    check_empty_active_keys_with_commented_lists(yaml_text)
+    print("\nChecking for improperly commented list items...") 
+    check_commenting_issues(yaml_text) 
+    check_empty_active_keys_with_commented_lists(yaml_text) 
 
-    print("\nValidation complete.")
+    # Call the new function and print its results
+    print("\nChecking commented blocks status:")
+    comment_block_results = check_commented_blocks(yaml_text)
+    for result in comment_block_results:
+        print(result)
+
+    print("\nValidation complete.") 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Validate an immuno YAML file for common formatting and logic errors.")
-    parser.add_argument("yaml_file", help="Path to the YAML file to validate.")
-    args = parser.parse_args()
+    parser = argparse.ArgumentParser(description="Validate an immuno YAML file for common formatting and logic errors.") 
+    parser.add_argument("yaml_file", help="Path to the YAML file to validate.") 
+    args = parser.parse_args() 
 
-    validate_yaml(args.yaml_file)
+    validate_yaml(args.yaml_file) 
