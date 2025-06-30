@@ -6,6 +6,7 @@ RUN apt-get install -y zip
 ADD scripts/cloudize-workflow.py /opt/scripts/cloudize-workflow.py
 ADD scripts/pull_outputs.py /opt/scripts/pull_outputs.py
 ADD scripts/requirements.txt /opt/scripts/requirements.txt
+ADD scripts/validate_immuno_yaml.py /opt/scripts/validate_immuno_yaml.py
 
 # Submit workflows
 ADD scripts/submit_workflow.sh /opt/scripts/submit_workflow.sh
