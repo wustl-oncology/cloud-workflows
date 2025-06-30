@@ -35,11 +35,8 @@ case $1 in
         ;;
     "build-and-tag")
         VERSION=$(head -n 1 "$SRC_DIR/VERSION")
-        echo "Building container image tagged latest"
-        docker build $SRC_DIR -t $DOCKER_IMAGE:latest
-        # this one will be cached, basically just doing a tag without having to find image ID
-        echo "Building container image tagged $VERSION"
-        docker build $SRC_DIR -t $DOCKER_IMAGE:$VERSION
+        echo "Building container image tagged latest and $VERSION"
+        docker build $SRC_DIR -t $DOCKER_IMAGE:latest -t $DOCKER_IMAGE:$VERSION
 
         echo "Pushing container image tagged latest"
         docker push $DOCKER_IMAGE:latest
