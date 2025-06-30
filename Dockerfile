@@ -15,6 +15,7 @@ ADD scripts/submit_workflow.sh /opt/scripts/submit_workflow.sh
 ADD scripts/create_resources.sh /opt/scripts/create_resources.sh
 ADD scripts/enable_api.sh /opt/scripts/enable_api.sh
 ADD scripts/estimate_billing.py /opt/scripts/estimate_billing.py
+ADD scripts/gb_estimate_billing.py /opt/scripts/gb_estimate_billing.py
 ADD scripts/persist_artifacts.py /opt/scripts/persist_artifacts.py
 ADD scripts/costs_json_to_csv.py /opt/scripts/costs_json_to_csv.py
 
