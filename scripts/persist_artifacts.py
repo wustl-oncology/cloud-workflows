@@ -8,9 +8,6 @@ from argparse import ArgumentParser
 from pathlib import Path
 
 CROMWELL_API = "http://localhost:8000/api"
-#LOCAL_DIR=os.environ["HOME"] + "/artifacts"
-#LOCAL_DIR=Path("/storage1/fs1/mgriffit/Active/griffithlab/gc2596/j.yao/immuno_local_copy_output/test_files/pvacseq_test/temp/artifacts")
-# workflow_id="33773f84-1655-43b2-b2aa-a56b6cae52b5"
 
 
 def _request_workflow(endpoint):
@@ -27,11 +24,6 @@ def _save_locally(contents, filename):
 
 # TODO: make an if condition to check if we are working locally on storage1 or on GCS
 # maybe GCS directories start with gs:// and local ones with /scratch1/...
-# old function: 
-#def persist_artifacts_to_gcs(gcs_artifacts_dir):
-    #logging.info(f"Copying {LOCAL_DIR} to {gcs_artifacts_dir}")
-    #os.system(f"gsutil -q cp -r -n {LOCAL_DIR} {gcs_artifacts_dir}")
-# new function to handle both GCS and local directories
 def persist_artifacts(artifacts_dir):
     """
     Persist artifacts to either Google Cloud Storage (if gcs_artifacts_dir starts with 'gs://')
@@ -167,16 +159,13 @@ if __name__ == "__main__":
     )
 
     metadata_by_workflow_id = fetch_metadata(args.workflow_id) 
-    # metadata_by_workflow_id = fetch_metadata(workflow_id)
     timing_by_workflow_id = fetch_all_timing(metadata_by_workflow_id)
 
     # Save root with special names for easy access
     root_metadata = metadata_by_workflow_id[args.workflow_id]
-    #root_metadata = metadata_by_workflow_id[workflow_id]
     _save_locally(json_str(root_metadata), 'metadata.json')
 
     root_timing   = timing_by_workflow_id[args.workflow_id]
-    #root_timing   = timing_by_workflow_id[workflow_id]
     _save_locally(root_timing,   'timing.html')
 
     root_outputs  = {"outputs": root_metadata["outputs"]}
@@ -194,6 +183,5 @@ if __name__ == "__main__":
     for workflow_id, timing in timing_by_workflow_id.items():
         _save_locally(timing, f"timing/{workflow_id}.html")
 
-    #persist_artifacts_to_gcs(args.gcs_dir)
     # update function to handle both GCS and local directories
     persist_artifacts(args.artifacts_dir)
