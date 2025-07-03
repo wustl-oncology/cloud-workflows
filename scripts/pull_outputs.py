@@ -13,23 +13,33 @@ DEFAULT_DRYRUN = False
 DRYRUN = DEFAULT_DRYRUN
 
 
-def download_from_gcs(src, dest):
-    "Copy a GCS file at path `src` to local path `dest`, creating that path if needed."
-    os.makedirs(Path(dest).parent, exist_ok=True)
-    if not Path(dest).is_file():
-        logging.info(f"Downloading {src} to {dest}")
+def download_file(src, dest):
+    """
+    Copy a file from `src` to `dest`. 
+    - If `src` starts with "gs://", it uses `gsutil` to copy the file from Google Cloud Storage.
+    - If `src` is a local path, it uses the `cp` command to copy the file locally.
+    """
+    os.makedirs(Path(dest).parent, exist_ok=True)  # Ensure the destination directory exists
+    if not Path(dest).is_file():  # Check if the file already exists
+        logging.info(f"Copying {src} to {dest}")
         if not DRYRUN:
-            subprocess.call(['gsutil', '-q', 'cp', '-n', src, dest])
+            if src.startswith("gs://"):
+                # Use gsutil for Google Cloud Storage paths
+                subprocess.call(['gsutil', '-q', 'cp', '-n', src, dest])
+            else:
+                # Use cp for local paths
+                subprocess.call(['cp', src, dest])
     else:
-        logging.info(f"File already exists, skipping download {src} to {dest}")
+        logging.info(f"File already exists, skipping copy {src} to {dest}")
 
 
-def download(path, value, subdir = None):
+def download(path, value, subdir=None):
     """
     Recursively download all output files.
-    GCS file `value` will be downloaded under `path
-    `subdir` is an optional value _only_ for types which need a directory, e.g. lists + dicts
-    If `subdir` is specified, list/dict types will download under `path/subdir`
+    - If `value` is a GCS file (starts with "gs://"), it will be downloaded using `download_file`.
+    - If `value` is a local file, it will also be handled by `download_file`.
+    - `subdir` is an optional value _only_ for types which need a directory, e.g., lists and dicts.
+    If `subdir` is specified, list/dict types will download under `path/subdir`.
     """
     if isinstance(value, list):
         for loc in value:
@@ -38,10 +48,8 @@ def download(path, value, subdir = None):
         for k, v in value.items():
             download(f"{path}/{subdir or ''}", v, subdir=k)
     elif isinstance(value, str):
-        if not value.startswith("gs://"):
-            logging.warning(f"Likely not a File output. had a non-GCS path value of {value}")
-        else:
-            download_from_gcs(value, Path(f"{path}/{Path(value).name}"))
+        # Handle both GCS and local paths
+        download_file(value, Path(f"{path}/{Path(value).name}"))
     elif value is None:
         logging.info(f"Skipping optional output that wasn't defined{': ' + subdir if subdir else ''}")
     else:
@@ -63,7 +71,7 @@ def read_json(filename):
     if filename.startswith("gs://"):
         tmpdir = os.environ.get("TMPDIR", "/tmp")
         tmpfile = f"{Path(tmpdir)}/{Path(filename).name}"
-        download_from_gcs(filename, tmpfile)
+        download_file(filename, tmpfile)
         with open(tmpfile) as f:
             return json.load(f)
     else:
