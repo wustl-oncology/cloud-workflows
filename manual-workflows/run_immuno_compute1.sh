@@ -2,7 +2,7 @@
 
 # ---------------------------------------------------------------------------------------------------------------------------------------------------------
 # Script to submit jobs for single or multiple samples to run the immuno pipeline on storage1 using bsub
-# Usage: bash run_immuno_compute1.sh "Hu_250" "/scratch1/fs1/mgriffit/jyao/miller_immuno/" "/j.x.yao/2_job"
+# Usage: bash run_immuno_compute1.sh "Hu_254" "/scratch1/fs1/mgriffit/jyao/miller_immuno/" "/j.x.yao/2_job"
 
 # Sample IDs to process
 SAMPLES=($1)  # e.g. "Hu_250" or "Hu_250 Hu_048"
@@ -26,8 +26,10 @@ JOB_GROUP=$3
 #JOB_GROUP="/j.x.yao/2_job" # <-- change this to your own job group
 
 
-# Define the working directory and the script to be executed
-WORK_DIR="../.."
+# Get the directory where this script is located
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# Set WORK_DIR to two levels up from the script's directory
+WORK_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
 # Create directory to store final outputs
 OUT_DIR="$WORK_DIR/immuno_outputs"
