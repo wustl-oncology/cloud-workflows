@@ -20,7 +20,6 @@ backend {
         -J ${job_name} \
         -cwd ${cwd} \
         -G compute-oncology \
-	# Replace the path below with your own LSF job group 
   -g /path/to/your/job_group \
         -o /dev/null \
         -e ${err} \
@@ -38,7 +37,6 @@ backend {
         -J ${job_name} \
         -cwd ${cwd} \
         -G compute-oncology \
-	# Replace the path below with your own LSF job group 
   -g /path/to/your/job_group \
         -o /dev/null \
         -e ${err} \
