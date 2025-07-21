@@ -22,8 +22,7 @@ def _save_locally(contents, filename):
     with open(target, 'w') as f:
         f.write(contents)
 
-# TODO: make an if condition to check if we are working locally on storage1 or on GCS
-# maybe GCS directories start with gs:// and local ones with /scratch1/...
+
 def persist_artifacts(artifacts_dir):
     """
     Persist artifacts to either Google Cloud Storage (if gcs_artifacts_dir starts with 'gs://')

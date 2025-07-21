@@ -3,6 +3,7 @@
 # ---------------------------------------------------------------------------------------------------------------------------------------------------------
 # Script to submit jobs for single or multiple samples to run the immuno pipeline on storage1 using bsub
 # Usage: bash run_immuno_compute1.sh "Hu_254" "/scratch1/fs1/mgriffit/jyao/miller_immuno/" "/j.x.yao/2_job"
+# Usage for multiple samples: bash run_immuno_compute1.sh "Hu_333 Hu_343" "/scratch1/fs1/mgriffit/jyao/miller_immuno/" "/j.x.yao/2_job"
 
 # Sample IDs to process
 SAMPLES=($1)  # e.g. "Hu_250" or "Hu_250 Hu_048"
@@ -12,20 +13,6 @@ SCRATCH_DIR=$2
 JOB_GROUP=$3
 
 # ----------------------------------------------------------------------------------------------------------------------------------------------------------
-
-# List of samples IDs to process
-# Run multiplt samples 
-#SAMPLES=("M221" "M222" "M223" "M225" "M228")
-# Run one sample
-#SAMPLES=("Hu_250") # <-- change this to your own sample IDs
-
-# Scratch directory to save pipeline artifacts
-#SCRATCH_DIR="/scratch1/fs1/mgriffit/jyao/miller_immuno/" # <-- change this to your own scratch directory
-
-# Set your LSF job group here
-#JOB_GROUP="/j.x.yao/2_job" # <-- change this to your own job group
-
-
 # Get the directory where this script is located
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # Set WORK_DIR to two levels up from the script's directory
