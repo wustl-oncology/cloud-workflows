@@ -199,7 +199,7 @@ for SAMPLE in "${SAMPLES[@]}"; do
         echo "     --yaml \"$WORK_DIR/yamls/${SAMPLE}_immuno.yaml\" \\"
         echo "     --results \"$OUT_DIR/${SAMPLE}_out\" \\"
         echo "     --temp $RUN_DIR \\"
-        echo "     --cromwell_jar \"/storage1/fs1/mgriffit/Active/griffithlab/common/cromwell-jars/cromwell-88.jar\" \\"
+        echo "     --cromwell_jar \"/storage1/fs1/mgriffit/Active/griffithlab/common/cromwell-jars/cromwell-71.jar\" \\"
         echo "     --cromwell_server_mem 10g --cromwell_submit_mem 10g --clean YES"
         echo ""
     } > "$SAMPLE_LOG"
@@ -219,7 +219,7 @@ for SAMPLE in "${SAMPLES[@]}"; do
          --yaml "$WORK_DIR/yamls/${SAMPLE}_immuno.yaml" \
          --results "$OUT_DIR/${SAMPLE}_out" \
 	 --temp $RUN_DIR \
-         --cromwell_jar "/storage1/fs1/mgriffit/Active/griffithlab/common/cromwell-jars/cromwell-88.jar" \
+         --cromwell_jar "/storage1/fs1/mgriffit/Active/griffithlab/common/cromwell-jars/cromwell-71.jar" \
          --cromwell_server_mem 10g --cromwell_submit_mem 10g --clean YES
 
     # Check if job submission was successful
@@ -247,7 +247,7 @@ cat <<EOT > "$TEMP_SCRIPT"
          --imports $WORK_DIR/analysis-wdls/workflows.zip \
          --yaml $WORK_DIR/yamls/${SAMPLE}_immuno.yaml \
          --results $OUT_DIR/${SAMPLE}_out \
-         --cromwell_jar /storage1/fs1/mgriffit/Active/griffithlab/common/cromwell-jars/cromwell-88.jar \
+         --cromwell_jar /storage1/fs1/mgriffit/Active/griffithlab/common/cromwell-jars/cromwell-71.jar \
          --cromwell_server_mem 10g --cromwell_submit_mem 10g -- clean YES
 EOT
     
