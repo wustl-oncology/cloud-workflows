@@ -1,6 +1,6 @@
 FROM google/cloud-sdk:latest
 
-RUN apt-get install -y zip
+RUN apt-get install -y zip openjdk-17-jdk less emacs vim git screen curl libnss-sss
 
 # Cloudize process
 ADD scripts/cloudize-workflow.py /opt/scripts/cloudize-workflow.py
