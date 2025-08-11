@@ -8,7 +8,6 @@ from argparse import ArgumentParser
 from pathlib import Path
 
 CROMWELL_API = "http://localhost:8000/api"
-LOCAL_DIR=os.environ["HOME"] + "/artifacts"
 
 
 def _request_workflow(endpoint):
@@ -24,9 +23,21 @@ def _save_locally(contents, filename):
         f.write(contents)
 
 
-def persist_artifacts_to_gcs(gcs_artifacts_dir):
-    logging.info(f"Copying {LOCAL_DIR} to {gcs_artifacts_dir}")
-    os.system(f"gsutil -q cp -r -n {LOCAL_DIR} {gcs_artifacts_dir}")
+def persist_artifacts(artifacts_dir):
+    """
+    Persist artifacts to either Google Cloud Storage (if gcs_artifacts_dir starts with 'gs://')
+    or to a local directory (if it does not start with 'gs://').
+    """
+    if artifacts_dir.startswith("gs://"):
+        # Handle Google Cloud Storage
+        logging.info(f"Copying {LOCAL_DIR} to Google Cloud Storage at {artifacts_dir}")
+        os.system(f"gsutil -q cp -r -n {LOCAL_DIR} {artifacts_dir}")
+    else:
+        # Handle local directory
+        logging.info(f"Copying {LOCAL_DIR} to local directory at {artifacts_dir}")
+        os.makedirs(artifacts_dir, exist_ok=True)  # Ensure the target directory exists
+        os.system(f"cp -r {LOCAL_DIR}/* {artifacts_dir}")
+        
 
 
 def json_str(obj):
@@ -127,9 +138,18 @@ def fetch_all_timing(metadata_by_workflow_id):
 
 if __name__ == "__main__":
     parser = ArgumentParser(description="Upload Cromwell endpoint responses for a given workflow. Uploads timing, outputs, and metadata (including subworkflow metadata).")
-    parser.add_argument("gcs_dir")
+    parser.add_argument("artifacts_dir")
     parser.add_argument("workflow_id")
     args = parser.parse_args()
+
+    # NEW
+    # Dynamically define LOCAL_DIR based on artifacts_dir
+    if args.artifacts_dir.startswith("gs://"):
+        LOCAL_DIR = os.environ["HOME"] + "/artifacts"
+    else:
+        LOCAL_DIR = Path(os.getcwd()) / "artifacts"
+    # Ensure the directory exists
+    LOCAL_DIR.mkdir(parents=True, exist_ok=True)
 
     log_level = os.environ.get("LOGLEVEL", "INFO").upper()
     logging.basicConfig(
@@ -137,7 +157,7 @@ if __name__ == "__main__":
         format='[%(levelname)s] %(message)s'
     )
 
-    metadata_by_workflow_id = fetch_metadata(args.workflow_id)
+    metadata_by_workflow_id = fetch_metadata(args.workflow_id) 
     timing_by_workflow_id = fetch_all_timing(metadata_by_workflow_id)
 
     # Save root with special names for easy access
@@ -162,4 +182,5 @@ if __name__ == "__main__":
     for workflow_id, timing in timing_by_workflow_id.items():
         _save_locally(timing, f"timing/{workflow_id}.html")
 
-    persist_artifacts_to_gcs(args.gcs_dir)
+    # update function to handle both GCS and local directories
+    persist_artifacts(args.artifacts_dir)
