@@ -189,7 +189,7 @@ for SAMPLE in "${SAMPLES[@]}"; do
         echo "bsub -q oncology -G compute-oncology -g \"$JOB_GROUP\" -M 22000000 \\"
         echo "     -R 'select[mem>22000] rusage[mem=22000]' -J \"$SAMPLE\" \\"
         echo "     -oo \"$LOG_DIR/$SAMPLE.stdout\" \\"
-        echo "     -a 'docker(ghcr.io/genome/genome_perl_environment:compute1-58)' \\"
+        echo "     -a 'docker(jyao36/cloudize-workflow:1.4.7)' \\"
         echo "     /bin/bash \"$WORK_DIR/cloud-workflows/manual-workflows/runCromwellWDL.sh\" \\"
         echo "     --workflow_dir \"$WORK_DIR/cloud-workflows\" \\"
         echo "     --cromwell_config \"$WORK_DIR/cloud-workflows/manual-workflows/cromwell.config.wdl\" \\"
@@ -199,7 +199,7 @@ for SAMPLE in "${SAMPLES[@]}"; do
         echo "     --yaml \"$WORK_DIR/yamls/${SAMPLE}_immuno.yaml\" \\"
         echo "     --results \"$OUT_DIR/${SAMPLE}_out\" \\"
         echo "     --temp $RUN_DIR \\"
-        echo "     --cromwell_jar \"/storage1/fs1/mgriffit/Active/griffithlab/common/cromwell-jars/cromwell-71.jar\" \\"
+        echo "     --cromwell_jar \"/storage1/fs1/mgriffit/Active/griffithlab/common/cromwell-jars/cromwell-88.jar\" \\"
         echo "     --cromwell_server_mem 10g --cromwell_submit_mem 10g --clean YES"
         echo ""
     } > "$SAMPLE_LOG"
@@ -209,7 +209,7 @@ for SAMPLE in "${SAMPLES[@]}"; do
     bsub -q oncology -G compute-oncology -g "$JOB_GROUP" -M 22000000 \
          -R 'select[mem>22000] rusage[mem=22000]' -J "$SAMPLE" \
          -oo "$LOG_DIR/$SAMPLE.stdout" \
-         -a 'docker(ghcr.io/genome/genome_perl_environment:compute1-58)' \
+         -a 'docker(jyao36/cloudize-workflow:1.4.7)' \
          /bin/bash "$WORK_DIR/cloud-workflows/manual-workflows/runCromwellWDL.sh" \
          --workflow_dir "$WORK_DIR/cloud-workflows" \
          --cromwell_config "$WORK_DIR/cloud-workflows/manual-workflows/cromwell.config.wdl" \
@@ -219,7 +219,7 @@ for SAMPLE in "${SAMPLES[@]}"; do
          --yaml "$WORK_DIR/yamls/${SAMPLE}_immuno.yaml" \
          --results "$OUT_DIR/${SAMPLE}_out" \
 	 --temp $RUN_DIR \
-         --cromwell_jar "/storage1/fs1/mgriffit/Active/griffithlab/common/cromwell-jars/cromwell-71.jar" \
+         --cromwell_jar "/storage1/fs1/mgriffit/Active/griffithlab/common/cromwell-jars/cromwell-88.jar" \
          --cromwell_server_mem 10g --cromwell_submit_mem 10g --clean YES
 
     # Check if job submission was successful
@@ -238,7 +238,7 @@ cat <<EOT > "$TEMP_SCRIPT"
     bsub -q oncology -G compute-oncology -g "$JOB_GROUP" -M 22000000 \
          -R 'select[mem>22000] rusage[mem=22000]' -J "$SAMPLE" \
          -oo "$LOG_DIR/$SAMPLE.stdout" \
-         -a 'docker(ghcr.io/genome/genome_perl_environment:compute1-58)' \
+         -a 'docker(jyao36/cloudize-workflow:1.4.7)' \
          /bin/bash $WORK_DIR/cloud-workflows/manual-workflows/runCromwellWDL.sh \
          --workflow_dir $WORK_DIR/cloud-workflows \
          --cromwell_config "$WORK_DIR/cloud-workflows/manual-workflows/cromwell.config.wdl" \
@@ -247,7 +247,7 @@ cat <<EOT > "$TEMP_SCRIPT"
          --imports $WORK_DIR/analysis-wdls/workflows.zip \
          --yaml $WORK_DIR/yamls/${SAMPLE}_immuno.yaml \
          --results $OUT_DIR/${SAMPLE}_out \
-         --cromwell_jar /storage1/fs1/mgriffit/Active/griffithlab/common/cromwell-jars/cromwell-71.jar \
+         --cromwell_jar /storage1/fs1/mgriffit/Active/griffithlab/common/cromwell-jars/cromwell-88.jar \
          --cromwell_server_mem 10g --cromwell_submit_mem 10g -- clean YES
 EOT
     
