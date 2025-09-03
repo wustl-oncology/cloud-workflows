@@ -2,19 +2,20 @@
 
 # ---------------------------------------------------------------------------------------------------------------------------------------------------------
 # Script to submit jobs for single or multiple samples to run the immuno pipeline on storage1 using bsub
-# Usage: bash run_immuno_compute1.sh --sample "Hu_254" --scratch_dir "/scratch1/fs1/mgriffit/jyao/miller_immuno" --job_group "/j.x.yao/2_job"
-# Usage for multiple samples: bash run_immuno_compute1.sh --sample "Hu_344 Hu_048" --scratch_dir "/scratch1/fs1/mgriffit/jyao/miller_immuno" --job_group "/j.x.yao/2_job"
+# Usage: bash run_immuno_compute1.sh --sample "Hu_254" --work_dir "/storage1/fs1/mgriffit/Active/immune/j.yao/Miller/immuno" --scratch_dir "/scratch1/fs1/mgriffit/jyao/miller_immuno" --job_group "/j.x.yao/2_job"
+# Usage for multiple samples: bash run_immuno_compute1.sh --sample "Hu_344 Hu_048" --work_dir "/storage1/fs1/mgriffit/Active/immune/j.yao/Miller/immuno" --scratch_dir "/scratch1/fs1/mgriffit/jyao/miller_immuno" --job_group "/j.x.yao/2_job"
 
 # Function to display usage
 usage() {
-    echo "Usage: $0 --sample <sample_id(s)> --scratch_dir <scratch_directory> --job_group <job_group>"
+    echo "Usage: $0 --sample <sample_id(s)> --work_dir <working_directory> --scratch_dir <scratch_directory> --job_group <job_group>"
     echo "  --sample: Single sample ID (e.g., 'Hu_254') or multiple sample IDs (e.g., 'Hu_344 Hu_048')"
+    echo "  --work_dir: Working directory containing the pipeline files and directories"
     echo "  --scratch_dir: Scratch directory to save pipeline artifacts"
     echo "  --job_group: Your LSF job group"
     echo ""
     echo "Examples:"
-    echo "  $0 --sample 'Hu_254' --scratch_dir '/scratch1/fs1/mgriffit/jyao/miller_immuno' --job_group '/j.x.yao/2_job'"
-    echo "  $0 --sample 'Hu_344 Hu_048' --scratch_dir '/scratch1/fs1/mgriffit/jyao/miller_immuno' --job_group '/j.x.yao/2_job'"
+    echo "  bash $0 --sample 'Hu_254' --work_dir '/storage1/fs1/mgriffit/Active/immune/j.yao/Miller/immuno' --scratch_dir '/scratch1/fs1/mgriffit/jyao/miller_immuno' --job_group '/j.x.yao/2_job'"
+    echo "  bash $0 --sample 'Hu_344 Hu_048' --work_dir '/storage1/fs1/mgriffit/Active/immune/j.yao/Miller/immuno' --scratch_dir '/scratch1/fs1/mgriffit/jyao/miller_immuno' --job_group '/j.x.yao/2_job'"
     exit 1
 }
 
@@ -23,6 +24,10 @@ while [[ $# -gt 0 ]]; do
     case $1 in
         --sample)
             SAMPLES_STR="$2"
+            shift 2
+            ;;
+        --work_dir)
+            WORK_DIR="$2"
             shift 2
             ;;
         --scratch_dir)
@@ -44,7 +49,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 # Check if all required arguments are provided
-if [[ -z "$SAMPLES_STR" || -z "$SCRATCH_DIR" || -z "$JOB_GROUP" ]]; then
+if [[ -z "$SAMPLES_STR" || -z "$WORK_DIR" || -z "$SCRATCH_DIR" || -z "$JOB_GROUP" ]]; then
     echo "Error: Missing required arguments"
     usage
 fi
@@ -52,12 +57,10 @@ fi
 # Convert sample string to array, work for a single sample or multiple samples
 SAMPLES=($SAMPLES_STR)
 
-# ----------------------------------------------------------------------------------------------------------------------------------------------------------
-# Get the directory where this script is located
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# Set WORK_DIR to two levels up from the script's directory
-WORK_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)" # change this to absolute path
+# working directory
+WORK_DIR="$WORK_DIR"
 
+# ----------------------------------------------------------------------------------------------------------------------------------------------------------
 # Create directory to store final outputs
 OUT_DIR="$WORK_DIR/immuno_outputs"
 # Check if OUT_DIR exists, if not, create it
@@ -71,6 +74,13 @@ LOG_DIR="$WORK_DIR/logs"
 # ----------------------------------------------------------------------------------------------------------------------------------------------------------
 # VALIDATION CHECKS - Run before processing any samples
 echo "=== VALIDATION CHECKS ==="
+
+# Check if working directory exists
+if [[ ! -d "$WORK_DIR" ]]; then
+    echo "ERROR: Working directory does not exist: $WORK_DIR"
+    exit 1
+fi
+echo "✓ Working directory validated: $WORK_DIR"
 
 # Check if cromwell.config.wdl exists
 CROMWELL_CONFIG="$WORK_DIR/cloud-workflows/manual-workflows/cromwell.config.wdl"
@@ -104,7 +114,7 @@ if [[ ${#MISSING_YAMLS[@]} -gt 0 ]]; then
     for yaml in "${MISSING_YAMLS[@]}"; do
         echo "  - $yaml"
     done
-    echo "Please run the YAML generation script first: bash run_make_input_yaml.sh"
+    echo "Please make sure YAML files are present in the yamls directory for your samples"
     exit 1
 else
     echo "✓ All sample YAML files found"
@@ -185,6 +195,9 @@ for SAMPLE in "${SAMPLES[@]}"; do
         echo "Job Group: $JOB_GROUP"
         echo "Timestamp: $(date)"
         echo ""
+        echo "Original script command:"
+        echo "bash $(basename $0) --sample \"$SAMPLES_STR\" --work_dir \"$WORK_DIR\" --scratch_dir \"$SCRATCH_DIR\" --job_group \"$JOB_GROUP\""
+        echo ""
         echo "Job submission command:"
         echo "bsub -q oncology -G compute-oncology -g \"$JOB_GROUP\" -M 22000000 \\"
         echo "     -R 'select[mem>22000] rusage[mem=22000]' -J \"$SAMPLE\" \\"
@@ -200,7 +213,7 @@ for SAMPLE in "${SAMPLES[@]}"; do
         echo "     --results \"$OUT_DIR/${SAMPLE}_out\" \\"
         echo "     --temp $RUN_DIR \\"
         echo "     --cromwell_jar \"/storage1/fs1/mgriffit/Active/griffithlab/common/cromwell-jars/cromwell-88.jar\" \\"
-        echo "     --cromwell_server_mem 10g --cromwell_submit_mem 10g --clean YES"
+        echo "     --cromwell_server_mem 10g --cromwell_submit_mem 10g --clean NO"
         echo ""
     } > "$SAMPLE_LOG"
 
@@ -220,7 +233,7 @@ for SAMPLE in "${SAMPLES[@]}"; do
          --results "$OUT_DIR/${SAMPLE}_out" \
 	 --temp $RUN_DIR \
          --cromwell_jar "/storage1/fs1/mgriffit/Active/griffithlab/common/cromwell-jars/cromwell-88.jar" \
-         --cromwell_server_mem 10g --cromwell_submit_mem 10g --clean YES
+         --cromwell_server_mem 10g --cromwell_submit_mem 10g --clean NO
 
     # Check if job submission was successful
     if [[ $? -eq 0 ]]; then
@@ -247,8 +260,9 @@ cat <<EOT > "$TEMP_SCRIPT"
          --imports $WORK_DIR/analysis-wdls/workflows.zip \
          --yaml $WORK_DIR/yamls/${SAMPLE}_immuno.yaml \
          --results $OUT_DIR/${SAMPLE}_out \
+         --temp $RUN_DIR \
          --cromwell_jar /storage1/fs1/mgriffit/Active/griffithlab/common/cromwell-jars/cromwell-88.jar \
-         --cromwell_server_mem 10g --cromwell_submit_mem 10g -- clean YES
+         --cromwell_server_mem 10g --cromwell_submit_mem 10g --clean NO
 EOT
     
     # Navigate back to the working directory
@@ -261,6 +275,7 @@ echo "All jobs have been submitted successfully!"
 echo ""
 echo "Summary:"
 echo "  - Samples being processed: ${SAMPLES[*]}"
+echo "  - Working directory: $WORK_DIR"
 echo "  - Output directory: $OUT_DIR"
 echo "  - Log directory: $LOG_DIR"
 echo "  - Scratch directory: $SCRATCH_DIR"
