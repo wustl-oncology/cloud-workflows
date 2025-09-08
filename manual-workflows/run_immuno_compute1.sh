@@ -2,8 +2,9 @@
 
 # ---------------------------------------------------------------------------------------------------------------------------------------------------------
 # Script to submit jobs for single or multiple samples to run the immuno pipeline on storage1 using bsub
-# Usage: bash run_immuno_compute1.sh --sample "Hu_254" --work_dir "/storage1/fs1/mgriffit/Active/immune/j.yao/Miller/immuno" --scratch_dir "/scratch1/fs1/mgriffit/jyao/miller_immuno" --job_group "/j.x.yao/2_job"
-# Usage for multiple samples: bash run_immuno_compute1.sh --sample "Hu_344 Hu_048" --work_dir "/storage1/fs1/mgriffit/Active/immune/j.yao/Miller/immuno" --scratch_dir "/scratch1/fs1/mgriffit/jyao/miller_immuno" --job_group "/j.x.yao/2_job"
+# Usage: bash run_immuno_compute1.sh --sample "Hu_test" --work_dir "/storage1/fs1/mgriffit/Active/immune/j.yao/Miller/immuno" --scratch_dir "/scratch1/fs1/mgriffit/jyao/miller_immuno" --job_group "/j.x.yao/2_job"
+# Usage for multiple samples: bash run_immuno_compute1.sh --sample "Hu_344 Hu_048" --work_dir "/storage1/fs1/mgriffit/Active/immune/j.yao/Miller/immuno/" --scratch_dir "/scratch1/fs1/mgriffit/jyao/miller_immuno/" --job_group "/j.x.yao/2_job"
+# Note: Paths work with or without trailing slashes - the script normalizes them automatically
 
 # Function to display usage
 usage() {
@@ -15,7 +16,8 @@ usage() {
     echo ""
     echo "Examples:"
     echo "  bash $0 --sample 'Hu_254' --work_dir '/storage1/fs1/mgriffit/Active/immune/j.yao/Miller/immuno' --scratch_dir '/scratch1/fs1/mgriffit/jyao/miller_immuno' --job_group '/j.x.yao/2_job'"
-    echo "  bash $0 --sample 'Hu_344 Hu_048' --work_dir '/storage1/fs1/mgriffit/Active/immune/j.yao/Miller/immuno' --scratch_dir '/scratch1/fs1/mgriffit/jyao/miller_immuno' --job_group '/j.x.yao/2_job'"
+    echo "  bash $0 --sample 'Hu_344 Hu_048' --work_dir '/storage1/fs1/mgriffit/Active/immune/j.yao/Miller/immuno/' --scratch_dir '/scratch1/fs1/mgriffit/jyao/miller_immuno/' --job_group '/j.x.yao/2_job'"
+    echo ""
     exit 1
 }
 
@@ -49,16 +51,34 @@ while [[ $# -gt 0 ]]; do
 done
 
 # Check if all required arguments are provided
-if [[ -z "$SAMPLES_STR" || -z "$WORK_DIR" || -z "$SCRATCH_DIR" || -z "$JOB_GROUP" ]]; then
-    echo "Error: Missing required arguments"
+MISSING_ARGS=()
+[[ -z "$SAMPLES_STR" ]] && MISSING_ARGS+=("--sample")
+[[ -z "$WORK_DIR" ]] && MISSING_ARGS+=("--work_dir")
+[[ -z "$SCRATCH_DIR" ]] && MISSING_ARGS+=("--scratch_dir")
+[[ -z "$JOB_GROUP" ]] && MISSING_ARGS+=("--job_group")
+
+if [[ ${#MISSING_ARGS[@]} -gt 0 ]]; then
+    echo "Error: Missing required arguments: ${MISSING_ARGS[*]}"
     usage
 fi
 
 # Convert sample string to array, work for a single sample or multiple samples
 SAMPLES=($SAMPLES_STR)
 
-# working directory
-WORK_DIR="$WORK_DIR"
+# Function to normalize paths (remove trailing slash to avoid double slashes)
+normalize_path() {
+    local path="$1"
+    # Remove trailing slash if present, but preserve root directory "/"
+    if [[ "$path" != "/" && "$path" == */ ]]; then
+        echo "${path%/}"
+    else
+        echo "$path"
+    fi
+}
+
+# Normalize working directory to avoid double slashes in path construction
+WORK_DIR=$(normalize_path "$WORK_DIR")
+SCRATCH_DIR=$(normalize_path "$SCRATCH_DIR")
 
 # ----------------------------------------------------------------------------------------------------------------------------------------------------------
 # Create directory to store final outputs
@@ -81,6 +101,25 @@ if [[ ! -d "$WORK_DIR" ]]; then
     exit 1
 fi
 echo "✓ Working directory validated: $WORK_DIR"
+
+# Check if required subdirectories exist under WORK_DIR (analysis-wdls, cloud-workflows, yamls)
+REQUIRED_SUBDIRS=("analysis-wdls" "cloud-workflows" "yamls")
+MISSING_SUBDIRS=()
+for subdir in "${REQUIRED_SUBDIRS[@]}"; do
+    if [[ ! -d "$WORK_DIR/$subdir" ]]; then
+        MISSING_SUBDIRS+=("$WORK_DIR/$subdir")
+    fi
+done
+
+if [[ ${#MISSING_SUBDIRS[@]} -gt 0 ]]; then
+    echo "ERROR: Missing required directories under WORK_DIR:"
+    for d in "${MISSING_SUBDIRS[@]}"; do
+        echo "  - $d"
+    done
+    exit 1
+fi
+
+echo "✓ Required subdirectories present: analysis-wdls, cloud-workflows, yamls"
 
 # Check if cromwell.config.wdl exists
 CROMWELL_CONFIG="$WORK_DIR/cloud-workflows/manual-workflows/cromwell.config.wdl"
@@ -132,12 +171,6 @@ if [[ ! -w "$SCRATCH_DIR" ]]; then
 fi
 
 echo "✓ Scratch directory validated"
-
-# Check if analysis-wdls directory exists
-if [[ ! -d "$WORK_DIR/analysis-wdls" ]]; then
-    echo "ERROR: analysis-wdls directory not found at: $WORK_DIR/analysis-wdls"
-    exit 1
-fi
 
 echo "✓ All validation checks passed"
 echo ""
@@ -202,7 +235,7 @@ for SAMPLE in "${SAMPLES[@]}"; do
         echo "bsub -q oncology -G compute-oncology -g \"$JOB_GROUP\" -M 22000000 \\"
         echo "     -R 'select[mem>22000] rusage[mem=22000]' -J \"$SAMPLE\" \\"
         echo "     -oo \"$LOG_DIR/$SAMPLE.stdout\" \\"
-        echo "     -a 'docker(jyao36/cloudize-workflow:1.4.7)' \\"
+        echo "     -a 'docker(mgibio/cloudize-workflow:1.4.7)' \\"
         echo "     /bin/bash \"$WORK_DIR/cloud-workflows/manual-workflows/runCromwellWDL.sh\" \\"
         echo "     --workflow_dir \"$WORK_DIR/cloud-workflows\" \\"
         echo "     --cromwell_config \"$WORK_DIR/cloud-workflows/manual-workflows/cromwell.config.wdl\" \\"
@@ -213,7 +246,7 @@ for SAMPLE in "${SAMPLES[@]}"; do
         echo "     --results \"$OUT_DIR/${SAMPLE}_out\" \\"
         echo "     --temp $RUN_DIR \\"
         echo "     --cromwell_jar \"/storage1/fs1/mgriffit/Active/griffithlab/common/cromwell-jars/cromwell-88.jar\" \\"
-        echo "     --cromwell_server_mem 10g --cromwell_submit_mem 10g --clean NO"
+        echo "     --cromwell_server_mem 10g --cromwell_submit_mem 10g --clean YES"
         echo ""
     } > "$SAMPLE_LOG"
 
@@ -222,7 +255,7 @@ for SAMPLE in "${SAMPLES[@]}"; do
     bsub -q oncology -G compute-oncology -g "$JOB_GROUP" -M 22000000 \
          -R 'select[mem>22000] rusage[mem=22000]' -J "$SAMPLE" \
          -oo "$LOG_DIR/$SAMPLE.stdout" \
-         -a 'docker(jyao36/cloudize-workflow:1.4.7)' \
+         -a 'docker(mgibio/cloudize-workflow:1.4.7)' \
          /bin/bash "$WORK_DIR/cloud-workflows/manual-workflows/runCromwellWDL.sh" \
          --workflow_dir "$WORK_DIR/cloud-workflows" \
          --cromwell_config "$WORK_DIR/cloud-workflows/manual-workflows/cromwell.config.wdl" \
@@ -233,7 +266,7 @@ for SAMPLE in "${SAMPLES[@]}"; do
          --results "$OUT_DIR/${SAMPLE}_out" \
 	 --temp $RUN_DIR \
          --cromwell_jar "/storage1/fs1/mgriffit/Active/griffithlab/common/cromwell-jars/cromwell-88.jar" \
-         --cromwell_server_mem 10g --cromwell_submit_mem 10g --clean NO
+         --cromwell_server_mem 10g --cromwell_submit_mem 10g --clean YES
 
     # Check if job submission was successful
     if [[ $? -eq 0 ]]; then
@@ -251,7 +284,7 @@ cat <<EOT > "$TEMP_SCRIPT"
     bsub -q oncology -G compute-oncology -g "$JOB_GROUP" -M 22000000 \
          -R 'select[mem>22000] rusage[mem=22000]' -J "$SAMPLE" \
          -oo "$LOG_DIR/$SAMPLE.stdout" \
-         -a 'docker(jyao36/cloudize-workflow:1.4.7)' \
+         -a 'docker(mgibio/cloudize-workflow:1.4.7)' \
          /bin/bash $WORK_DIR/cloud-workflows/manual-workflows/runCromwellWDL.sh \
          --workflow_dir $WORK_DIR/cloud-workflows \
          --cromwell_config "$WORK_DIR/cloud-workflows/manual-workflows/cromwell.config.wdl" \
@@ -262,7 +295,7 @@ cat <<EOT > "$TEMP_SCRIPT"
          --results $OUT_DIR/${SAMPLE}_out \
          --temp $RUN_DIR \
          --cromwell_jar /storage1/fs1/mgriffit/Active/griffithlab/common/cromwell-jars/cromwell-88.jar \
-         --cromwell_server_mem 10g --cromwell_submit_mem 10g --clean NO
+         --cromwell_server_mem 10g --cromwell_submit_mem 10g --clean YES
 EOT
     
     # Navigate back to the working directory
