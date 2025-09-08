@@ -1,3 +1,6 @@
+set -o nounset
+set -o errexit
+
 VM_NAME=cromwell
 
 DB_INSTANCE=cromwell1
