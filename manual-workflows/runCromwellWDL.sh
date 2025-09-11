@@ -1,14 +1,30 @@
 #!/bin/bash
 
 # EXAMPLE COMMAND:
-#bsub -q general -G compute-obigriffith -M 22000000 -R 'select[mem>22000] rusage[mem=22000]' -oo /storage1/fs1/obigriffith/Active/canine/canine_embryonal_rhabdomyosarcoma/exome_somatic/Annie/CER_Annie_exome.stdout -eo /storage1/fs1/obigriffith/Active/canine/canine_embryonal_rhabdomyosarcoma/exome_somatic/Annie/CER_Annie_exome.stderr -a 'docker(ghcr.io/genome/genome_perl_environment:compute1-58)' /bin/bash /storage1/fs1/obigriffith/Active/Common/git/archive/misc/runCromwellWDL.sh --cromwell_config /storage1/fs1/obigriffith/Active/canine/canine_embryonal_rhabdomyosarcoma/exome_somatic/cromwell.config.wdl --sample Annie --wdl /storage1/fs1/obigriffith/Active/canine/canine_embryonal_rhabdomyosarcoma/exome_somatic/analysis-wdls/definitions/somatic_exome_nonhuman.wdl --imports /storage1/fs1/obigriffith/Active/canine/canine_embryonal_rhabdomyosarcoma/exome_somatic/analysis-wdls/workflows.zip --yaml /storage1/fs1/obigriffith/Active/canine/canine_embryonal_rhabdomyosarcoma/exome_somatic/Annie/somatic_exome.yml --results /storage1/fs1/obigriffith/Active/canine/canine_embryonal_rhabdomyosarcoma/exome_somatic/Annie/final_somatic_results --temp /scratch1/fs1/obigriffith/obi-tmp/somatic_exome_nonhuman/Annie --cromwell_jar /storage1/fs1/mgriffit/Active/griffithlab/common/cromwell-jars/cromwell-71.jar --cromwell_server_mem 10g --cromwell_submit_mem 10g
+#bsub -q general -G compute-obigriffith -M 22000000 -R 'select[mem>22000] rusage[mem=22000]' \
+#-oo /storage1/fs1/obigriffith/Active/canine/canine_embryonal_rhabdomyosarcoma/exome_somatic/Annie/CER_Annie_exome.stdout \
+#-eo /storage1/fs1/obigriffith/Active/canine/canine_embryonal_rhabdomyosarcoma/exome_somatic/Annie/CER_Annie_exome.stderr \
+#-a 'docker(ghcr.io/genome/genome_perl_environment:compute1-58)' \
+#/bin/bash /storage1/fs1/obigriffith/Active/Common/git/archive/misc/runCromwellWDL.sh \
+#-d /absolute/path/to/cloud-workflows \
+#--cromwell_config /storage1/fs1/obigriffith/Active/canine/canine_embryonal_rhabdomyosarcoma/exome_somatic/cromwell.config.wdl \
+#--sample Annie \
+#--wdl /storage1/fs1/obigriffith/Active/canine/canine_embryonal_rhabdomyosarcoma/exome_somatic/analysis-wdls/definitions/somatic_exome_nonhuman.wdl \
+#--imports /storage1/fs1/obigriffith/Active/canine/canine_embryonal_rhabdomyosarcoma/exome_somatic/analysis-wdls/workflows.zip \
+#--yaml /storage1/fs1/obigriffith/Active/canine/canine_embryonal_rhabdomyosarcoma/exome_somatic/Annie/somatic_exome.yml \
+#--results /storage1/fs1/obigriffith/Active/canine/canine_embryonal_rhabdomyosarcoma/exome_somatic/Annie/final_somatic_results \
+#--temp /scratch1/fs1/obigriffith/obi-tmp/somatic_exome_nonhuman/Annie \
+#--cromwell_jar /storage1/fs1/mgriffit/Active/griffithlab/common/cromwell-jars/cromwell-71.jar \
+#--cromwell_server_mem 10g \
+#--cromwell_submit_mem 10g
 
 #NOTE. When specifying memory for the two Java commands below (which run in parallel) make sure they add up to LESS than what is requested for the parent LSF job.  
 function usage
 {
     echo ""
-    echo "usage: runCromwellCWL.sh -q <queue> -m <memory> -a <docker image> -h"
+    echo "usage: runCromwellWDL.sh -d <cloud-workflows-path> -q <queue> -m <memory> -a <docker image> -h"
     echo ""
+    echo "  -d | --workflow_dir            Path to cloud-workflows directory (required)"
     echo "  -g | --cromwell_config       Path to cromwell config file"
     echo "  -s | --sample                Sample name"
     echo "  -w | --wdl                   Path to WDL pipeline file"
@@ -30,11 +46,15 @@ if [[ $1 == "" ]];then
     exit;
 fi
 
+# Parse arguments
 while [[ "$1" != "" ]]; do
     case $1 in
+         -d | --workflow_dir )           shift
+                                         workflow_dir=$1
+                                         ;;
          -g | --cromwell_config )        shift
                                          cromwell_config=$1
-				         ;;
+                                         ;;
          -s | --sample )                 shift
                                          sample=$1
                                          ;;
@@ -74,6 +94,10 @@ while [[ "$1" != "" ]]; do
     shift
 done
 
+if [[ $workflow_dir == "" ]];then
+    echo "--workflow_dir must be specified (path to cloud-workflows repository)"
+    exit;
+fi
 if [[ $cromwell_config == "" ]];then
     echo "--cromwell_config must be specified"
     exit;
@@ -192,21 +216,42 @@ done
 CROMWELL_ID="$(cat $sample.status | python3 -m json.tool | grep "\"id\":" | sed 's@.*\"id\": \"\(.*\)\".*@\1@')"
 CROMWELL_NAME="$(cat $sample.status | python3 -m json.tool | grep "\"name\":" | sed 's@.*\"name\": \"\(.*\)\".*@\1@')"
 
-# when done continue and grab the outputs
-echo curl -SL http://localhost:8000/api/workflows/v1/$CROMWELL_ID/outputs >| $sample.output
-curl -SL http://localhost:8000/api/workflows/v1/$CROMWELL_ID/outputs >| $sample.output
+# Set absolute path to scripts directory
+SCRIPTS_DIR="$workflow_dir/scripts"
 
-# loop through the output and put everything in the right place
-#cat $sample.output | python3 -m json.tool | grep $temp | sed 's@.*\"location\": \"\(.*\)\".*@\1@' >| $sample.final_results
-cat $sample.output | python3 -m json.tool | grep $temp | sed -n 's/^[^"]*"\([^"]*\)".*"\([^"]*\)".*/\2/p' >| $sample.final_results
+function save_artifacts () {
+    WORKFLOW_ID=$1
+    DESTINATION_PATH=$2
+    if [[ -z $WORKFLOW_ID || -z $DESTINATION_PATH ]]; then
+        echo "Usage: save_artifacts WORKFLOW_ID DESTINATION_PATH"
+    elif [[ $(systemctl is-active --quiet cromwell) -ne 0 ]]; then
+        echo "Make sure Cromwell service is active before saving.\n\n    sudo systemctl start cromwell\n"
+    else
+        if [[ ! -d $DESTINATION_PATH ]]; then
+            echo "Directory $DESTINATION_PATH does not exist. Creating it..."
+            mkdir -p $DESTINATION_PATH
+        fi
+        python3 "$SCRIPTS_DIR/persist_artifacts.py" $DESTINATION_PATH $WORKFLOW_ID
+    fi
+}
+save_artifacts $CROMWELL_ID $results/workflow_artifacts/
 
-echo "Copying results files defined in the WDL to user specified location: " $results
 
-for line in $(cat $sample.final_results)
-do
-    echo cp -r $line $results
-    cp -r $line $results
-done
+# Define function to pull outputs (similar to save_artifacts)
+function pull_outputs () {
+    OUTPUTS_FILE=$1
+    DESTINATION_PATH=$2
+    if [[ -z $OUTPUTS_FILE || -z $DESTINATION_PATH ]]; then
+        echo "Usage: pull_outs OUTPUTS_FILE DESTINATION_PATH"
+    else
+        if [[ ! -d $DESTINATION_PATH ]]; then
+            echo "Directory $DESTINATION_PATH does not exist. Creating it..."
+            mkdir -p $DESTINATION_PATH
+        fi
+        python3 "$SCRIPTS_DIR/pull_outputs.py" --outputs-file=$OUTPUTS_FILE --outputs-dir=$DESTINATION_PATH
+    fi
+}
+pull_outputs $results/workflow_artifacts/outputs.json $results
 
 #############################################################################################
 ################ with everything now done clean up after yourself ###########################
