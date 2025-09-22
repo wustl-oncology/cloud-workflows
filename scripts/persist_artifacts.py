@@ -142,10 +142,9 @@ if __name__ == "__main__":
     parser.add_argument("workflow_id")
     args = parser.parse_args()
 
-    # NEW
     # Dynamically define LOCAL_DIR based on artifacts_dir
     if args.artifacts_dir.startswith("gs://"):
-        LOCAL_DIR = os.environ["HOME"] + "/artifacts"
+        LOCAL_DIR = Path(os.environ["HOME"]) / "artifacts"
     else:
         LOCAL_DIR = Path(os.getcwd()) / "artifacts"
     # Ensure the directory exists
