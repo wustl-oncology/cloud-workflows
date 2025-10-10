@@ -24,7 +24,7 @@ function usage
     echo ""
     echo "usage: runCromwellWDL.sh -d <cloud-workflows-path> -q <queue> -m <memory> -a <docker image> -h"
     echo ""
-    echo "  -d | --workflow_dir            Path to cloud-workflows directory (required)"
+    echo "  -d | --workflow_dir          Path to cloud-workflows directory (required)"
     echo "  -g | --cromwell_config       Path to cromwell config file"
     echo "  -s | --sample                Sample name"
     echo "  -w | --wdl                   Path to WDL pipeline file"
@@ -35,6 +35,7 @@ function usage
     echo "  -j | --cromwell_jar          Path to cromwell jar file (default: /storage1/fs1/mgriffit/Active/common/cromwell-jars/cromwell-51.jar)"
     echo "  -a | --cromwell_server_mem   Memory (GB) used for the Java process for Cromwell Server command"
     echo "  -b | --cromwell_submit_mem   Memory (GB) used for the Java process for Cromwell Submit command"
+    echo "  -k | --status_check_interval How long to wait before checking Cromwell for run status (default 600 seconds)"
     echo "  -n | --clean                 Whether to clean up or not (default: YES - things will be cleaned up unless you say --clean NO)"
     echo "  -h | --help                  Show this message"
     echo ""
@@ -82,6 +83,9 @@ while [[ "$1" != "" ]]; do
         -b | --cromwell_submit_mem )     shift
                                          cromwell_submit_mem=$1
 				         ;;
+        -k | --status_check_interval )   shift
+                                         status_check_interval=$1
+                                         ;;
         -n | --clean )                   shift
                                          clean=$1
 				         ;;
@@ -137,6 +141,10 @@ fi
 if [[ $cromwell_submit_mem == "" ]];then
     echo "--cromwell_submit_mem (in GB) must be specified (e.g. --cromwell_submit_mem=10g)"
     exit;
+fi
+if [[ $status_check_interval == "" ]];then
+    echo "Interval used to check Cromwell for run status will be 600 seconds"
+    status_check_interval="600"
 fi
 if [[ $clean == "" ]];then
     echo "Temp files will be cleaned up"
@@ -198,7 +206,7 @@ x=0
 while [ $x -le 1 ]
 do
     curl -SL http://localhost:8000/api/workflows/v1/query?label=model:$sample >| $sample.status
-    sleep 600
+    sleep $status_check_interval
     if cat $sample.status | python3 -m json.tool | grep -q "Succeeded"; then
         break
     elif cat $sample.status | python3 -m json.tool | grep -q "Failed"; then
