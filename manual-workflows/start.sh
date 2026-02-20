@@ -18,7 +18,7 @@ arguments:
 --workflow-options   Local path to workflow_options.json. DEFAULT \$SRC_DIR/workflow_options.json
 --machine-type       GCP machine type for the instance. DEFAULT e2-standard-2
 --zone               DEFAULT us-central1-c. For options, visit: https://cloud.google.com/compute/docs/regions-zones 
---analysis-release   DEFAULT 1.5.0. For options, visit: https://github.com/wustl-oncology/analysis-wdls/releases
+--analysis-release   DEFAULT 1.5.1. For options, visit: https://github.com/wustl-oncology/analysis-wdls/releases
 
 Additional arguments are passed directly to gsutil compute instances
 create command. For more information on those arguments, check that commands
@@ -100,7 +100,7 @@ while test $# -gt 0; do
             ;;
         --analysis-release*)
             if [ ! "$2" ]; then
-                ANALYSIS_RELEASE="1.5.0"
+                ANALYSIS_RELEASE="1.5.1"
             else
                 ANALYSIS_RELEASE=$2
                 shift
@@ -120,7 +120,7 @@ MACHINE_TYPE=${MACHINE_TYPE:-"e2-standard-2"}
 [ -z $CROMWELL_CONF    ] && CROMWELL_CONF="$SRC_DIR/cromwell.conf"
 [ -z $WORKFLOW_OPTIONS ] && WORKFLOW_OPTIONS="$SRC_DIR/workflow_options.json"
 [ -z $ZONE             ] && ZONE="us-central1-c"
-[ -z $ANALYSIS_RELEASE ] && ANALYSIS_RELEASE="1.5.0"
+[ -z $ANALYSIS_RELEASE ] && ANALYSIS_RELEASE="1.5.1"
 
 if [[ ! -f $CROMWELL_CONF ]]; then
     cat <<EOF
