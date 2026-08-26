@@ -55,7 +55,7 @@ def load_metadata(metadata_dir, workflow_id):
     if path.startswith("gs://"):
         tmpdir = os.environ.get("TMPDIR", "/tmp")
         tmpfile = f"{Path(tmpdir)}/{Path(path).name}"
-        subprocess.call(['gsutil', '-q', 'cp', '-n', path, tmpfile])
+        subprocess.call(['gcloud', 'storage', 'cp', '--no-clobber', '--quiet', path, tmpfile])
         with open(tmpfile) as f:
             data = json.load(f)
     else:

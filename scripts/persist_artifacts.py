@@ -31,7 +31,7 @@ def persist_artifacts(artifacts_dir):
     if artifacts_dir.startswith("gs://"):
         # Handle Google Cloud Storage
         logging.info(f"Copying {LOCAL_DIR} to Google Cloud Storage at {artifacts_dir}")
-        os.system(f"gsutil -q cp -r -n {LOCAL_DIR} {artifacts_dir}")
+        os.system(f"gcloud storage cp --recursive --no-clobber --quiet {LOCAL_DIR} {artifacts_dir}")
     else:
         # Handle local directory
         logging.info(f"Copying {LOCAL_DIR} to local directory at {artifacts_dir}")

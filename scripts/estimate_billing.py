@@ -55,7 +55,7 @@ def read_json(filename):
     if filename.startswith("gs://"):
         tmpdir = os.environ.get("TMPDIR", "/tmp")
         tmpfile = f"{Path(tmpdir)}/{Path(filename).name}"
-        subprocess.call(['gsutil', '-q', 'cp', '-n', filename, tmpfile])
+        subprocess.call(['gcloud', 'storage', 'cp', '--no-clobber', '--quiet', filename, tmpfile])
         with open(tmpfile) as f:
             return json.load(f)
     else:

@@ -89,7 +89,7 @@ def download_from_metadata(tag, dest_path):
     """
     Download gs:// path from `tag` to `dest_path`. `tag` value expected to be a GCS path.
     """
-    os.system(f"gsutil cp {_fetch_instance_attribute(tag)} {dest_path}")
+    os.system(f"gcloud storage cp {_fetch_instance_attribute(tag)} {dest_path}")
 
 
 def _fetch_instance_metadata(path):
@@ -173,8 +173,8 @@ def persist_vm_logs(gcs_dir):
     """
     os.system('journalctl -u google-startup-scripts > vm.log')
     os.system('journalctl -u cromwell > cromwell.log')
-    os.system(f"gsutil cp vm.log {gcs_dir}/vm.log")
-    os.system(f"gsutil cp cromwell.log {gcs_dir}/cromwell.log")
+    os.system(f"gcloud storage cp vm.log {gcs_dir}/vm.log")
+    os.system(f"gcloud storage cp cromwell.log {gcs_dir}/cromwell.log")
 
 
 def persist_url_response(url, gcs_dir, filename):
@@ -186,7 +186,7 @@ def persist_url_response(url, gcs_dir, filename):
         logging.debug(f"Persisting {filename}")
         with open(filename, 'wb') as f:
             f.write(response.content)
-        os.system(f"gsutil cp {filename} {outdir}/{filename}")
+        os.system(f"gcloud storage cp {filename} {outdir}/{filename}")
     else:
         # TODO(john): troubleshooting info from response
         logging.error(f"Could not retrieve {filename} diagram. Please investigate")
