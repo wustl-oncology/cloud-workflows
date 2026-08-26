@@ -19,9 +19,10 @@ arguments:
 --machine-type       GCP machine type for the instance. DEFAULT e2-standard-2
 --zone               DEFAULT us-central1-c. For options, visit: https://cloud.google.com/compute/docs/regions-zones 
 --analysis-release   DEFAULT 1.7.0. For options, visit: https://github.com/wustl-oncology/analysis-wdls/releases
+--cromwell-version   DEFAULT 92. For options, visit: https://github.com/broadinstitute/cromwell/releases
 
-Additional arguments are passed directly to gsutil compute instances
-create command. For more information on those arguments, check that commands
+Additional arguments are passed directly to the gcloud compute instances
+create command. For more information on those arguments, check that command's
 help page with
 
     gcloud compute instances create --help
@@ -106,6 +107,14 @@ while test $# -gt 0; do
                 shift
             fi
             ;;
+        --cromwell-version*)
+            if [ ! "$2" ]; then
+                CROMWELL_VERSION="92"
+            else
+                CROMWELL_VERSION=$2
+                shift
+            fi
+            ;;
         *)
             break
             ;;
@@ -121,6 +130,7 @@ MACHINE_TYPE=${MACHINE_TYPE:-"e2-standard-2"}
 [ -z $WORKFLOW_OPTIONS ] && WORKFLOW_OPTIONS="$SRC_DIR/workflow_options.json"
 [ -z $ZONE             ] && ZONE="us-central1-c"
 [ -z $ANALYSIS_RELEASE ] && ANALYSIS_RELEASE="1.7.0"
+[ -z $CROMWELL_VERSION ] && CROMWELL_VERSION="92"
 
 if [[ ! -f $CROMWELL_CONF ]]; then
     cat <<EOF
@@ -152,7 +162,7 @@ gcloud compute instances create $INSTANCE_NAME \
        --machine-type=$MACHINE_TYPE \
        --service-account=$SERVER_ACCOUNT --scopes=cloud-platform \
        --network=$NETWORK --subnet=$SUBNET \
-       --metadata=cromwell-version=88,analysis-release="$ANALYSIS_RELEASE" \
+       --metadata=cromwell-version="$CROMWELL_VERSION",analysis-release="$ANALYSIS_RELEASE" \
        --metadata-from-file=startup-script=$SRC_DIR/server_startup.py,cromwell-conf=$CROMWELL_CONF,helpers-sh=$SRC_DIR/helpers.sh,cromwell-service=$SRC_DIR/cromwell.service,workflow-options=$WORKFLOW_OPTIONS,persist-artifacts=$SRC_DIR/../scripts/persist_artifacts.py \
        $@
 
