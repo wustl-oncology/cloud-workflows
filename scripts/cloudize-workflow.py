@@ -282,7 +282,6 @@ def write_new_inputs(new_input_obj, output_path):
 
 def upload_all(file_inputs, bucket, dryrun):
     # Upload all the files
-    # TODO: find a way to optimize/parallelize (gcloud storage parallelizes by default,
     for f in file_inputs:
         for file_path in f.all_file_paths:
             upload_to_gcs(bucket, file_path.local, file_path.cloud, dryrun=dryrun)
