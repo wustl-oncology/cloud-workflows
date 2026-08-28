@@ -142,7 +142,7 @@ EOF
     exit 1
 fi
 
-# $@ indicates the ability to add any of the other flags that come with gcloud compute instances creat
+# $@ indicates the ability to add any of the other flags that come with "gcloud compute instances create"
 # for a full account, visit https://cloud.google.com/sdk/gcloud/reference/compute/instances/create
 gcloud compute instances create $INSTANCE_NAME \
        --project $PROJECT \
