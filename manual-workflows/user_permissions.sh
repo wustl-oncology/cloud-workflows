@@ -74,7 +74,7 @@ done
 
 case $COMMAND in
     "grant")
-        gsutil iam ch user:$EMAIL:objectAdmin gs://$BUCKET
+        gcloud storage buckets add-iam-policy-binding gs://$BUCKET --member=user:$EMAIL --role=roles/storage.objectAdmin
         gcloud projects add-iam-policy-binding $PROJECT \
                --member=user:$EMAIL \
                --role='roles/compute.instanceAdmin' > /dev/null
@@ -87,7 +87,7 @@ case $COMMAND in
         echo ""
         ;;
     "revoke")
-        gsutil iam ch -d user:$EMAIL gs://$BUCKET
+        gcloud storage buckets remove-iam-policy-binding gs://$BUCKET --member=user:$EMAIL --role=roles/storage.objectAdmin
         gcloud projects remove-iam-policy-binding $PROJECT \
                --member=user:$EMAIL \
                --role='roles/compute.instanceAdmin' > /dev/null

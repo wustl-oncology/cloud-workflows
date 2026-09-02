@@ -12,7 +12,7 @@ def is_gs_path(path):
 def file_exists(path):
     if is_gs_path(path):
         try:
-            subprocess.check_call(["gsutil", "-q", "stat", path], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            subprocess.check_call(["gcloud", "storage", "objects", "describe", path, "--format=none"], stderr=subprocess.DEVNULL)
             return True
         except subprocess.CalledProcessError:
             return False

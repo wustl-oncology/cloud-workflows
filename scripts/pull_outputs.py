@@ -16,7 +16,7 @@ DRYRUN = DEFAULT_DRYRUN
 def download_file(src, dest):
     """
     Copy a file from `src` to `dest`. 
-    - If `src` starts with "gs://", it uses `gsutil` to copy the file from Google Cloud Storage.
+    - If `src` starts with "gs://", it uses `gcloud storage` to copy the file from Google Cloud Storage.
     - If `src` is a local path, it uses the `cp` command to copy the file locally.
     """
     os.makedirs(Path(dest).parent, exist_ok=True)  # Ensure the destination directory exists
@@ -24,8 +24,8 @@ def download_file(src, dest):
         logging.info(f"Copying {src} to {dest}")
         if not DRYRUN:
             if src.startswith("gs://"):
-                # Use gsutil for Google Cloud Storage paths
-                subprocess.call(['gsutil', '-q', 'cp', '-n', src, dest])
+                # Use gcloud storage for Google Cloud Storage paths
+                subprocess.call(['gcloud', 'storage', 'cp', '--no-clobber', '--quiet', src, dest])
             else:
                 # Use cp for local paths
                 subprocess.call(['cp', src, dest])

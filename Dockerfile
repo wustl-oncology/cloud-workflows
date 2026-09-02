@@ -18,6 +18,7 @@ ADD scripts/estimate_billing.py /opt/scripts/estimate_billing.py
 ADD scripts/gb_estimate_billing.py /opt/scripts/gb_estimate_billing.py
 ADD scripts/persist_artifacts.py /opt/scripts/persist_artifacts.py
 ADD scripts/costs_json_to_csv.py /opt/scripts/costs_json_to_csv.py
+ADD scripts/condense_costs.py /opt/scripts/condense_costs.py
 
 # GMS setup/run
 ADD gms/resources.sh /opt/gms/resources.sh

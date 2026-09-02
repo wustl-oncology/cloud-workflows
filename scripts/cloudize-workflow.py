@@ -33,7 +33,7 @@ def upload_to_gcs(bucket, src, dest, dryrun=False):
     elif dryrun:
         pass
     else:
-        os.system(f"gsutil cp -n {src} {gcs_uri}")
+        os.system(f"gcloud storage cp --no-clobber {src} {gcs_uri}")
 
 
 # ---- Generic functions -----------------------------------------------
@@ -282,7 +282,6 @@ def write_new_inputs(new_input_obj, output_path):
 
 def upload_all(file_inputs, bucket, dryrun):
     # Upload all the files
-    # TODO: find a way to optimize/parallelize a la `gsutil -m
     for f in file_inputs:
         for file_path in f.all_file_paths:
             upload_to_gcs(bucket, file_path.local, file_path.cloud, dryrun=dryrun)

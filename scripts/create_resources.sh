@@ -76,10 +76,13 @@ gcloud compute firewall-rules create $NETWORK-allow-ssh \
        --allow tcp:22
 
 # Bucket
-[ ! -z $RETENTION ] && gsutil mb --retention $RETENTION gs://$BUCKET
-gsutil mb -p $PROJECT -b on gs://$BUCKET
-gsutil iam ch serviceAccount:$COMPUTE_ACCOUNT:objectAdmin gs://$BUCKET
-gsutil iam ch serviceAccount:$COMPUTE_ACCOUNT:legacyBucketOwner gs://$BUCKET
-gsutil iam ch serviceAccount:$SERVER_ACCOUNT:objectAdmin gs://$BUCKET
-gsutil iam ch serviceAccount:$SERVER_ACCOUNT:legacyBucketOwner gs://$BUCKET
-gsutil pap set enforced gs://$BUCKET
+if [ ! -z $RETENTION ]; then
+    gcloud storage buckets create gs://$BUCKET --project=$PROJECT --location=$GC_REGION --uniform-bucket-level-access --retention-period=$RETENTION
+else
+    gcloud storage buckets create gs://$BUCKET --project=$PROJECT --location=$GC_REGION --uniform-bucket-level-access
+fi
+gcloud storage buckets add-iam-policy-binding gs://$BUCKET --member=serviceAccount:$COMPUTE_ACCOUNT --role=roles/storage.objectAdmin
+gcloud storage buckets add-iam-policy-binding gs://$BUCKET --member=serviceAccount:$COMPUTE_ACCOUNT --role=roles/storage.legacyBucketOwner
+gcloud storage buckets add-iam-policy-binding gs://$BUCKET --member=serviceAccount:$SERVER_ACCOUNT --role=roles/storage.objectAdmin
+gcloud storage buckets add-iam-policy-binding gs://$BUCKET --member=serviceAccount:$SERVER_ACCOUNT --role=roles/storage.legacyBucketOwner
+gcloud storage buckets update gs://$BUCKET --public-access-prevention

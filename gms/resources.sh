@@ -79,7 +79,7 @@ cat <<EOF > lifecycle_rules.json
     ]
 }
 EOF
-gsutil lifecycle set lifecycle_rules.json gs://$BUCKET
+gcloud storage buckets update gs://$BUCKET --lifecycle-file=lifecycle_rules.json
 rm lifecycle_rules.json
 
 
