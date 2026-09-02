@@ -1,3 +1,4 @@
+import functools
 import json
 import logging
 import os
@@ -47,9 +48,13 @@ disk_price = {
 }
 
 
+@functools.lru_cache(maxsize=None)
 def load_metadata(metadata_dir, workflow_id):
     """
-    Reads and parses a JSON file into memory. Works for local files and gs:// file paths
+    Reads and parses a JSON file into memory. Works for local files and gs:// file paths.
+    Cached per (metadata_dir, workflow_id): the same workflow's metadata is often requested
+    repeatedly (e.g. several calls that are all cache hits pointing at the same original
+    workflow), and without caching each of those re-downloads and re-parses the same file.
     """
     path = f"{metadata_dir}/{workflow_id}.json"
     if path.startswith("gs://"):
