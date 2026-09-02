@@ -76,8 +76,20 @@ def is_subworkflow(call):
     return SUBWORKFLOW_KEY in call
 
 
+def is_preempted(call):
+    """
+    True if this call attempt was preempted. On the older PAPI backend this
+    is reported directly as backendStatus == "Preempted". On GCP Batch there
+    is no such backendStatus value - the attempt instead comes back as a
+    RetryableFailure/Failed whose failure message mentions "VMPreemption".
+    """
+    if call.get("backendStatus") == "Preempted":
+        return True
+    return any("VMPreemption" in f.get("message", "") for f in call.get("failures", []))
+
+
 def is_task_completed(call):
-    return call[COMPLETED_TASK_KEY] == "Done" or call["backendStatus"] == "Preempted"
+    return call[COMPLETED_TASK_KEY] == "Done" or is_preempted(call)
 
 
 def convert_from_iso(datetime_str):
@@ -91,13 +103,18 @@ def get_machine_duration(task):
     events = task["executionEvents"]
 
     def find_description(desc):
-        return next(event for event in events if event["description"] == desc)
+        return next((event for event in events if event["description"] == desc), None)
 
     start_event = find_description("RunningJob")
     end_event = find_description("UpdatingJobStore")
 
     if not (start_event and end_event):
-        raise NotImplementedError(f"machine duration couldn't be determined for a task. Had events {events}")
+        logging.warning(
+            "machine duration events not found for a task "
+            f"(backendStatus={task.get('backendStatus')}); "
+            "falling back to the call's start/end times"
+        )
+        return task["start"], task["end"]
 
     return start_event["startTime"], end_event["endTime"]
 
@@ -155,12 +172,28 @@ def parse_cache_result(call):
 
 def get_cached_cost(metadata_dir, call, metadata):
     """
-    Pulls the metadata for the matching cached task and passes it to get_task_cost
+    Pulls the metadata for the matching cached task and computes its cost.
+    The referenced call may itself be a cache hit (chained caching) or a
+    subworkflow, so it goes back through get_call_cost rather than assuming
+    it's a task that actually ran on a machine.
     """
     cached_call_id, call_name, shard_index = parse_cache_result(call)
-    metadata = load_metadata(metadata_dir, cached_call_id)
-    call_data = next(x for x in metadata["calls"][call_name] if x["shardIndex"] == shard_index)
-    return get_task_cost(call_data)
+    cached_metadata = load_metadata(metadata_dir, cached_call_id)
+    call_data = next(x for x in cached_metadata["calls"][call_name] if x["shardIndex"] == shard_index)
+    return get_call_cost(metadata_dir, call_data, cached_metadata)
+
+
+def get_call_cost(metadata_dir, call, metadata):
+    """
+    Dispatches a single call to the right cost calculation depending on
+    whether it's a cache hit, a subworkflow, or a task that actually ran.
+    """
+    if is_cached_task(call):
+        return get_cached_cost(metadata_dir, call, metadata)
+    elif is_subworkflow(call):
+        return get_workflow_cost(metadata_dir, call[SUBWORKFLOW_KEY])
+    else:
+        return get_task_cost(call)
 
 
 def get_task_cost(task):
@@ -192,7 +225,7 @@ def get_task_cost(task):
         "totalCost": total_cost,
         "attempt": task["attempt"],
         "preemptible": preemptible,
-        "backendStatus": task["backendStatus"]
+        "backendStatus": "Preempted" if is_preempted(task) else task["backendStatus"]
     }
 
 
@@ -217,12 +250,7 @@ def get_workflow_cost(metadata_dir, workflow_id):
         for _, call in enumerate(details):
             ck = call_key(call_name, call)
             if is_task_completed(call):
-                if is_cached_task(call):
-                    call_costs[ck] = get_cached_cost(metadata_dir, call, metadata)
-                elif is_subworkflow(call):
-                    call_costs[ck] = get_workflow_cost(metadata_dir, call[SUBWORKFLOW_KEY])
-                else:
-                    call_costs[ck] = get_task_cost(call)
+                call_costs[ck] = get_call_cost(metadata_dir, call, metadata)
             else:
                 logging.error(f"{call_name} has not completed running, cost cannot be calculated")
     duration = convert_from_iso(metadata["end"]) - convert_from_iso(metadata["start"])
