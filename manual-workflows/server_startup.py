@@ -51,8 +51,11 @@ def create_directories():
 
 @bookends
 def install_packages():
-    os.system('apt-get update')
-    os.system('apt-get install -y ' + ' '.join(PACKAGES))
+    # DEBIAN_FRONTEND=noninteractive silences debconf's harmless
+    # "unable to re-open stdin" warning, since this script runs with no
+    # controlling TTY (as a GCE startup-script) and can't be prompted anyway.
+    os.system('DEBIAN_FRONTEND=noninteractive apt-get update')
+    os.system('DEBIAN_FRONTEND=noninteractive apt-get install -y ' + ' '.join(PACKAGES))
 
 
 @bookends
