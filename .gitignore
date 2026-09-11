@@ -23,4 +23,6 @@ outputs/*
 *~
 README.html
 *#*
+
 scripts/__pycache__/*
+manual-workflows/__pycache__/
