@@ -13,6 +13,7 @@ PACKAGES = [
     'openjdk-17-jdk',
     'git',
     'python3-pip',
+    'python3-requests',
     # just useful
     'zip',
     'less',
@@ -50,10 +51,11 @@ def create_directories():
 
 @bookends
 def install_packages():
-    os.system('apt-get update')
-    os.system('apt-get install -y ' + ' '.join(PACKAGES))
-    # Python deps
-    os.system('python3 -m pip install "requests>=2.20.0"')
+    # DEBIAN_FRONTEND=noninteractive silences debconf's harmless
+    # "unable to re-open stdin" warning, since this script runs with no
+    # controlling TTY (as a GCE startup-script) and can't be prompted anyway.
+    os.system('DEBIAN_FRONTEND=noninteractive apt-get update')
+    os.system('DEBIAN_FRONTEND=noninteractive apt-get install -y ' + ' '.join(PACKAGES))
 
 
 @bookends

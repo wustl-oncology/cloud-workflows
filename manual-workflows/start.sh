@@ -37,6 +37,13 @@ die () {
 }
 
 
+case $1 in
+    -h|-\?|--help)
+        show_help
+        exit 0
+        ;;
+esac
+
 INSTANCE_NAME=$1
 if [ -z $INSTANCE_NAME ]; then
     show_help
@@ -45,7 +52,16 @@ fi
 shift
 
 
+GCLOUD_ARGS=()
 while test $# -gt 0; do
+    # Normalize "--flag=value" into "--flag" "value" so both syntaxes work
+    # uniformly below, for this script's own flags as well as passthrough
+    # flags forwarded to gcloud.
+    case $1 in
+        --*=*)
+            set -- "${1%%=*}" "${1#*=}" "${@:2}"
+            ;;
+    esac
     case $1 in
         -h|-\?|--help)
             show_help
@@ -116,7 +132,7 @@ while test $# -gt 0; do
             fi
             ;;
         *)
-            break
+            GCLOUD_ARGS+=("$1")
             ;;
     esac
     shift
@@ -152,11 +168,13 @@ EOF
     exit 1
 fi
 
-# $@ indicates the ability to add any of the other flags that come with gcloud compute instances creat
-# for a full account, visit https://cloud.google.com/sdk/gcloud/reference/compute/instances/create
+# GCLOUD_ARGS holds any other flags that come with gcloud compute instances create
+# (any argument above not recognized as one of this script's own options), collected
+# regardless of where they appear relative to this script's own flags. For a full
+# account, visit https://cloud.google.com/sdk/gcloud/reference/compute/instances/create
 gcloud compute instances create $INSTANCE_NAME \
        --project $PROJECT \
-       --image-family debian-11 \
+       --image-family debian-12 \
        --image-project debian-cloud \
        --zone $ZONE \
        --machine-type=$MACHINE_TYPE \
@@ -164,7 +182,7 @@ gcloud compute instances create $INSTANCE_NAME \
        --network=$NETWORK --subnet=$SUBNET \
        --metadata=cromwell-version="$CROMWELL_VERSION",analysis-release="$ANALYSIS_RELEASE" \
        --metadata-from-file=startup-script=$SRC_DIR/server_startup.py,cromwell-conf=$CROMWELL_CONF,helpers-sh=$SRC_DIR/helpers.sh,cromwell-service=$SRC_DIR/cromwell.service,workflow-options=$WORKFLOW_OPTIONS,persist-artifacts=$SRC_DIR/../scripts/persist_artifacts.py \
-       $@
+       "${GCLOUD_ARGS[@]}"
 
 cat <<EOF
 To use this instance, SSH into it via:
