@@ -10,7 +10,7 @@ PACKAGES = [
     # required to run
     'curl',
     'screen',
-    'openjdk-17-jdk',
+    'openjdk-21-jdk',
     'git',
     'python3-pip',
     'python3-requests',
