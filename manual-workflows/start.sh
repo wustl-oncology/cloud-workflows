@@ -174,7 +174,7 @@ fi
 # account, visit https://cloud.google.com/sdk/gcloud/reference/compute/instances/create
 gcloud compute instances create $INSTANCE_NAME \
        --project $PROJECT \
-       --image-family debian-12 \
+       --image-family debian-13 \
        --image-project debian-cloud \
        --zone $ZONE \
        --machine-type=$MACHINE_TYPE \
