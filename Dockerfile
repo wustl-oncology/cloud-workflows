@@ -1,6 +1,8 @@
-FROM google/cloud-sdk:latest
+FROM gcr.io/google.com/cloudsdktool/google-cloud-cli:591.0.0
 
-RUN apt-get install -y zip openjdk-17-jdk less emacs vim git screen curl libnss-sss
+RUN apt-get update && apt-get install -y \
+    zip openjdk-21-jdk less emacs vim git screen curl libnss-sss \
+    && rm -rf /var/lib/apt/lists/*
 
 # Cloudize process
 ADD scripts/cloudize-workflow.py /opt/scripts/cloudize-workflow.py
@@ -34,4 +36,4 @@ ADD manual-workflows/server_startup.py /opt/manual-workflows/server_startup.py
 ADD manual-workflows/start.sh /opt/manual-workflows/start.sh
 ADD manual-workflows/cromwell.service /opt/manual-workflows/cromwell.service
 
-RUN pip3 install --no-build-isolation --break-system-packages -r /opt/scripts/requirements.txt
+RUN pip3 install --break-system-packages -r /opt/scripts/requirements.txt

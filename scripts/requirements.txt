@@ -1,13 +1,10 @@
 cython<3.0.0
 
 cwl_utils
-miniwdl == 1.2.1
+miniwdl == 1.16.0
 
 # major API change after 0.15.0
 ruamel.yaml >= 0.15.0
-
-pathlib == 1.0.1
-
 PyYAML
 
 # do not use google-cloud-storage
