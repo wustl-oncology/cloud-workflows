@@ -1,0 +1,12 @@
+sbatch --time=5-00:00:00 --mem=22G /projects/beyond_binding/cromwell_immuno_test/git/adm/cloud-workflows/manual-workflows/runCromwellWDL_slurm.sh \
+        -d /projects/beyond_binding/cromwell_immuno_test/git/adm/cloud-workflows \
+        --cromwell_config /projects/beyond_binding/cromwell_immuno_test/adm-test/cromwell-softlink.conf \
+        --sample adam-test \
+        --wdl /projects/beyond_binding/cromwell_immuno_test/git/adm/analysis-wdls/definitions/immuno.wdl \
+        --imports /projects/beyond_binding/cromwell_immuno_test/git/adm/analysis-wdls/workflows.zip \
+        --yaml /projects/beyond_binding/cromwell_immuno_test/yamls/inputs.json \
+        --temp /projects/beyond_binding/cromwell_immuno_test/adm-test/scratch \
+        --results /projects/beyond_binding/cromwell_immuno_test/adm-test/results \
+        --cromwell_server_mem 10g \
+        --cromwell_submit_mem 10g \
+        --bind_paths /projects/beyond_binding
